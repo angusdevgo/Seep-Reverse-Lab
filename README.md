@@ -2,6 +2,10 @@
 
 面向大语言模型智能体（Pi Agent、Claude Code、Codex、DeepSeek Harness 等）的**多平台客户端逆向工程与授权流安全审计专精工作台**。深度覆盖 Windows 原生 PE / 动态库、Android APK / DEX / SO、Linux ELF 等二进制目标的特权判定分析、离线许可检验走查（CWE-602）、二进制微创补丁注入、运行时动态插桩以及 CTF 靶标分析。
 
+> 🔗 **致敬与参考源**：
+> - 核心移动端逆向工程与验证规范参考自标杆开源项目：[**newliver666/apk-reverse**](https://github.com/newliver666/apk-reverse)（完整上游镜像与验证测试集内置于 [`Tool/upstream/apk-reverse/`](./Tool/upstream/apk-reverse/)）。
+> - 社区支持与技术讨论：[**LINUX DO**](https://linux.do/)（真诚、友善、团结、专业的技术论坛）。
+
 它是一个**面向智能体闭环作业的工程工作台（Agent-Native Workbench）**，而不是泛泛的文字教程：内置了以门控机制（Gate）驱动的总控分发协议（`softseep`）、开箱即用的自动化分析 MCP 工具集、体系化渗透与逆向战术知识库（289 篇）、标准化沙盒执行流水线以及 9 类实战脱敏架构范式库。
 
 ---
@@ -217,6 +221,11 @@ Seep\ (251 MB)
    - **加载期**：收敛动态链接库搜索路径（`SetDefaultDllDirectories`）杜绝环境劫持。
    - **运行期**：启用进程级动态代码策略（`ProcessDynamicCodePolicy`）封锁非法内存属性改写。
    - **逻辑层**：确立“服务端权威”原则，关键受限资源以服务端动态签名与短期令牌为唯一授权凭据。
+
+## 致谢与社区 (Acknowledgements & Community)
+
+- 特别致谢开源项目 [**newliver666/apk-reverse**](https://github.com/newliver666/apk-reverse) 提供的卓越 Android 逆向门控范式与工具验证体系。
+- 感谢 [**LINUX DO**](https://linux.do/) 社区提供的高质量技术交流与探索氛围。
 
 ---
 
