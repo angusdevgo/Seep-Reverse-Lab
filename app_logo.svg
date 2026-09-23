@@ -1,0 +1,45 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128">
+  <defs>
+    <linearGradient id="cyberGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#00F2FE" />
+      <stop offset="50%" stop-color="#4FACFE" />
+      <stop offset="100%" stop-color="#6B11FF" />
+    </linearGradient>
+    <linearGradient id="shieldGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#1E2235" />
+      <stop offset="100%" stop-color="#0F111A" />
+    </linearGradient>
+    <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="4" result="blur" />
+      <feComposite in="SourceGraphic" in2="blur" operator="over" />
+    </filter>
+  </defs>
+
+  <!-- Background Shield Outer -->
+  <path d="M64 6 L112 24 V64 C112 94 64 122 64 122 C64 122 16 94 16 64 V24 Z" 
+        fill="url(#shieldGrad)" stroke="url(#cyberGrad)" stroke-width="3" filter="url(#glow)"/>
+
+  <!-- Inner Circuit Grid/Network -->
+  <path d="M40 42 L64 26 L88 42 L88 74 L64 90 L40 74 Z" 
+        fill="none" stroke="#00F2FE" stroke-width="1.5" stroke-dasharray="3,3" opacity="0.6"/>
+
+  <line x1="64" y1="26" x2="64" y2="48" stroke="#00F2FE" stroke-width="1.5" opacity="0.8"/>
+  <line x1="40" y1="42" x2="52" y2="56" stroke="#00F2FE" stroke-width="1.5" opacity="0.8"/>
+  <line x1="88" y1="42" x2="76" y2="56" stroke="#00F2FE" stroke-width="1.5" opacity="0.8"/>
+  <line x1="40" y1="74" x2="64" y2="66" stroke="#00F2FE" stroke-width="1.5" opacity="0.8"/>
+  <line x1="88" y1="74" x2="64" y2="66" stroke="#00F2FE" stroke-width="1.5" opacity="0.8"/>
+  <line x1="64" y1="66" x2="64" y2="90" stroke="#00F2FE" stroke-width="1.5" opacity="0.8"/>
+
+  <!-- Nodes -->
+  <circle cx="64" cy="26" r="3.5" fill="#00F2FE" filter="url(#glow)"/>
+  <circle cx="40" cy="42" r="3" fill="#4FACFE"/>
+  <circle cx="88" cy="42" r="3" fill="#4FACFE"/>
+  <circle cx="40" cy="74" r="3" fill="#4FACFE"/>
+  <circle cx="88" cy="74" r="3" fill="#4FACFE"/>
+  <circle cx="64" cy="90" r="3.5" fill="#6B11FF"/>
+
+  <!-- Core Keyhole / Reverse Pulse -->
+  <circle cx="64" cy="56" r="8" fill="none" stroke="#00F2FE" stroke-width="2.5" filter="url(#glow)"/>
+  <path d="M60 62 L68 62 L71 76 L57 76 Z" fill="url(#cyberGrad)"/>
+  <circle cx="64" cy="56" r="3" fill="#FFFFFF"/>
+</svg>

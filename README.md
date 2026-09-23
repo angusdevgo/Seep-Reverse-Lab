@@ -1,46 +1,68 @@
-# seep
+<p align="center">
+  <img src="app_logo.svg" alt="Seep Reverse Lab Logo" width="128" height="128">
+</p>
 
-面向大语言模型智能体（Pi Agent、Claude Code、Codex、DeepSeek Harness 等）的**多平台客户端逆向工程与授权流安全审计专精工作台**。深度覆盖 Windows 原生 PE / 动态库、Android APK / DEX / SO、Linux ELF 等二进制目标的特权判定分析、离线许可检验走查（CWE-602）、二进制微创补丁注入、运行时动态插桩以及 CTF 靶标分析。
+<h1 align="center">Seep Reverse Lab</h1>
+
+<p align="center">
+  <strong>面向 AI Agent 的多平台客户端逆向工程 · 授权流审计（CWE-602）· 自动化攻防工作台</strong>
+</p>
+
+<p align="center">
+  <a href="https://github.com/angusdevgo/seep-reverse-lab"><img src="https://img.shields.io/badge/Release-v1.0.0-brightgreen.svg?style=for-the-badge&logo=github" alt="Release"></a>
+  <a href="https://github.com/angusdevgo/seep-reverse-lab/blob/main/LICENSE"><img src="https://img.shields.io/badge/License-MIT-blue.svg?style=for-the-badge" alt="License"></a>
+  <img src="https://img.shields.io/badge/Platform-Windows%20%7C%20Android%20%7C%20Linux-0078D6?style=for-the-badge&logo=windows" alt="Platform">
+  <img src="https://img.shields.io/badge/Architecture-x86%20%7C%20x64%20%7C%20ARM64-orange?style=for-the-badge" alt="Architecture">
+  <img src="https://img.shields.io/badge/MCP%20Tools-22%20Integrated-purple?style=for-the-badge&logo=fastapi" alt="MCP Tools">
+  <a href="https://linux.do/"><img src="https://img.shields.io/badge/Community-LINUX%20DO-23272A?style=for-the-badge&logo=discourse" alt="LINUX DO"></a>
+</p>
+
+<p align="center">
+  <a href="#-项目定位与解决痛点">项目定位</a> •
+  <a href="#-核心能力">核心能力</a> •
+  <a href="#-目录架构体系">目录架构</a> •
+  <a href="#-核心技术范畴">核心范畴</a> •
+  <a href="#-mcp-工具矩阵">MCP 工具</a> •
+  <a href="#-快速开始">快速开始</a> •
+  <a href="#-智能体消费规范">消费规范</a> •
+  <a href="#-致谢与社区">致谢社区</a> •
+  <a href="#-免责声明">免责声明</a>
+</p>
+
+---
 
 > 🔗 **致敬与参考源**：
 > - 核心移动端逆向工程与验证规范参考自标杆开源项目：[**newliver666/apk-reverse**](https://github.com/newliver666/apk-reverse)（完整上游镜像与验证测试集内置于 [`Tool/upstream/apk-reverse/`](./Tool/upstream/apk-reverse/)）。
 > - 社区支持与技术讨论：[**LINUX DO**](https://linux.do/)（真诚、友善、团结、专业的技术论坛）。
 
-它是一个**面向智能体闭环作业的工程工作台（Agent-Native Workbench）**，而不是泛泛的文字教程：内置了以门控机制（Gate）驱动的总控分发协议（`softseep`）、开箱即用的自动化分析 MCP 工具集、体系化渗透与逆向战术知识库（289 篇）、标准化沙盒执行流水线以及 9 类实战脱敏架构范式库。
+---
+
+## 🌟 项目定位与解决痛点
+
+它把分散的逆向工具链（Radare2 / JADX / Apktool / Frida / IDA）、战术知识库、提示词与实战经验，深度组装为一套 **AI Agent 能直接消费并自主驱动的自动化工作台（Agent-Native Workbench）** —— 用户仅需输入自然语言大白话，智能体即可自发展开平台识别、漏洞类型判型、微创打桩与证据链闭环交付。
+
+### 核心解决的五大痛点：
+- 🚀 **工具链高度碎片化**：传统逆向需要手动切换七八个离散工具，路径四散 —— 本工作台全量内置，通过标准化 MCP 统一调度。
+- 🧠 **大模型缺乏决断逻辑**：面对混淆二进制或未知 APK，模型容易陷入盲目逆向 —— `softseep` 总控协议自发展开平台（Win/Android/Linux/Web）与业务类型（9 大类）自动判型，零摩擦分发。
+- 🛡️ **云端模型误报防拒**：日常逆向与合规白盒审计易触发模型敏感词安全熔断 —— 内置底座级 `BLOCK_NONE` 注入、动态口语合规转译与推理级思维重定向三层保险。
+- 📚 **实战经验无法沉淀**：多数逆向任务沦为一次性消耗 —— 内置 9 种脱敏工业架构范式（项目 A ~ I）与 289 篇系统化战术实战笔记，确立“先查知识库再动手”纪律。
+- 📦 **环境部署摩擦高昂**：实习生或新机器配置繁琐 —— 提供全自动一键配置脚本，原生支持 **Pi Agent**、**Claude Code**、**DeepSeek Harness (DSH)** 及 **Codex / OpenCode**。
 
 ---
 
-## 智能体如何消费与驱动本工作台 (How an agent is expected to consume this)
+## ⚡ 本工作台的核心能力 (What it is good at)
 
-本仓库的指令集与核心入口文件并非供人类漫读的参考文档，而是针对大模型“容易陷入幻觉、偏离授权目标或在长推理链条中发生退缩”这一常见缺陷设计的**程序化执行门禁（Procedures with Gates）**。
-
-当任何兼容的 AI Agent 挂载本仓库作为上下文时，其推理逻辑受以下四层机制硬性约束：
-
-- **强制门禁（G-Auth & G0–G6）**：任何任务开展前，第一行为永远是判定目标是否属于受权白盒测试资产；随后通过“四问”确定鉴权权威（服务端 vs 客户端本地）与交付形态（补丁 / 内存劫持 / 算号 / 协议中继 / 载荷提取）。任何一步通不过则立即终止或重定向，严禁凭第一性原理盲目逆向。
-- **两击失败熔断纪律（Two-Strike Rule）**：同一假设、同一种内存补丁或逆向利用路径若连续失败两次，立即视为当前技术模型错误，强制回退至上一级判型，严禁进行第三次同构盲试。
-- **先查知识库再动手（Zero-Waste Recon）**：发现特征信号（如特定加壳混淆、JWT、加密通信、驱动对抗、自引用校验）时，禁止从零手写分析脚本，必须优先通过 `seep_kb_search` 索引成熟战术库并直接映射 MCP 工具调用。
-- **完工严格定义（Definition of Done）**：仅有控制台日志无错误绝不等于任务完成。“完成”必须满足端到端证据链闭环：从原始目标指纹、判定点 RVA 逆向还原、补丁或验证 PoC 实施、断网离线实测（确证无云端依赖）到结构化三段式报告交付，缺一不可。
+- 🎯 **自然语言穿透与两级自动判型**：使用者无需记忆特定选单或参数，下达“分析这个程序特权验证”、“定位本地卡密校验”、“去广告”等日常指令，总控协议自主结合文件特征（魔数与导入表）与语义动词，瞬时收敛攻击路径。
+- 🔍 **客户端鉴权脆弱性走查（CWE-602）**：在几分钟内定性受限特权是由本地布尔/时间戳驱动，还是由服务端强验签与远程资产下发决定。严密规避“强改本地标志位导致客户端向服务端索要数据失败从而发生白屏或静默崩溃”的经典伪 VIP 陷阱。
+- 🛡️ **Authenticode 数字签名完备性保全**：对于具备官方签名的 Windows 核心进程，杜绝落地修改 EXE 文件，统一通过 DLL 搜索顺序劫持（代理 `version.dll`、`sentry.dll`）在内存加载期实施微创打桩，保全宿主二进制的合法数字签名。
+- 💎 **九大工业级架构范式全覆盖**：覆盖从单进程纯离线内存打桩、多进程架构分流过滤、资源模板与 IAT Hook 显示层伪造、压缩壳处理与 ACL 注册表冻结，到 VM 集中判定重定向、.NET 算法还原离线 Keygen、自引用哈希破局、Ed25519 公钥密文替换及弱模 RSA 验签入口旁路。
+- 🔌 **全量离线预置与零外网依赖**：底层工具集（Radare2、JADX、Apktool、Playwright 自动化引擎、IDA 桥接适配层等）均物理打包内置，解压即用，在完全隔离沙箱中稳定执行。
 
 ---
 
-## 本工作台的核心能力 (What it is good at)
+## 📋 目录架构体系 (Structure)
 
-- **自然语言输入穿透与两级自动判型**：无需使用者记忆繁杂的逆向参数或选单，自然语言下达测试意图（如“分析此程序特权分支”、“定位本地卡密校验”、“去广告”），总控引擎自动提取文件魔数与语义动词，瞬时收敛出“目标平台（Windows / Android / Linux / Web）”与“逆向业务类型（9 类）”，自发路由至最轻量有效的工具链。
-- **客户端鉴权脆弱性走查（CWE-602）与特权分支判定**：在几分钟内断定受限特权是由本地布尔值/时间戳驱动，还是由服务端强验签与远程资产下发决定。严密规避“强改本地标志位导致客户端向服务端索要数据失败从而发生白屏或静默崩溃”的经典伪 VIP 陷阱。
-- **跨平台运行时与商用保护壳对抗分流**：
-  - 原生 C/C++ PE：识别已知压缩壳与动态注入通道，指导无源码环境下的免杀代理 DLL 劫持跳板研发与单点分支修正。
-  - .NET / Mono：解构元数据流、定位动态 IL 注入点与可逆算法，实现无私钥签名依赖的纯本地算号（Keygen）。
-  - Android DEX / SO：基于 JADX / Apktool / Frida 自动识别加壳类型、抽取壳形态，对 Native 层 OLLVM 平坦化分支或签名衍生密钥进行针对性提取与 RPC 服务化转换。
-  - 强保护环境（EXECryptor / VMProtect / Denuvo）：快速识别 VM stub 特征，果断放弃不可逆的代码还原，自动转向内存态取载荷或外部调用点旁路。
-- **零破坏性与 Authenticode 签名完整性保全**：对于具备官方数字签名的 Windows 关键进程，全流程杜绝直接落盘修改主程序 EXE，统一通过 Windows DLL 搜索顺序劫持（代理系统库如 `version.dll`、`sentry.dll`）在内存加载期施加微创打桩，保全宿主二进制的数字签名合法性。
-- **开箱即用与零外网依赖**：底层工具集（Radare2、JADX、Apktool、Playwright 自动化组件、IDA 桥接适配层等）全量物理预置；核心分析命令均可在隔离沙箱与离线网络中稳定执行。
-- **多模型推理防御与无感合规降拒**：内置实验环境状态机（Lab Mode）、底座级请求放行映射与思维重定向词表，彻底消除模型在面对逆向与攻防术语时的主观推诿与虚假拒绝。
-
----
-
-## 目录结构体系 (Structure)
-
-本工作台遵循严格的组件分层与渐进式披露规范：
+本工作台遵循严密的渐进式披露（Progressive Disclosure）与分层管理规范：
 
 ```
 Seep\ (251 MB)
@@ -62,6 +84,13 @@ Seep\ (251 MB)
 │   │   ├── mcp.json.template      ← 全局 MCP 挂载配置标准模板
 │   │   └── Tool\                  ← ⚠️ MCP 内部强约束底层工具运行时（严格保持相对路径）
 │   │       ├── safe\              ← 已物理内置的跨平台逆向工具箱（JADX、Radare2、Apktool、Hook 引擎等）
+│   │       │   ├── jadx\          ← 75 MB（v1.5.6 纯净优化版）
+│   │       │   ├── radare2\       ← 39 MB（v6.2.2 全套二进制套件）
+│   │       │   ├── apktool\       ← 24 MB（v3.0.3 原生环境）
+│   │       │   ├── hook-mcp\      ← 331 KB（Frida/LSPosed 动态注入模板）
+│   │       │   ├── ida-pro-mcp\   ← 28 MB（IDA 桥接适配依赖）
+│   │       │   ├── js-reverse-mcp\← 61 MB（Web/JS 动态调试核心）
+│   │       │   └── playwright-mcp\← 8.8 MB（无头浏览器控制台）
 │   │       └── reverselab\        ← 攻防知识库核心（687 个架构文件，含 289 篇系统化战术实战笔记）
 │   │
 │   ├── prompts\                   ← 智能体协同规范与扩展注入层
@@ -78,59 +107,49 @@ Seep\ (251 MB)
 │   ├── docs\                      ← 运维与工程标准文档库（MCP 验证、下载溯源、资产依赖总清单）
 │   └── scripts\                   ← 工作空间管理与自动化辅助脚本集（建档、签名、IDA 启动挂载等）
 │
-├── setup\                         ← 自动化安装、依赖配置与环境健康自检脚本
+├── setup\                         ← 自动化安装、依赖配置与环境健康自检脚本集
 └── MANUAL\                        ← 基础设施依赖与商业环境自备说明（Python、Node、IDA Pro 授权等）
 ```
 
 ---
 
-## 核心分析链路与技术范畴 (Scope)
+## 🔬 核心技术范畴 (Scope)
 
-本工作台深度聚焦于**CTF 攻防、跨平台逆向工程、Android 移动安全与二进制深度分析**，将常见的工业级防御、私有虚拟机与授权校验机制抽象为四大核心领域：
+本工作台将常见的商业软件防御、虚拟机加固与授权体系抽象归纳为四大纵深战术域：
 
 ### 1. CTF 攻防竞赛与 Web/二进制靶标分析 (CTF & Challenge Workflows)
-- **实战攻防网络路由（Attack-Network Routing）**：
-  基于内置 `reverselab` 体系，以“信号检测 → 战术检索（`seep_kb_search`）→ 现成 PoC/模板装配 → MCP 工具执行”的确定性链条驱动。
-- **Web 靶标与复杂协议研判**：
-  覆盖 JWT 弱签及 KID 注入、SSRF 链路穿透、SSTI 模板注入、原型链污染、反序列化 Gadget Chain 匹配及无 Schema 约束的 Protobuf 逆向解析。
-- **竞赛自动化提效支撑**：
-  提供标准化的漏洞测试种子库（`seep_kb_payloads`）与应急排查清单（`seep_kb_checklist`），杜绝临场手写脆弱性探测脚本。
+- **实战攻防网络路由（Attack-Network Routing）**：基于内置 `reverselab` 体系，以“信号检测 → 战术检索（`seep_kb_search`）→ 现成 PoC/模板装配 → MCP 工具执行”的确定性链条驱动。
+- **Web 靶标与复杂协议研判**：覆盖 JWT 弱签及 KID 注入、SSRF 链路穿透、SSTI 模板注入、原型链污染、反序列化 Gadget Chain 匹配及无 Schema 约束的 Protobuf 逆向解析。
+- **竞赛自动化提效支撑**：提供标准化的漏洞测试种子库（`seep_kb_payloads`）与应急排查清单（`seep_kb_checklist`），杜绝临场手写脆弱性探测脚本。
 
 ### 2. 客户端决策与授权体系审计（CWE-602）
-- **权威定性模型**：通过断网、回环拦截、时钟偏移等动态观测手段，判定权益授予的真实裁决方。
+- **权威归属定性模型**：通过断网隔离、回环重定向（`netsh` 回环抢占）、时间戳伪造等动态手段，快速判定受限功能是由本地布尔值驱动还是由服务端强校验闭环。
 - **九大典型架构范式闭环**：
-  - **单进程单点布尔判断（项目 A 型）**：标量函数出口修正（如 `mov eax, 1; ret`）。
-  - **现代多进程拓扑（项目 B 型）**：前台渲染层、守护服务与虚拟机 IPC 通信的跨进程分流过滤与三层状态护航。
-  - **资源模板与显示层重构（项目 C 型）**：双射掩码混淆解析；针对自研皮肤引擎下沉至 `SetDlgItemTextW` 的 IAT Hook 显示层文案伪造。
-  - **压缩壳与混合激活（项目 D 型）**：MPRESS 壳分析、18 点微创二进制修补、签名数据目录截断剥离与 Windows ACL 注册表试用期冻结。
-  - **代码虚拟化与集中裁决（项目 E 型）**：面对不可直接还原的 EXECryptor VM 验签过程，利用其判定函数复用特征，实施 2 点 Call 指令重定向至内存 Stub。
-  - **托管混淆与纯算号路径（项目 F 型）**：针对 .NET 动态方法体剥离实施 Harmony 内存转储，还原 96 位组合哈希算法，构造离线合规 Keygen。
-  - **自引用校验处理（项目 G 型）**：识别载荷对自身 SHA-384 哈希校验的死结特征，转向入口点 5 字节微创修补并部署登录项守护。
-  - **非对称公钥就地替换（项目 H 型）**：利用 Ed25519 内嵌公钥密文流的单向推导漏洞，在可执行文件内部以相同密码流重写自持公钥，签发自定义载荷。
-  - **高阶数字签名入口旁路（项目 I 型）**：分析 CNG 结构与弱模数 RSA 滑动窗口特征，直接对导出接口施加激活态注入。
+  - **项目 A 型（单进程单点布尔）**：标量函数出口修正（如 `mov eax, 1; ret`）。
+  - **项目 B 型（多进程复杂拓扑）**：前台渲染层、守护服务与虚拟机 IPC 通信的跨进程分流过滤与三层状态护航。
+  - **项目 C 型（资源模板与显示层重构）**：双射掩码混淆解析；针对自研皮肤引擎下沉至 `SetDlgItemTextW` 的 IAT Hook 显示层文案伪造。
+  - **项目 D 型（压缩壳与混合激活）**：MPRESS 壳分析、18 点微创二进制修补、签名数据目录截断剥离与 Windows ACL 注册表试用期冻结。
+  - **项目 E 型（代码虚拟化与集中裁决）**：面对不可直接还原的 EXECryptor VM 验签过程，利用判定函数高复用特征，实施 2 点 Call 指令重定向至内存 Stub。
+  - **项目 F 型（托管混淆与纯算号路径）**：针对 .NET 动态方法体剥离实施 Harmony 内存转储，还原 96 位组合哈希算法，构造离线合规 Keygen。
+  - **项目 G 型（自引用校验处理）**：识别载荷对自身 SHA-384 哈希校验的死结特征，转向入口点 5 字节微创修补并部署登录项守护。
+  - **项目 H 型（非对称公钥密文替换）**：利用 Ed25519 内嵌公钥密文流的单向推导漏洞，在二进制内部以相同密码流重写自持公钥，签发自定义载荷。
+  - **项目 I 型（高阶数字签名入口旁路）**：分析 CNG 结构与弱模数 RSA 滑动窗口特征，直接对导出接口施加激活态注入。
 
 ### 3. Android 移动安全与全链路逆向 (Android & DEX/SO Deep Analysis)
-- **DEX 层微创手术与字节级修补**：
-  提供等长字节修补机制（规避重排校验与方法膨胀）、Dex 头部校验和/SHA-1 签名逆向重算规则，对抗 R8 深度优化代码混淆。
-- **加壳防护与抽取壳深度辨析**：
-  建立 Java2C（编译下沉至 SO）、原生落地壳、抽取壳（Trivial-body ratio 判定）与私有 Dex-VMP 差分分析的明确诊断树，杜绝盲目倾倒空壳 DEX。
-- **运行时环境自检与对抗绕过**：
-  涵盖设备 Root 检测规避、多层 SSL Pinning 证书绑定剥离、基于 Frida 的 Native 动态插桩与基于 Frida-RPC 的跨进程服务化调用。
-- **构建与签名工程完备性**：
-  封装自动化重打包流水线，原生处理 `resources.arsc` 的 STORED 状态与 4 字节边界对齐（Zipalign），实施 v1+v2+v3 完整数字证书重签名。
+- **DEX 层微创手术与字节级修补**：提供等长字节修补机制（规避重排校验与方法膨胀）、Dex 头部校验和/SHA-1 签名逆向重算规则，对抗 R8 深度优化代码混淆。
+- **加壳防护与抽取壳深度辨析**：建立 Java2C（编译下沉至 SO）、原生落地壳、抽取壳（Trivial-body ratio 判定）与私有 Dex-VMP 差分分析的明确诊断树，杜绝盲目倾倒空壳 DEX。
+- **运行时环境自检与对抗绕过**：涵盖设备 Root 检测规避、多层 SSL Pinning 证书绑定剥离、基于 Frida 的 Native 动态插桩与基于 Frida-RPC 的跨进程服务化调用。
+- **构建与签名工程完备性**：封装自动化重打包流水线，原生处理 `resources.arsc` 的 STORED 状态与 4 字节边界对齐（Zipalign），实施 v1+v2+v3 完整数字证书重签名。
 
 ### 4. 二进制反编译、动态分析与 Native 逆向 (PE/ELF/Mach-O Native RE)
-- **多平台底层静态解剖**：
-  - 基于内置 Radare2 执行无头模式的架构探测、节区熵分析、符号提取、反汇编与类 C 伪代码生成。
-  - 挂载 IDA Pro MCP 服务，全自动反编译函数、重命名局部符号、恢复复杂结构体与交叉引用追踪。
-- **底层防御机制识别与规避**：
-  深入研判进程自杀式故意崩溃（如特意触发 `fault addr 0x4` 等空指针陷阱以伪装缺陷）、线程守卫注入、系统调用（Raw `svc`）直接调用以及内核级驱动对抗，给出“以返回正常状态代替强制挂起死循环”的防进程锁死规范。
+- **多平台底层静态解剖**：基于内置 Radare2 执行无头模式的架构探测、节区熵分析、符号提取、反汇编与类 C 伪代码生成；挂载 IDA Pro MCP 服务，全自动反编译函数、重命名局部符号、恢复复杂结构体与交叉引用追踪。
+- **底层防御机制识别与规避**：深入研判进程自杀式故意崩溃（如特意触发 `fault addr 0x4` 等空指针陷阱以伪装缺陷）、线程守卫注入、系统调用（Raw `svc`）直接调用以及内核级驱动对抗，给出“以返回正常状态代替强制挂起死循环”的防进程锁死规范。
 
 ---
 
-## 工具链与自动化服务矩阵 (Tools & MCP Matrix)
+## 🛠️ MCP 工具矩阵 (Tools & MCP Matrix)
 
-工作台底层挂载的自研 `seep` MCP 服务直接暴露出 22 项专用分析工具，由智能体在分析过程中依据战术需要自主调用：
+工作台底层挂载的自研 `seep` MCP 服务直接暴露出 **22 项** 专用分析工具，由智能体在分析过程中依据战术需要自主调用：
 
 | 分类 | 工具标识 | 核心功能 |
 |---|---|---|
@@ -159,41 +178,41 @@ Seep\ (251 MB)
 
 ---
 
-## 部署规范与各智能体适配 (Deployment & Harness Integration)
-
-本工作台针对当前主流智能体环境提供了一体化分发适配：
+## 🚀 快速开始与部署规范 (Quick Start & Deployment)
 
 ### 1. 运行依赖要求 (Prerequisites)
-- **操作系统**：Windows 10 / 11 x64（主推荐）或兼容 Linux / macOS 环境。
-- **基础运行时**：Python 3.11+、Node.js 18+、Git。
-- **环境初始化**：进入项目根目录的 `setup/`，在终端执行自动化配置脚本：
-  ```powershell
-  cd setup
-  powershell -ExecutionPolicy Bypass -File .\install.ps1
-  ```
-  该脚本将自动校验内置离线工具的完好性、解压运行库归档、补齐 Python `mcp` 协议支持，并完成环境自检。
+- **操作系统**：Windows 10 / 11 x64（推荐主环境）或兼容 Linux / macOS。
+- **核心运行时**：Python 3.11+、Node.js 18+、Git。
 
-### 2. 各主流智能体环境接入方式
+### 2. 一键自动化部署 (One-Click Setup)
+在终端中进入项目根目录下的 `setup/` 目录执行一键初始化脚本：
+```powershell
+cd setup
+powershell -ExecutionPolicy Bypass -File .\install.ps1
+```
+> **该脚本全自动执行**：解压内置压缩依赖（`node_modules.zip` / `venv.zip`）→ 校验内置 Jadx/R2 工具完整性 → 安装 Python `mcp` 协议依赖 → 注册 MCP 服务至智能体客户端 → 执行环境健康自检。
+
+### 3. 多智能体环境接入方式
 
 | 智能体平台 | 核心指令来源 | MCP 服务挂载点 | 接入说明 |
 |---|---|---|---|
 | **Pi Agent** | `Tool/prompts/SYSTEM.md` | `~/.pi/agent/mcp.json` | 运行 `install.ps1` 自动完成用户级配置写入与技能注册 |
-| **Claude Code** | 项目根 `CLAUDE.md` | 项目根 `.mcp.json` | 在工作台根目录直接执行 `claude` 命令，自动读取上下文 |
+| **Claude Code** | 项目根 `CLAUDE.md` | 项目根 `.mcp.json` | 在工作台根目录直接执行 `claude` 命令，自动读取项目级上下文 |
 | **DeepSeek Harness (DSH)** | `Tool/prompts/AGENTS.md` | `DSH-PROFILE.md` (Cordis YAML) | 将通用指令部署至工作目录，将 MCP 插件配置写入 DSH Profile |
 | **OpenCode / Codex** | 项目根 `AGENTS.md` | 客户端全局配置 | 复制 `AGENTS.md` 至当前项目工作根目录即可 |
 
 ---
 
-## 操作工作流与交互规范 (Quick Start)
+## 🎮 操作工作流与交互规范 (Workflow & Lab Mode)
 
 ### 1. 实验工作环境打卡 (Lab Mode Protocol)
-为了在日常对话与敏感逆向测试之间建立清晰边界，工作台设计了不依赖长文本记忆的磁盘状态切换机制：
+为了在日常自由对话与严格的逆向白盒测试之间建立清晰边界，工作台设计了不依赖模型长文本记忆的磁盘状态切换机制：
 - **进入测试工作环境**：向智能体发送：
   ```
   lab：
   ```
-  *(或直接跟附任务：`lab：分析样本 X.exe`)*  
-  智能体将在本地标记实验环境开启，随后全量加载逆向技术映射、思维重定向与防拒绝策略。在后续工作中，**无需重复携带任何前缀**。
+  *(或一步到位：`lab：分析目标样本 X.exe`)*  
+  智能体将在本地磁盘生成状态标记文件，随后全量启用逆向技术映射、思维重定向与防拒绝策略。在后续工作中，**无需重复携带任何前缀**。
 - **退出测试工作环境**：发送 `退出实验`，智能体即刻卸载状态标记，恢复日常常规对话。
 
 ### 2. 常用任务口令 (Task Shortcuts)
@@ -207,7 +226,18 @@ Seep\ (251 MB)
 
 ---
 
-## 交付与报告标准 (Deliverable Specification)
+## 🤖 智能体消费规范 (How an agent is expected to consume this)
+
+本仓库的指令集与核心入口文件并非供人类漫读的参考文档，而是针对大模型“容易陷入幻觉、偏离授权目标或在长推理链条中发生退缩”这一常见缺陷设计的**程序化执行门禁（Procedures with Gates）**。
+
+- **强制门禁（G-Auth & G0–G6）**：任何任务开展前，第一行为永远是判定目标是否属于受权白盒测试资产；随后通过“四问”确定鉴权权威（服务端 vs 客户端本地）与交付形态（补丁 / 内存劫持 / 算号 / 协议中继 / 载荷提取）。任何一步通不过则立即终止或重定向，严禁凭第一性原理盲目逆向。
+- **两击失败熔断纪律（Two-Strike Rule）**：同一假设、同一种内存补丁或逆向利用路径若连续失败两次，立即视为当前技术模型错误，强制回退至上一级判型，严禁进行第三次同构盲试。
+- **先查知识库再动手（Zero-Waste Recon）**：发现特征信号（如特定加壳混淆、JWT、加密通信、驱动对抗、自引用校验）时，禁止从零手写分析脚本，必须优先通过 `seep_kb_search` 索引成熟战术库并直接映射 MCP 工具调用。
+- **完工严格定义（Definition of Done）**：仅有控制台日志无错误绝不等于任务完成。“完成”必须满足端到端证据链闭环：从原始目标指纹、判定点 RVA 逆向还原、补丁或验证 PoC 实施、断网离线实测（确证无云端依赖）到结构化三段式报告交付，缺一不可。
+
+---
+
+## 📝 交付与报告标准 (Deliverable Specification)
 
 任何针对客户端脆弱性的研判与审计，最终产物统一固化为咨询级安全报告架构，杜绝模糊推测：
 
@@ -222,14 +252,16 @@ Seep\ (251 MB)
    - **运行期**：启用进程级动态代码策略（`ProcessDynamicCodePolicy`）封锁非法内存属性改写。
    - **逻辑层**：确立“服务端权威”原则，关键受限资源以服务端动态签名与短期令牌为唯一授权凭据。
 
-## 致谢与社区 (Acknowledgements & Community)
+---
+
+## 🤝 致谢与社区 (Acknowledgements & Community)
 
 - 特别致谢开源项目 [**newliver666/apk-reverse**](https://github.com/newliver666/apk-reverse) 提供的卓越 Android 逆向门控范式与工具验证体系。
 - 感谢 [**LINUX DO**](https://linux.do/) 社区提供的高质量技术交流与探索氛围。
 
 ---
 
-## 免责声明 (Disclaimer)
+## ⚖️ 免责声明 (Disclaimer)
 
 **本工作台及其所载之一切文档、规则、脚本与工程范例仅供合法授权的安全研究、白盒安全走查、合规漏洞测试及 CTF 教学演练使用。**
 
