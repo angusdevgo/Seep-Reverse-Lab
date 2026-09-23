@@ -1,0 +1,132 @@
+# CI for the apk-reverse skill repository.
+#
+# WHAT THIS RUNS
+#   * the repository's own structural gates: check_repo.py, check_refs.py,
+#     check_budget.py, check_routing.py, and check_commands.py when it is present
+#   * the pytest suite: tests/unit, tests/cli, tests/integration
+#
+# WHAT THIS DOES NOT RUN, ON PURPOSE
+#   * anything needing a device, adb, frida, a rooted phone, a network peer or a
+#     real sample APK. Those routes are recorded experiments in tests/benchmark.md
+#     and their status is documented in
+#     docs/tool-verification/EXTENSION-test-harness.md.
+#   * anything about agent behaviour. Whether a model routes, classifies or
+#     refuses correctly is not observable from a unit test; skills/apk-reverse/
+#     evals/evals.json is the skeleton for that, and it has never been executed.
+#   * the dex_patch_bytes regression hash. Its input lives in git-ignored
+#     tools/_work/bench/, so that test self-skips here with a printed reason
+#     rather than failing. Run it locally after downloading the sample.
+#
+# Coverage is therefore: static structure, documentation anchors, budget, command
+# references, routing coherence, pure parsers, CLI contracts, typing/style lint and
+# no-device flows. Nothing more is claimed.
+name: ci
+
+on:
+  push:
+  pull_request:
+#
+# NOTE ON TRIGGERS: no `paths:` filter, deliberately. A filter that watches only
+# `*.py` and the lint configuration would skip the structural gates on exactly the
+# changes they exist to catch -- a reference index or a documented command edited
+# without touching a script. check_refs.py and check_routing.py are documentation
+# gates, so they have to run on documentation commits.
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: python ${{ matrix.python-version }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.11", "3.12", "3.13", "3.14"]
+
+    env:
+      PYTHONIOENCODING: utf-8
+      PYTHONDONTWRITEBYTECODE: "1"
+      # The gates spawn sibling scripts and decode their output. On a Windows
+      # runner the default codec is the console's (GBK here), and one script's
+      # --help text is not GBK-decodable, which is reported as a crash in that
+      # script rather than as a harness decoding problem. Pinning UTF-8 removes
+      # the whole class of failure on every platform.
+      PYTHONUTF8: "1"
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install test dependencies
+        # `tiktoken` is optional for the suite but not for the budget gate's *measurement*: without
+        # it, `check_budget.py` falls back to characters/constant, and the two paths must agree.
+        # Installing it here means CI exercises the real tokenizer path, and the unit test comparing
+        # both paths runs instead of skipping.
+        # Not upgrading pip itself: it is not a goal here, and a pip self-upgrade failing would be
+        # reported as this repository's regression.
+        run: python -m pip install --upgrade pytest tiktoken
+
+      - name: Structural gate - repository layout
+        run: python check_repo.py
+
+      - name: Structural gate - documentation anchors
+        run: python check_refs.py
+
+      - name: Structural gate - context budget
+        run: python check_budget.py
+
+      - name: Structural gate - documented commands (if present)
+        run: |
+          if [ -f check_commands.py ]; then
+            python check_commands.py
+          else
+            echo "check_commands.py is not present in this revision; skipping."
+          fi
+
+      - name: Structural gate - routing inventory matches the entry point
+        run: python check_routing.py
+
+      - name: Regression suite
+        run: python -m pytest -q
+
+      - name: Summarise skipped and expected-failure coverage
+        if: always()
+        run: python -m pytest -q -ra --no-header -p no:cacheprovider 2>&1 | tail -n 40
+
+  lint:
+    # Static checks over the same tracked surface the local commands cover, so what passes locally
+    # cannot drift from what CI enforces. Both tools read their configuration (mypy.ini, .flake8)
+    # from the repository root automatically.
+    #
+    # The environment is deliberately bare -- only mypy and flake8, none of PyYAML, capstone, tiktoken
+    # or frida. That is the poorest environment the configuration must keep working in, which is what
+    # mypy.ini's ignore_missing_imports overrides exist for: CI exercises the fallbacks instead of a
+    # machine-local install hiding a regression.
+    #
+    # One interpreter, not the matrix: the checks are static, and the matrix's job is runtime
+    # behaviour, which lint does not observe. `check_routing.py` -- a gate the test job also runs --
+    # is deliberately not repeated here.
+    #
+    # Verified locally before being added: on a venv with only mypy and flake8, `flake8` reports 0 and
+    # `mypy` reports "Success: no issues found in 55 source files".
+    name: lint (mypy + flake8)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install lint dependencies
+        run: python -m pip install --upgrade mypy flake8
+
+      - name: mypy
+        run: mypy *.py skills/apk-reverse/scripts/*.py
+
+      - name: flake8
+        run: flake8 *.py skills/apk-reverse/scripts/*.py

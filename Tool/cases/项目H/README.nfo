@@ -1,0 +1,14 @@
+__________________________________________________________________________
+|   INT0 SCENE RELEASE // 项目H PRO OFFLINE LICENSE TOOLCHAIN           |
+|__________________________________________________________________________|
+ 
+   TARGET: 项目H <目标版本> Desktop (Windows x64)
+   TYPE: 项目H & Ed25519 Signature Chain Reversing
+   SHA256: <实测哈希>
+   ONLINE TOOL: https://项目H.int0.cc
+   DISTRIBUTION: https://int0.cc & P2P Mirrors
+
+   TECHNICAL DETAILS:
+   ------------------
+   Reversed the offline licensing client. Generates valid cryptographic
+   activation pairs tied to MachineGuid with zero network communication.

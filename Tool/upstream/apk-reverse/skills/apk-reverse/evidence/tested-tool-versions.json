@@ -1,0 +1,103 @@
+{
+  "schema": "apk-reverse/tested-tool-versions",
+  "version": 1,
+  "purpose": "Every tool and library version this skill's claims were measured on, with the command that produced each number, so a reader can tell 'this was verified' from 'this was verified on a version I do not have'. An installed copy carries this file; the full run records do not ship.",
+  "how_to_re_probe": [
+    "Windows / PowerShell host, as used for every measurement below.",
+    "Python libraries: python -c \"import importlib.metadata as m; print(m.version('frida'))\"",
+    "CLI tools: <tool> --version (or -V).",
+    "PATH presence: Get-Command <tool>. Anything reported NOT ON PATH must be passed explicitly by path, and scripts here do that."
+  ],
+  "host": {
+    "os": "Windows 10.0.26100 (x86_64)",
+    "python": "3.14.0 (CPython, MSC v.1944 64-bit AMD64)",
+    "shell": "PowerShell 7 (pwsh)",
+    "strength": "observed"
+  },
+  "measured_on": {
+    "note": "Every entry below was probed on the host described above during the packaging pass; each carries the command that produced it. Listing a tool here means its version was read, not that every capability of it was exercised -- see capability-matrix.json for the latter.",
+    "languages_and_runtimes": [
+      {"name": "python", "version": "3.14.0", "probe": "python -V", "strength": "observed", "used_by": "all scripts under scripts/"},
+      {"name": "java", "version": "17.0.4.1 (2022-08-18 LTS)", "probe": "java -version", "strength": "observed", "used_by": "scripts/dexpatch/, jar-based tools"},
+      {"name": "javac", "version": "17.0.4.1", "probe": "javac -version", "strength": "observed", "used_by": "scripts/lsposed_scaffold.py build notes"},
+      {"name": "node", "version": "v24.11.1", "probe": "node -v", "strength": "observed", "used_by": "no script in this skill requires it"},
+      {"name": "sqlite3", "version": "3.50.6 (32-bit build)", "probe": "sqlite3 -version", "strength": "observed", "used_by": "local-state work"},
+      {"name": "git", "version": "2.46.2.windows.1", "probe": "git --version", "strength": "observed", "used_by": "repository gates"}
+    ],
+    "device_toolchain": [
+      {"name": "adb", "version": "1.0.41 (platform-tools 37.0.1)", "probe": "adb version", "strength": "observed", "used_by": "scripts/install_test.py, scripts/coldstart.py, scripts/preflight.py, scripts/devsh.py"}
+    ],
+    "android_build_tools": {
+      "package": "Android SDK build-tools 34.0.0",
+      "probe": "source.properties: Pkg.Revision=34.0.0",
+      "strength": "observed",
+      "not_on_path": true,
+      "note": "None of these resolve through PATH; the working calls pass them explicitly. The measured signing order is zip, then zipalign, then apksigner -- reversing it is refused by the installer.",
+      "members": [
+        {"name": "aapt2", "version": "2.19-10229193", "probe": "aapt2 version"},
+        {"name": "D8", "version": "8.2.2-dev (build facedf41bbd28b563d1e9e09c5f72d7c5ca598d5)", "probe": "java -cp <build-tools>/lib/d8.jar com.android.tools.r8.D8 --version"},
+        {"name": "apksigner", "version": "0.9 (jar)", "probe": "java -jar <build-tools>/lib/apksigner.jar --version"},
+        {"name": "zipalign", "version": "no version string emitted", "probe": "zipalign (prints the 'Zip alignment utility' banner)"},
+        {"name": "dexdump", "version": "no version string emitted", "probe": "dexdump (prints usage and exit)"},
+        {"name": "split-select", "version": "same package (34.0.0)", "probe": "package revision"}
+      ]
+    },
+    "frida_stack": [
+      {"name": "frida", "version": "16.7.19", "probe": "frida --version", "strength": "observed", "used_by": "scripts/run_probe.py, scripts/spawn_patch_detach.py, scripts/hook_patch_only.js, scripts/anti_detect_probe.js, scripts/stalker_trace.js, scripts/frida_rpc_serve.py"},
+      {"name": "frida-tools", "version": "13.7.1", "probe": "python -c \"import importlib.metadata as m; print(m.version('frida-tools'))\"", "strength": "observed"},
+      {"name": "objection", "version": "1.12.5", "probe": "python -c \"import importlib.metadata as m; print(m.version('objection'))\"", "strength": "observed"}
+    ],
+    "python_libraries": [
+      {"name": "androguard", "version": "4.1.4", "strength": "observed", "used_by": "dex reading paths"},
+      {"name": "capstone", "version": "5.0.9", "strength": "observed", "used_by": "scripts/dart_disasm.py comparison, scripts/svc_scan.py second decoder"},
+      {"name": "unicorn", "version": "2.1.4", "strength": "observed", "used_by": "emulation route"},
+      {"name": "lief", "version": "1.0.0", "strength": "observed", "used_by": "ELF work"},
+      {"name": "pyelftools", "version": "0.33", "strength": "observed", "used_by": "ELF work; also supplies the 'readelf' script that PATH resolves to (see notes)"},
+      {"name": "protobuf", "version": "6.33.6", "strength": "observed", "used_by": "the official-runtime cross-check behind the schema-free decoder"},
+      {"name": "networkx", "version": "3.6.1", "strength": "observed"},
+      {"name": "pydot", "version": "4.0.1", "strength": "observed"},
+      {"name": "asn1crypto", "version": "1.5.1", "strength": "observed"},
+      {"name": "cryptography", "version": "48.0.1", "strength": "observed"},
+      {"name": "lxml", "version": "6.0.2", "strength": "observed"},
+      {"name": "mitmproxy", "version": "12.2.3", "strength": "observed", "notes": "the library version"}
+    ],
+    "proxy": [
+      {"name": "mitmdump (standalone binary in the local tools directory)", "version": "11.1.2 binary, bundling Python 3.13.1 and OpenSSL 3.4.0", "probe": "<binary> --version", "strength": "observed", "notes": "This is NOT the same version as the mitmproxy library above. A local workbench note recorded 12.2.3 against this binary's path; the binary reports 11.1.2. If a captured-flow shape matters, read the version from the binary you actually invoke."}
+    ],
+    "readelf_note": {
+      "resolved_to": "a pyelftools-supplied Python script earlier on PATH than any GNU binutils readelf",
+      "version": "not obtainable from the resolved executable (its --version prints nothing)",
+      "strength": "observed",
+      "consequence": "A local workbench note recorded 'readelf 2.28'. That number does not match what PATH resolves to here. Treat any readelf-derived figure as produced by the pyelftools script until proved otherwise."
+    }
+  },
+  "external_toolchains_measured_elsewhere": {
+    "note": "These were exercised in earlier passes and their versions are recorded in files at the repository root, which an installed copy does not contain. Listed here so the claim is not silently version-free.",
+    "record_location": "docs/tool-verification/TOOL-VERDICTS.md and docs/tool-verification/EXTENSION-*.md (repository root, not shipped)",
+    "entries": [
+      {"name": "blutter", "reference": "HEAD 4a60ac6; init_env downloads ICU 73.2 + capstone 4.0.2", "result": "works; the first-run crash was not reproducible after relink; build about 78 s", "strength": "observed"},
+      {"name": "aotopsy", "reference": "pure Go, no toolchain needed; hash recorded in the verdict file", "result": "works out of the box; the same feature flags blutter derived", "strength": "observed"},
+      {"name": "devsh / device shell", "reference": "toybox shell, one rooted Android 11 / API 30 / arm64-v8a device", "result": "the device facts that shaped several traps", "strength": "observed"}
+    ]
+  },
+  "not_available_here": [
+    {"name": "apktool", "state": "not on PATH", "probe": "Get-Command apktool", "notes": "the local launcher was recorded as a dead link in the workbench record (not shipped), so no apktool version has ever been exercised here"},
+    {"name": "jadx", "state": "not on PATH", "notes": "documentation treats it as a readable viewer of last resort, not as a verified measurement source"},
+    {"name": "unzip, tshark, rabin2 (rizin), gdb", "state": "not on PATH"},
+    {"name": "gradle", "state": "not installed", "notes": "the module route uses a gradle-free chain"},
+    {"name": "Android NDK / host clang / device clang", "state": "not installed", "notes": "this is why no Dex-to-C output was ever built and why the Java2C-specific criteria stay inferred"},
+    {"name": "smali / baksmali jars, android.jar", "state": "absent", "notes": "scripts/smtool.py carries its own classpath expectations"},
+    {"name": "uber-apk-signer", "state": "absent", "notes": "the measured signing chain is zipalign plus apksigner.jar"},
+    {"name": "keytool, jarsigner", "state": "not on PATH", "notes": "present inside the JDK installation and must be passed by path"}
+  ],
+  "not_tested_at_these_versions": [
+    "frida: only 16.7.19 was measured. No claim here has evidence against frida 17.x or any other major.",
+    "Android device: only Android 11 / API 30 / arm64-v8a was measured. The documented analysis of Android 12-16 behaviour (why classic active-invocation hooks stopped working) is inferred from public work, not measured.",
+    "Android build-tools: only 34.0.0. aapt2, D8, apksigner, zipalign and dexdump have no measurement on any other revision.",
+    "Python: only 3.14.0. JDK: only 17. Node: only v24.11.1 (and nothing here needs it).",
+    "Kernel side: no kernel module was compiled or loaded at any version, on any kernel. The generator was exercised; the artefact was not.",
+    "Gradle and the Android NDK: never used, at any version.",
+    "Dart: the string-table formats were checked on two ABIs of one build (a Dart 3.6.0 snapshot), through a front end this skill does not ship.",
+    "Mitmproxy: the library and the standalone binary measured different versions (12.2.3 and 11.1.2); no capture in the record is tied to a mitmproxy release."
+  ]
+}

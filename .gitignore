@@ -1,0 +1,34 @@
+# Logs and temporary files
+*.log
+*.tmp
+*.bak
+*.bak-*
+*.pre-*
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.venv/
+venv/
+ENV/
+
+# OS generated files
+.DS_Store
+Thumbs.db
+ehthumbs.db
+[Dd]esktop.ini
+$RECYCLE.BIN/
+
+# IDA Pro database working files (safety measure)
+*.idb
+*.i64
+*.nam
+*.til
+*.id0
+*.id1
+*.id2
+
+# Node.js
+# Note: Root level node_modules should not exist, and safe/ modules are already compressed to .zip
+node_modules/

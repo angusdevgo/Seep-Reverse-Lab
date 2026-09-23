@@ -1,0 +1,11 @@
+--------- beginning of main
+01-01 10:00:01.100  1234  1234 I ActivityManager: Start proc 1234:com.example.app/u0a123 for activity
+01-01 10:00:01.500  1234  1234 D AndroidRuntime: Shutting down VM
+01-01 10:00:01.501  1234  1234 E AndroidRuntime: FATAL EXCEPTION: main
+01-01 10:00:01.501  1234  1234 E AndroidRuntime: Process: com.example.app, PID: 1234
+01-01 10:00:01.502  1234  1234 E AndroidRuntime: java.lang.VerifyError: Rejecting class Lprobe/Synthetic;
+01-01 10:00:01.503  1234  1234 W dalvikvm: Failure to verify dex file: Bad checksum (12345678, expected 9abcdef0)
+01-01 10:00:01.504  1234  1234 E AndroidRuntime: Caused by: java.lang.UnsatisfiedLinkError: dlopen failed
+01-01 10:00:02.000  1000  1500 I ActivityManager: Displayed com.example.app/.MainActivity: +842ms
+01-01 10:00:03.100  1000  1500 W ActivityManager: ANR in com.example.app (com.example.app/.MainActivity)
+01-01 10:00:03.200  1000  1500 E ActivityManager: Reason: Input dispatching timed out

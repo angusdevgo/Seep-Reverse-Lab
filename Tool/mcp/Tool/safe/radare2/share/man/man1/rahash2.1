@@ -1,0 +1,142 @@
+.Dd Mar 16, 2024
+.Dt RAHASH2 1
+.Sh NAME
+.Nm rahash2
+.Nd block-based hashing, encoding and encryption utility
+.Sh SYNOPSIS
+.Nm rahash2
+.Op Fl BbdehjkLqrv
+.Op Fl a Ar algo
+.Op Fl b Ar size
+.Op Fl c Ar hash
+.Op Fl D Ar deco
+.Op Fl e
+.Op Fl E Ar enco
+.Op Fl f Ar from
+.Op Fl i Ar num
+.Op Fl I Ar iv
+.Op Fl j
+.Op Fl J
+.Op Fl L
+.Op Fl S Ar seed
+.Op Fl k
+.Op Fl s Ar string
+.Op Fl t Ar to
+.Op Fl x Ar hexstr
+.Op Fl X
+.Op Fl v
+.Op Ar [file] ...
+.Sh DESCRIPTION
+This program is part of the radare project.
+.Pp
+.Rahash2 allows you to calculate, check, and display hash values of each block of a target file. By default, the block size is set to 32768 bytes. It supports reading from stdin using '-' as a target file. You can compare against a known hash and get the result in the exit status.
+.Pp
+It's particularly useful for hashing large files and identifying modifications in forensics filesystem analysis.
+.Pp
+.Rahash2 can be used to calculate the entropy or hashes of specific parts of a file or command-line passed strings. But it is also able to encode, decode, encrypt and decrypt files using a variety of cryptographic algorithms and methods.
+.Pp
+This command provides the same features as the 'ph' command of radare.
+.Bl -tag -width Fl
+.It Fl a Ar algo
+Comma-separated list of algorithms to use when hashing files or strings. Refer to -L to list supported hashing algorithms. This flag can be passed multiple times instead of separating them by commas.
+.It Fl b Ar size
+Specify the block size.
+.It Fl c Ar hash
+Compare the computed hash with the provided one. This is allowed only when a single hash is computed.
+.It Fl D Ar deco
+Decrypt using the specified algorithm. Use -S to set the key and -I to set the IV.
+.It Fl e
+Swap endianness to show digests or injest keys in big or little endian.
+.It Fl E Ar enco
+Encrypt using the specified algorithm. Use -S to set the key and -I to set the IV.
+.It Fl f Ar from
+Start hashing at the given address.
+.It Fl i Ar num
+Repeat hash `num` iterations.
+.It Fl I Ar iv
+Use the given initialization vector (IV) (hexadecimal or string).
+.It Fl j
+Display output in JSON format.
+.It Fl J
+New simplified JSON output format (equivalent to -jj).
+.It Fl k
+Display hash using OpenSSH's randomkey algorithm.
+.It Fl L
+List available hash, checksum and crypto plugins. This flag can be combined with -j to read the results in JSON format.
+.It Fl s Ar string
+Hash the provided string instead of using the 'source' and 'hash-file' arguments.
+.It Fl S Ar seed
+Use the given seed (hexadecimal or string). Use ^ to prefix (key for -E). '-' will slurp the key from stdin, and '@' prefix points to a file.
+.It Fl t Ar to
+Stop hashing at the given address.
+.It Fl x Ar hexstr
+Hash the provided hexadecimal string instead of using 'source' and 'hash-file' arguments.
+.It Fl X
+Output of encryption in hexpairs instead of raw (see -j for json output)
+.It Fl v
+Display version information.
+.El
+.Sh EXAMPLES
+.Pp
+Calculate the MD5 hash of the 'ls' binary:
+.Pp
+  $ rahash2 -qqa md5 /bin/ls
+.Pp
+Calculate the SHA256 hash of string from stdin:
+.Pp
+  $ echo -n "Hello, World" | rahash2 -a sha256 -
+  $ rahash2 -a sha256 -s "Hello, World"
+.Pp
+Compare CRC32 of the given file didnt changed:
+.Pp
+  $ rahash2 -qqa crc32 /bin/ls
+  63212007
+  $ rahash2 -a crc32 -c 63212007 /bin/ls
+  INFO: Computed hash matches the expected one
+  $ echo $?
+  0
+.Pp
+List only the cryptographic plugins loaded:
+.Pp
+  $ rahash2 -L | grep ^c
+.Pp
+  $ rahash2 -qqa crc32 /bin/ls
+.Pp
+Encode the string "Hello World" with base64:
+.Pp
+  $ rahash2 -E base64 -s "Hello World"
+.Pp
+Calculate SHA256 hash of a specific part of a file:
+.Pp
+  $ rahash2 -qqa sha256 -f 0x1000 -t 0x2000 file_to_hash
+.Pp
+Encrypt and decrypt the "hello" string using the ror and rol plugins:
+.Pp
+  $ rahash2 -S 12333 -E ror -s hello && echo
+  Cell{
+  $ rahash2 -S 12333 -E rol -s Cell{ && echo
+  hello
+.Pp
+Encrypting and decrypting using AES-CBC:
+.Pp
+  $ export AES_KEY="11111111111111111111111111113211"
+  $ rahash2 -E aes-ecb -S "$AES_KEY" -s "hello world you bastard" > .file
+  $ cat .file | rahash2 -D aes-ecb -S "$AES_KEY" -s - && echo
+.Pp
+Encrypting a file using Blowfish and encode it into a json:
+.Pp
+  $ rahash2 -E blowfish -S "11111111111111111111111111113211" -j /bin/ls > ls.json
+.Pp
+.Sh DIAGNOSTICS
+.Ex -std
+.Pp
+When using the -c flag, an exit status of 0 indicates a match between the expected and computed hashes.
+.Sh SEE ALSO
+.Pp
+.Xr radare2(1)
+.Sh WWW
+.Pp
+https://www.radare.org/
+.Sh AUTHORS
+.Pp
+pancake <pancake@nopcode.org>

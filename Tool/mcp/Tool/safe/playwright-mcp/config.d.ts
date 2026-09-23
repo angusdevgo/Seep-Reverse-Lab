@@ -1,0 +1,239 @@
+/**
+ * Copyright (c) Microsoft Corporation.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+import type * as playwright from '../../..';
+
+export type ToolCapability =
+  'config' |
+  'core' |
+  'core-navigation' |
+  'core-tabs' |
+  'core-input' |
+  'core-install' |
+  'network' |
+  'pdf' |
+  'storage' |
+  'testing' |
+  'vision' |
+  'devtools';
+
+export type Config = {
+  /**
+   * The browser to use.
+   */
+  browser?: {
+    /**
+     * The type of browser to use.
+     */
+    browserName?: 'chromium' | 'firefox' | 'webkit';
+
+    /**
+     * Keep the browser profile in memory, do not save it to disk.
+     */
+    isolated?: boolean;
+
+    /**
+     * Path to a user data directory for browser profile persistence.
+     * Temporary directory is created by default.
+     */
+    userDataDir?: string;
+
+    /**
+     * Launch options passed to
+     * @see https://playwright.dev/docs/api/class-browsertype#browser-type-launch-persistent-context
+     *
+     * This is useful for settings options like `channel`, `headless`, `executablePath`, etc.
+     */
+    launchOptions?: playwright.LaunchOptions;
+
+    /**
+     * Context options for the browser context.
+     *
+     * This is useful for settings options like `viewport`.
+     */
+    contextOptions?: playwright.BrowserContextOptions;
+
+    /**
+     * Chrome DevTools Protocol endpoint to connect to an existing browser instance in case of Chromium family browsers.
+     */
+    cdpEndpoint?: string;
+
+    /**
+     * CDP headers to send with the connect request.
+     */
+    cdpHeaders?: Record<string, string>;
+
+    /**
+     * Timeout in milliseconds for connecting to CDP endpoint. Defaults to 30000 (30 seconds). Pass 0 to disable timeout.
+     */
+    cdpTimeout?: number;
+
+    /**
+     * Remote endpoint to connect to an existing Playwright server. May be a
+     * WebSocket URL string, or a [ConnectOptions] object that mirrors the
+     * `connectOptions` shape used by the test runner. When passed as an object,
+     * `exposeNetwork`, `headers`, `slowMo`, and `timeout` are forwarded to the
+     * underlying connect call.
+     */
+    remoteEndpoint?: string | playwright.ConnectOptions & { endpoint: string };
+
+    /**
+     * Paths to TypeScript files to add as initialization scripts for Playwright page.
+     */
+    initPage?: string[];
+
+    /**
+     * Paths to JavaScript files to add as initialization scripts.
+     * The scripts will be evaluated in every page before any of the page's scripts.
+     */
+    initScript?: string[];
+  },
+
+  /**
+   * Connect to a running browser instance (Edge/Chrome only). If specified, `browser`
+   * config is ignored.
+   * Requires the "Playwright Extension" to be installed.
+   */
+  extension?: boolean;
+
+  server?: {
+    /**
+     * The port to listen on for SSE or MCP transport.
+     */
+    port?: number;
+
+    /**
+     * The host to bind the server to. Default is localhost. Use 0.0.0.0 to bind to all interfaces.
+     */
+    host?: string;
+
+    /**
+     * The hosts this server is allowed to serve from. Defaults to the host server is bound to.
+     * This is not for CORS, but rather for the DNS rebinding protection.
+     */
+    allowedHosts?: string[];
+  },
+
+  /**
+   * List of enabled tool capabilities. Possible values:
+   *   - 'core': Core browser automation features.
+   *   - 'pdf': PDF generation and manipulation.
+   *   - 'vision': Coordinate-based interactions.
+   *   - 'devtools': Developer tools features.
+   */
+  capabilities?: ToolCapability[];
+
+  /**
+   * Whether to save the Playwright session into the output directory.
+   */
+  saveSession?: boolean;
+
+  /**
+   * Reuse the same browser context between all connected HTTP clients.
+   */
+  sharedBrowserContext?: boolean;
+
+  /**
+   * Secrets are used to replace matching plain text in the tool responses to prevent the LLM
+   * from accidentally getting sensitive data. It is a convenience and not a security feature,
+   * make sure to always examine information coming in and from the tool on the client.
+   */
+  secrets?: Record<string, string>;
+
+  /**
+   * The directory to save output files.
+   */
+  outputDir?: string;
+
+  /**
+   * Threshold for evicting old output files, in bytes.
+   */
+  outputMaxSize?: number;
+
+  console?: {
+    /**
+     * The level of console messages to return. Each level includes the messages of more severe levels. Defaults to "info".
+     */
+    level?: 'error' | 'warning' | 'info' | 'debug';
+  },
+
+  network?: {
+    /**
+     * List of origins to allow the browser to request. Default is to allow all. Origins matching both `allowedOrigins` and `blockedOrigins` will be blocked.
+     *
+     * Supported formats:
+     * - Full origin: `https://example.com:8080` - matches only that origin
+     * - Wildcard port: `http://localhost:*` - matches any port on localhost with http protocol
+     */
+    allowedOrigins?: string[];
+
+    /**
+     * List of origins to block the browser to request. Origins matching both `allowedOrigins` and `blockedOrigins` will be blocked.
+     *
+     * Supported formats:
+     * - Full origin: `https://example.com:8080` - matches only that origin
+     * - Wildcard port: `http://localhost:*` - matches any port on localhost with http protocol
+     */
+    blockedOrigins?: string[];
+  };
+
+  /**
+   * Specify the attribute to use for test ids, defaults to "data-testid".
+   */
+  testIdAttribute?: string;
+
+  timeouts?: {
+    /*
+     * Configures default action timeout: https://playwright.dev/docs/api/class-page#page-set-default-timeout. Defaults to 5000ms.
+     */
+    action?: number;
+
+    /*
+     * Configures default navigation timeout: https://playwright.dev/docs/api/class-page#page-set-default-navigation-timeout. Defaults to 60000ms.
+     */
+    navigation?: number;
+
+    /**
+     * Configures default expect timeout: https://playwright.dev/docs/test-timeouts#expect-timeout. Defaults to 5000ms.
+     */
+    expect?: number;
+  };
+
+  /**
+   * Whether to send image responses to the client. Can be "allow", "omit", or "auto". Defaults to "auto", which sends images if the client can display them.
+   */
+  imageResponses?: 'allow' | 'omit';
+
+  snapshot?: {
+    /**
+     * When taking snapshots for responses, specifies the mode to use.
+     */
+    mode?: 'full' | 'none';
+  };
+
+  /**
+   * allowUnrestrictedFileAccess acts as a guardrail to prevent the LLM from accidentally
+   * wandering outside its intended workspace. It is a convenience defense to catch unintended
+   * file access, not a secure boundary; a deliberate attempt to reach other directories can be
+   * easily worked around, so always rely on client-level permissions for true security.
+   */
+  allowUnrestrictedFileAccess?: boolean;
+
+  /**
+   * Specify the language to use for code generation.
+   */
+  codegen?: 'typescript' | 'none';
+};

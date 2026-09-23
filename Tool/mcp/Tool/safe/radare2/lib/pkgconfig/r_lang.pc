@@ -1,0 +1,12 @@
+prefix=D:/a/radare2/radare2/radare2-5.9.8-w64
+libdir=${prefix}/lib
+includedir=${prefix}/include
+
+Name: r_lang
+Description: radare foundation libraries
+Version: 5.9.8
+Requires: r_util, r_asm, r_crypto, r_esil, r_arch, r_cons
+Requires.private: r_io, r_socket
+Libs: -L${libdir} -lr_lang
+Libs.private: -lws2_32 -lwininet -lpsapi
+Cflags: -I${includedir}/libr

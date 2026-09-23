@@ -1,0 +1,74 @@
+__________________________________________________________________________
+|                                                                          |
+|                     ██╗███╗   ██╗████████╗  ██████╗                      |
+|                     ██║████╗  ██║╚══██╔══╝ ██╔═████╗                     |
+|                     ██║██╔██╗ ██║   ██║    ██║██╔██║                     |
+|                     ██║██║╚██╗██║   ██║    ████╔╝██║                     |
+|                     ██║██║ ╚████║   ██║    ╚██████╔╝                     |
+|                     ╚═╝╚═╝  ╚═══╝   ╚═╝     ╚═════╝                      |
+|                                                                          |
+|                   [ INT0 RESEARCH GROUP // SCENE NFO ]                   |
+|__________________________________________________________________________|
+
+ - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+   RELEASE INFORMATION
+ - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+   Application  : 项目E PRO <目标版本> / 项目E (项目E)
+   Version      : 1.1.0
+   Target DLL   : 项目E.exe / 项目EHelper.exe
+   Release Date : 2026-09-04
+   Release Name : Geek.Uninstaller.PRO.<目标版本>.Activation.Tool-INT0
+   Release Type : EXECryptor Runtime & IsRegistered Bytecode Reversing Suite
+   Platform     : Windows 10 / 11 (x86_64)
+   Protection   : EXECryptor VM / Online Verification API / Shared Memory IPC
+   SHA256       : <实测哈希>
+   Subsite URL  : https://geek.int0.cc (also https://uninstall-tool.int0.cc)
+   Main Portal  : https://int0.cc
+
+ - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+   REVERSE ENGINEERING & CRYPTOGRAPHIC NOTES
+ - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+   项目E PRO / 项目E <目标版本> enforces license validity
+   through an out-of-process EXECryptor virtualized helper architecture:
+
+     1. IPC Licensing Tunnel:
+        项目E.exe spawns 项目EHelper.exe with high-integrity
+        pipe parameters. The helper evaluates serial tokens through VM bytecode
+        and queries 项目E.license-manage.com/verify.php.
+
+     2. Shared Memory Result:
+        Results are returned via Global\\项目EHelper_Memory as a JSON
+        string containing {"result": "3"} (3 = Valid / Fully Registered).
+
+     3. Root Arbiter Gate:
+        Both CLicenseManager::CheckRegistration (0x1400329C4) and Activate
+        (0x1400320D4) funnel through FUN_140009db0 (IsRegistered query).
+        At offset 0x140009E0F:
+          call atoi(json["result"]) (0x1402DE8C8)
+        is redirected to an unused code stub at 0x140001622:
+          B8 03 00 00 00 C3 (mov eax, 3; ret)
+
+     4. v1.1.0 Automation Architecture:
+        - Atomic In-Place Patching: detects and terminates running processes,
+          elevates UAC on access denied, backs up original to 项目E.orig.exe,
+          writes patched binary in-place, writes registry RN/RC, and executes
+          double readback verification.
+        - Headless PowerShell Automation: auto_activate.ps1 provides zero-GUI
+          CLI activation for sysadmins and unattended deployment.
+
+ - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+   USAGE INSTRUCTIONS
+ - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+   Method A: GUI Full Automation (Single Click)
+     1. Run 项目EActivate.exe
+     2. Click '一键激活（全自动）'
+     3. Launch 项目E PRO / 项目E -> Registration is active.
+
+   Method B: Headless PowerShell CLI
+     powershell -ExecutionPolicy Bypass -File .\\auto_activate.ps1
+
+ - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+   GREETS TO:
+ - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+   CORE • Razor1911 • RELOADED • FFF • SKiDROW • PARADOX • Deviance • TiTAN
+   and all non-profit reverse engineers and scene archivists worldwide.

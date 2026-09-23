@@ -1,0 +1,13 @@
+#ifndef R_VERSION_H
+#define R_VERSION_H 1
+#define R_MESON_VERSION "0.61.99"
+#define R2_VERSION_MAJOR 5
+#define R2_VERSION_MINOR 9
+#define R2_VERSION_PATCH 8
+#define R2_VERSION_NUMBER 50908
+#define R2_VERSION_COMMIT 1
+#define R2_VERSION "5.9.8"
+#define R2_GITTAP "5.9.8"
+#define R2_GITTIP "4eb49d5ad8c99eaecc8850a2f10bad407067c898"
+#define R2_BIRTH "Tue 11/19/2024__11:46:03.42"
+#endif

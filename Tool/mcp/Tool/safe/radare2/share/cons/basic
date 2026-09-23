@@ -1,0 +1,54 @@
+# optimized for windows
+ecd
+ec fname cyan
+ec label cyan
+ec fline cyan
+ec flag green
+ec offset white
+ec comment red
+ec usrcmt green
+ec flow green
+ec flow2 green
+ec b0x00 white
+ec b0xff red
+ec bin gray
+ec b0x7f white
+ec other gray
+ec btext cyan
+ec trap red
+ec ucall green
+ec ujmp green
+ec args green
+ec help yellow
+ec prompt cyan
+ec mov white
+ec math gray
+ec push cyan
+ec reg yellow
+ec creg yellow
+ec num cyan
+ec invalid red
+ec swi cyan
+ec cmp white
+ec call green
+ec cjmp green
+ec jmp green
+ec pop cyan
+ec linehl rgb:004
+ec graph.true green
+ec graph.false red
+ec graph.trufae blue
+ec graph.current blue
+ec graph.traced blue
+ec graph.box gray
+ec graph.box2 blue
+ec graph.box3 gray
+ec graph.box4 gray
+
+ec var white
+ec var.type blue
+ec var.addr cyan
+ec var.name white
+
+ec widget.bg white gray
+ec widget.sel black cyan

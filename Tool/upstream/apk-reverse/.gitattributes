@@ -1,0 +1,21 @@
+# Normalize line endings so a Windows checkout does not rewrite committed files.
+# Scripts stay LF (they are consumed by python/node and by shell on POSIX hosts).
+* text=auto eol=lf
+
+*.py    text eol=lf
+*.js    text eol=lf
+*.sh    text eol=lf
+*.md    text eol=lf
+*.java  text eol=lf
+*.yml   text eol=lf
+*.yaml  text eol=lf
+
+# PowerShell is the one thing that is happier with CRLF on Windows.
+*.ps1   text eol=crlf
+
+# Never normalize binary-ish artifacts.
+*.jar   binary
+*.png   binary
+*.apk   binary
+*.dex   binary
+*.so    binary

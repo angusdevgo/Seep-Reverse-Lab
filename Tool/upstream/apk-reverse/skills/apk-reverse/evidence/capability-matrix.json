@@ -1,0 +1,420 @@
+{
+  "schema": "apk-reverse/capability-matrix",
+  "version": 1,
+  "purpose": "One machine-readable row per capability this skill claims: how strong the claim is, whether the route itself was ever measured, where the evidence lives inside an installed copy, and what the claim does not cover. An installed copy of this skill must be able to answer 'is this proven, how strongly, and where' without the repository it was extracted from.",
+  "read_with": "references/evidence-summary.md (the prose condensation of this file, and the only place that lists the non-shipped record)",
+  "status_labels": {
+    "ok": "The documented route was carried out on a real target and the result is recorded.",
+    "partial": "Part of the route was measured; at least one decisive step (usually install, launch, or a second independent producer) was not.",
+    "blocked": "Either the route depends on something this skill does not ship, or nothing in this record is evidence about it either way. Do not treat 'blocked' as 'impossible' -- treat it as 'no footing here'."
+  },
+  "strength_labels": {
+    "observed": "A command was run and its output exists behind the claim.",
+    "inferred": "Follows from a documented mechanism or a neighbouring measurement; the step itself was not executed.",
+    "unverified": "Assumed, or reported by someone else, and not reproduced in this record."
+  },
+  "evidence_rules": [
+    "Every path in `evidence` is relative to the installed skill root and resolves in an installed copy.",
+    "Paths in `evidence_not_shipped` sit at the repository root, which `npx skills add` does not install. Every one of them is marked 'repository root, not shipped'.",
+    "Rows are traceable to an existing evidence file or to a row of the repository's benchmark matrix (B1-B13). Nothing here was written from expectation.",
+    "Where a source document and a script disagree, the script's behaviour was taken as the measurement and the row says so."
+  ],
+  "capabilities": [
+    {
+      "capability": "dex-equal-length-surgical-patch",
+      "group": "dex",
+      "status": "ok",
+      "route_measured": true,
+      "strength": "observed",
+      "benchmark_rows": ["B1"],
+      "evidence": ["references/byte-level-patching.md", "references/dex-patching.md", "references/patch-audit.md", "scripts/dex_patch_bytes.py", "scripts/dex_find_insn.py"],
+      "evidence_not_shipped": ["docs/tool-verification/EXTENSION-benchmark-l1-l3.md section 2 (repository root, not shipped)", "tests/benchmark.md row B1 (repository root, not shipped)"],
+      "limits": "Equal-length edits only. The end-to-end measurement is one 2-byte branch rewrite inside a 5,528-byte dex, whose whole-file diff is those 4 bytes plus dex header bytes 8..32; the patched file self-verifies. Constraints that cannot be expressed as an equal-length edit need the dexlib2 route, which has no public-target measurement."
+    },
+    {
+      "capability": "dex-method-level-rewrite-dexlib2",
+      "group": "dex",
+      "status": "partial",
+      "route_measured": false,
+      "strength": "unverified",
+      "benchmark_rows": [],
+      "evidence": ["references/dex-patching.md", "references/patch-audit.md", "scripts/dexpatch/"],
+      "evidence_not_shipped": ["docs/tool-verification/README.md (repository root, not shipped)"],
+      "limits": "The rewriter and the smali round-trip tools (scripts/smtool.py, scripts/patch_smali.py) carry no measurement against a public target in this record. The round-trip blind spot is documented: a whole-tree smali round trip can pass every table check and still crash with IncompatibleClassChangeError. Treat the route as documented, not proven."
+    },
+    {
+      "capability": "dex-header-integrity-and-verifier-legality",
+      "group": "dex",
+      "status": "ok",
+      "route_measured": true,
+      "strength": "observed",
+      "benchmark_rows": ["B1"],
+      "evidence": ["references/patch-audit.md", "references/byte-level-patching.md", "scripts/dexutil.py", "scripts/dex_check_verifier.py", "scripts/dex_classdiff.py"],
+      "evidence_not_shipped": ["tests/benchmark.md row B1 (repository root, not shipped)"],
+      "limits": "Header recompute order (adler32 over d[12:], sha1 over d[32:]) is proven on one written file, which reproduces both fields. Passing scripts/dex_classdiff.py is necessary, not sufficient: it cannot detect code-item damage, and the checks that look further (instruction-length audit, the equal-length blind spot, move-result adjacency) live in references/patch-audit.md."
+    },
+    {
+      "capability": "dex-string-constant-patch",
+      "group": "dex",
+      "status": "partial",
+      "route_measured": false,
+      "strength": "unverified",
+      "benchmark_rows": [],
+      "evidence": ["references/byte-level-patching.md", "references/dex-patching.md", "scripts/dex_strpatch.py"],
+      "evidence_not_shipped": ["docs/tool-verification/TOOL-VERDICTS.md (repository root, not shipped)"],
+      "limits": "Equal-length only: the shipped scripts/dex_strpatch.py enforces equal length and refuses a substring of a longer identifier. A different-length string edit is therefore not covered by that script; it needs the dexlib2 route, whose build is documented and unmeasured. No public-target measurement for the string path."
+    },
+    {
+      "capability": "repack-sign-install-single-apk",
+      "group": "packaging",
+      "status": "ok",
+      "route_measured": true,
+      "strength": "observed",
+      "benchmark_rows": ["B1", "B9"],
+      "evidence": ["references/repack-and-sign.md", "references/verification.md", "scripts/repack.py", "scripts/install_test.py"],
+      "evidence_not_shipped": ["docs/tool-verification/EXTENSION-benchmark-l1-l3.md section 2 (repository root, not shipped)", "tests/benchmark.md rows B1 and B9 (repository root, not shipped)"],
+      "limits": "Measured chain on this class of host: zip, then zipalign -p -f 4, then apksigner.jar --v1 --v2 --v3; the order cannot be reversed (the installer refuses with [-124]). B1 confirms installability by matching the on-device base.apk sha256 against the local build, and its control build through the identical pipeline still fails the old way. Signing has no uber-apk-signer here. The isolated-constant rewrite script writes an APK through a different code path whose zip-metadata and alignment handling was recorded as a defect; that path is not covered by this row."
+    },
+    {
+      "capability": "split-apk-and-app-bundle-sets",
+      "group": "packaging",
+      "status": "partial",
+      "route_measured": true,
+      "strength": "observed",
+      "benchmark_rows": ["B9"],
+      "evidence": ["references/split-apk.md", "scripts/repack.py"],
+      "evidence_not_shipped": ["docs/tool-verification/EXTENSION-split-apk.md (repository root, not shipped)", "tests/benchmark.md row B9 (repository root, not shipped)"],
+      "limits": "Analyze, unified re-sign and merge were run on two real sets: after resign every member shares one certificate with v1+v2+v3 true, and merge correctly refuses (exit 1, before writing) a set whose members carry their own resources.arsc while succeeding on the code/native-only set. adb install-multiple and launch confirmation were NOT executed, so installability of a re-signed set is unverified, and the split mode's install path is exactly where a wrong alignment hides."
+    },
+    {
+      "capability": "third-party-build-audit",
+      "group": "packaging",
+      "status": "partial",
+      "route_measured": false,
+      "strength": "unverified",
+      "benchmark_rows": [],
+      "evidence": ["references/third-party-builds.md", "scripts/apk_diff.py"],
+      "evidence_not_shipped": ["docs/tool-verification/README.md (repository root, not shipped)"],
+      "limits": "scripts/apk_diff.py is listed among the scripts the first verification pass never ran, and no benchmark row exercises it. Absence from that record is not a verdict on it, but nothing here supports trusting its output either."
+    },
+    {
+      "capability": "extraction-shell-detection-trivial-body",
+      "group": "unpacking",
+      "status": "ok",
+      "route_measured": true,
+      "strength": "observed",
+      "benchmark_rows": ["B3"],
+      "evidence": ["references/advanced-unpacking.md", "scripts/dex_dump_validate.py", "scripts/dex_mem_scan.py"],
+      "evidence_not_shipped": ["docs/tool-verification/EXTENSION-extraction-shell-bench.md (repository root, not shipped)", "tests/benchmark.md row B3 (repository root, not shipped)"],
+      "limits": "The ratio is bimodal, not thresholded: a real skeleton reads about 100 percent, a zero-change control 1.9 percent, nop-cleared bodies 0.0 percent and throw stubs 1.9 percent, so the shapes real shells use are invisible to it. The earlier 'tens of percent means a skeleton' rule was wrong and was deleted. Measured on an 11-variant synthetic set derived from one real dex, not on a live extraction shell, and three script defects were found by that set."
+    },
+    {
+      "capability": "dex-vmp-declaration-boundary",
+      "group": "unpacking",
+      "status": "partial",
+      "route_measured": true,
+      "strength": "observed",
+      "benchmark_rows": ["B4"],
+      "evidence": ["references/advanced-unpacking.md", "references/code-virtualization-and-custom-linkers.md", "references/vmp-differential-analysis.md"],
+      "evidence_not_shipped": ["docs/tool-verification/EXTENSION-extraction-shell-bench.md section 3.4 and section 4 (repository root, not shipped)", "tests/benchmark.md row B4 (repository root, not shipped)"],
+      "limits": "Static criteria can rule a dex-VMP out; they cannot rule runtime-applied hardening out. Never declare a VMP without an official disassembler's failure count: a hand-written opcode table reported 1,393 of 22,424 bodies as undecodable and produced a VMP verdict on a sample that the platform decoder showed to be ordinary dalvik with zero structural errors. Install, launch and refusal for that sample remain untested."
+    },
+    {
+      "capability": "vmp-differential-opcode-map",
+      "group": "unpacking",
+      "status": "partial",
+      "route_measured": true,
+      "strength": "observed",
+      "benchmark_rows": [],
+      "evidence": ["references/vmp-differential-analysis.md", "scripts/vmp_diff_harness.py"],
+      "evidence_not_shipped": ["docs/tool-verification/EXTENSION-vmp-diff.md (repository root, not shipped)"],
+      "limits": "The fixture covers 218 of 224 opcodes and the closed loop re-derived that table exactly: 218 of 218 emitted opcodes, zero wrong entries, zero fabricated entries. What was not exercised is the other half of the premise -- no third-party hardening platform was contacted, and the assumption that a real engine substitutes per opcode at stable instruction length is inferred from public write-ups. No benchmark row covers this route."
+    },
+    {
+      "capability": "java2c-vs-jni-sinking-discrimination",
+      "group": "native",
+      "status": "ok",
+      "route_measured": true,
+      "strength": "observed",
+      "benchmark_rows": ["B5", "B11"],
+      "evidence": ["references/java2c-and-jni-sinking.md", "scripts/java2c_probe.py"],
+      "evidence_not_shipped": ["docs/tool-verification/EXTENSION-java2c.md (repository root, not shipped)", "tests/benchmark.md rows B5 and B11 (repository root, not shipped)"],
+      "limits": "The discriminating measurement is observed: native-declaration density separates the shapes by roughly 2000x (0.03-0.04 percent on three real JNI samples against 82.76 percent on a Java2C-shaped fixture), and Java_* symbols matched dex native-method counts 1:1 per ABI. No Dex-to-C compiler output was ever built here (no NDK, no host or device clang), so every Java2C-specific criterion is inferred. A symbol search fails silently on real Java2C: dcc emits -fvisibility=hidden and C++ jni.h inlines RegisterNatives."
+    },
+    {
+      "capability": "native-terminate-path-neutralisation",
+      "group": "native",
+      "status": "partial",
+      "route_measured": true,
+      "strength": "observed",
+      "benchmark_rows": ["B2"],
+      "evidence": ["references/native-tamper-and-suicide.md", "references/native-and-so.md", "scripts/spawn_patch_detach.py", "scripts/hook_patch_only.js"],
+      "evidence_not_shipped": ["docs/tool-verification/EXTENSION-benchmark-l1-l3.md section 3 (repository root, not shipped)", "tests/benchmark.md row B2 (repository root, not shipped)"],
+      "limits": "The tooling works; the patch does not. Writes landed 0.04-0.05 s after resume and survived detach, and the patched run and a read-and-write-back control both still died with SIGABRT at the same site: neutralising the terminate routine plus both of its branch inputs was insufficient, and the region is a dense cluster of mov w0,#imm ; ret stubs. Holding the process paused until the patch lands structurally cannot work, because a frozen process has no libraries mapped. On that target the pristine original already reports tamper, so no clean baseline exists there. No surviving-target result is claimed."
+    },
+    {
+      "capability": "native-instruction-tracing-stalker",
+      "group": "native",
+      "status": "partial",
+      "route_measured": true,
+      "strength": "observed",
+      "benchmark_rows": ["B6"],
+      "evidence": ["references/native-dbi-and-deobfuscation.md", "scripts/stalker_trace.js", "scripts/stalker_report.py"],
+      "evidence_not_shipped": ["docs/tool-verification/EXTENSION-stalker-exclude.md (repository root, not shipped)", "tests/benchmark.md row B6 (repository root, not shipped)"],
+      "limits": "Split result: following a hot libc export with no exclusions kills the process, and excluding 20 system modules keeps it alive -- but delivery is still zero events (blocks=0 blk=0 calls=0). Exclusion is therefore not the fix for a trace that reports nothing, which contradicts the framing that lists 'no events' among the symptoms exclusion addresses. Two harness traps that manufacture a false zero-event result were fixed in the same pass. No real OLLVM trace was produced, and no trace pipeline is verified on the test device."
+    },
+    {
+      "capability": "native-library-mapping-and-plt-resolution",
+      "group": "native",
+      "status": "ok",
+      "route_measured": true,
+      "strength": "observed",
+      "benchmark_rows": [],
+      "evidence": ["references/native-and-so.md", "references/toolchain.md", "scripts/lib_map.py", "scripts/elf_plt.py"],
+      "evidence_not_shipped": ["docs/tool-verification/TOOL-VERDICTS.md (repository root, not shipped)"],
+      "limits": "scripts/lib_map.py is verified on a real target. scripts/elf_plt.py was broken and fixed: one defect was proven to cause a false negative on a symbol that exists and is called, and a second compared a file offset against a virtual address under --diff --name-regions. Run it before patching any stub, and treat its 'no callers' answer as a claim about its own input parsing until you have seen it scan something you know references the symbol."
+    },
+    {
+      "capability": "native-crash-triage-and-swallowed-stacks",
+      "group": "native",
+      "status": "partial",
+      "route_measured": false,
+      "strength": "unverified",
+      "benchmark_rows": [],
+      "evidence": ["references/native-tamper-and-suicide.md", "references/environment.md", "scripts/native_crash.py", "scripts/grab_crash.py"],
+      "evidence_not_shipped": ["docs/tool-verification/TOOL-VERDICTS.md (repository root, not shipped)"],
+      "limits": "scripts/native_crash.py was recorded as 'not applicable to this sample' in the first pass, and scripts/grab_crash.py was never run -- including on the one target whose crash-reporter SDK hid exactly the stack it claims to recover, so that claim is unverified rather than wrong. The general rule that survives without a measurement is narrower: a process that dies with only 'uncaughtException time: ...' and no stack has crashed."
+    },
+    {
+      "capability": "runtime-analysis-with-frida",
+      "group": "runtime",
+      "status": "ok",
+      "route_measured": true,
+      "strength": "observed",
+      "benchmark_rows": ["B2", "B6", "B13"],
+      "evidence": ["references/dynamic-frida.md", "references/environment.md", "references/native-tamper-and-suicide.md", "scripts/run_probe.py", "scripts/frida_probe.js", "scripts/preflight.py"],
+      "evidence_not_shipped": ["docs/tool-verification/EXTENSION-device-run.md (repository root, not shipped)", "tests/benchmark.md rows B2, B6 and B13 (repository root, not shipped)"],
+      "limits": "Instrumentation is itself a measured variable. Attaching is what kills some targets (the probe arm of B13 dies about 300 ms after resume while the no-script control stays alive); exclusion is what keeps others alive (B6); and a spawn ordering that holds the process paused cannot work, because no libraries are mapped yet (B2). Reading a device's refusal as a fact about the target is the failure mode this row exists to prevent -- the preflight check comes before blaming a patch."
+    },
+    {
+      "capability": "runtime-data-local-state",
+      "group": "runtime",
+      "status": "partial",
+      "route_measured": true,
+      "strength": "observed",
+      "benchmark_rows": ["B8"],
+      "evidence": ["references/runtime-data.md", "scripts/datastore_inject.py", "scripts/blob_decode.py"],
+      "evidence_not_shipped": ["tests/benchmark.md row B8 (repository root, not shipped)"],
+      "limits": "The DataStore encode/decode path is proven on one real 81-byte container: an edited value re-encoded (81 to 80 bytes, length prefix recomputed) was read back by the injector. SharedPreferences and SQLite edits have no equivalent measurement here, and an edit that keeps reverting is a routing signal -- something else owns the value -- not a data-editing problem."
+    },
+    {
+      "capability": "anti-instrumentation-triage-naming-the-check",
+      "group": "runtime",
+      "status": "ok",
+      "route_measured": true,
+      "strength": "observed",
+      "benchmark_rows": ["B13"],
+      "evidence": ["references/detection-and-anti-analysis.md", "scripts/anti_detect_probe.js"],
+      "evidence_not_shipped": ["docs/tool-verification/EXTENSION-detection-pipeline.md sections 1, 4 and 5 (repository root, not shipped)", "tests/benchmark.md row B13 (repository root, not shipped)"],
+      "limits": "The check was named and the asymmetry recorded: strstr(\"frida\") fired at 303 ms of process life, then the process was gone with no tombstone, no crash and no ANR record, while the probe's own self-report showed TracerPid=0 with four frida-named mappings visible in /proc/self/maps. Reproducibility is honestly bounded: 3 same-shape arms, 1 delivered the full sequence, because a target that dies in about 300 ms leaves a sub-second window. The probe is observer-only by contract and patches nothing."
+    },
+    {
+      "capability": "emulation-and-frida-rpc",
+      "group": "runtime",
+      "status": "partial",
+      "route_measured": true,
+      "strength": "inferred",
+      "benchmark_rows": [],
+      "evidence": ["references/emulation-and-rpc.md", "scripts/frida_rpc_serve.py", "scripts/rpc_template.js"],
+      "evidence_not_shipped": ["docs/tool-verification/EXTENSION-emulation-rpc.md (repository root, not shipped)"],
+      "limits": "The rpc.exports bridge was exercised end to end on a live device and the indexer pair (droidasc / ddc) was measured on a hardened APK, but the reference classifies the route itself as inferred: emulated execution costs environment-filling work, the unidbg build needed repair before it ran, and no target .so had been emulated at the time of writing. The tool was measured; the route was not."
+    },
+    {
+      "capability": "schemaless-protobuf-decode",
+      "group": "protocol",
+      "status": "ok",
+      "route_measured": true,
+      "strength": "observed",
+      "benchmark_rows": ["B8"],
+      "evidence": ["references/protocol-reverse.md", "scripts/protobuf_decode_raw.py"],
+      "evidence_not_shipped": ["docs/tool-verification/EXTENSION-protobuf-raw.md (repository root, not shipped)", "tests/benchmark.md row B8 (repository root, not shipped)"],
+      "limits": "26 of 26 built-in fixtures, 21 of 21 against the official runtime (re-encode byte-identical to SerializeToString()), 8 of 8 framing checks. Two ambiguities are inherent to the wire format rather than defects: 0801120178 is a valid nested message and a valid packed array, and a non-presence 0 is byte-identical to 'never assigned'. Four script defects were found by these checks and fixed."
+    },
+    {
+      "capability": "server-api-probing-and-tls-feature-scope",
+      "group": "protocol",
+      "status": "partial",
+      "route_measured": false,
+      "strength": "inferred",
+      "benchmark_rows": ["B7"],
+      "evidence": ["references/server-api.md", "references/tls-and-cert.md", "references/protocol-reverse.md", "scripts/probe_api.py", "scripts/tls_check.py"],
+      "evidence_not_shipped": ["tests/benchmark.md row B7 (repository root, not shipped)"],
+      "limits": "Client-scoped by design: this determines who owns a gate, not how to break an authorization the server performs. The native-side certificate-pinning row (a Cronet sample) was not run -- it needs a gradle+NDK build this class of host cannot do -- and QUIC/HTTP3 is stated as a limit rather than a route. Certificates and pinning are asserted from documented behaviour, so label a feature-scoped TLS failure as inferred until you have reproduced the failure yourself."
+    },
+    {
+      "capability": "dart-aot-analysis-given-a-snapshot-dump",
+      "group": "dart",
+      "status": "partial",
+      "route_measured": true,
+      "strength": "observed",
+      "benchmark_rows": [],
+      "evidence": ["references/dart-aot.md", "scripts/dart_disasm.py", "scripts/dart_pprefs.py", "scripts/dart_pool_strings.py"],
+      "evidence_not_shipped": ["docs/tool-verification/TOOL-VERDICTS.md (repository root, not shipped)", "docs/tool-verification/EXTENSION-dart-aot-formats.md (repository root, not shipped)"],
+      "limits": "Measured on a real Dart 3.6.0 build: the disassembler decoded identically to capstone (32 of 32 and 96 of 96), the caller index was re-derived independently with a symmetric difference of 0, and a specific business-logic site was located end to end. This row assumes a snapshot dump already exists -- producing one is a separate, blocked capability (see dart-aot-snapshot-dump-production)."
+    },
+    {
+      "capability": "dart-aot-string-table-format",
+      "group": "dart",
+      "status": "partial",
+      "route_measured": true,
+      "strength": "observed",
+      "benchmark_rows": ["B12"],
+      "evidence": ["references/dart-aot.md", "scripts/dart_pool_strings.py"],
+      "evidence_not_shipped": ["docs/tool-verification/EXTENSION-dart-aot-formats.md (repository root, not shipped)", "tests/benchmark.md row B12 (repository root, not shipped)"],
+      "limits": "Two claims were tested and both were wrong before this row. The arm64 packed form is confirmed at the byte level (tag byte equals 0x80|(len<<1) at every literal checked, 4,980 chained entries). The previously documented armv7 form (len*2 plus UTF-16) is refuted: the 32-bit record is [header u32][byte-count u32le][UTF-8 payload], and the extractor's zero for that ABI is a format mismatch rather than an empty table. An end-to-end patched build was never repacked and installed, so no device patch is claimed. A third claim, that the engine banner gives x.y.z (stable), is also refuted on that target."
+    },
+    {
+      "capability": "dart-aot-snapshot-dump-production",
+      "group": "dart",
+      "status": "blocked",
+      "route_measured": false,
+      "strength": "unverified",
+      "benchmark_rows": [],
+      "evidence": ["references/dart-aot.md", "references/coverage-and-limits.md"],
+      "evidence_not_shipped": ["docs/tool-verification/README.md (repository root, not shipped)"],
+      "limits": "This skill ships no snapshot container resolver and cannot synthesize one, so the Dart AOT workflow cannot start from an APK alone. The two offset spaces are not a constant offset apart: dart_pool_strings.py reports file offsets while the pool index speaks pool offsets, and a measured run found 4,237 distinct deltas over 4,241 shared strings. Ship a pinned front end (aotopsy, pure Go, no toolchain) or build blutter (about 80 s, needs a C++ toolchain) -- and say which one, because the two report different Dart version labels for the same binary."
+    },
+    {
+      "capability": "packer-custom-loader-identification",
+      "group": "hardening",
+      "status": "partial",
+      "route_measured": false,
+      "strength": "unverified",
+      "benchmark_rows": [],
+      "evidence": ["references/packers.md", "references/code-virtualization-and-custom-linkers.md", "references/coverage-and-limits.md"],
+      "evidence_not_shipped": ["docs/tool-verification/TOOL-VERDICTS.md (repository root, not shipped)", "docs/tool-verification/README.md (repository root, not shipped)"],
+      "limits": "The first verification pass did not exercise the packer, code-virtualization, custom-linker, integrity-check-redirection or tamper-suicide scenarios: its target has none of them, and its unmodified build already fails to start, which removes the repack-and-regress loop those scenarios need. The packer tooling was recorded as 'not applicable to this sample'. Nothing in the record is evidence either way about a protected target -- the benchmark pass measured shape discrimination only."
+    },
+    {
+      "capability": "module-delivery-instead-of-repack-lsposed",
+      "group": "hardening",
+      "status": "partial",
+      "route_measured": false,
+      "strength": "inferred",
+      "benchmark_rows": [],
+      "evidence": ["references/lsposed-and-modules.md", "scripts/lsposed_scaffold.py", "references/precedents/logd-broken-module-never-ran-case-3.md"],
+      "evidence_not_shipped": ["docs/tool-verification/EXTENSION-lsposed.md (repository root, not shipped)"],
+      "limits": "Documented route, not a measured one: the generated project was built end to end with the gradle-free chain and its timings recorded, but the delivery route itself -- a module standing in for a refused repack -- has no public-target measurement. It needs a device with an active LSPosed, and confirming that a module actually ran takes more than one log surface; a logcat-only check has already produced one confidently wrong conclusion here."
+    },
+    {
+      "capability": "kernel-side-syscall-answer-forging",
+      "group": "kernel",
+      "status": "blocked",
+      "route_measured": false,
+      "strength": "unverified",
+      "benchmark_rows": ["B10"],
+      "evidence": ["references/kernel-and-environment-hardening.md", "scripts/kernelsu_syscall_mask.py"],
+      "evidence_not_shipped": ["docs/tool-verification/EXTENSION-kernel-weapons.md (repository root, not shipped)", "tests/benchmark.md row B10 (repository root, not shipped)"],
+      "limits": "The generator is measured -- an 11-file userspace module skeleton plus KPM/LKM/eBPF templates, with verify reporting 0 problems -- but no kernel-side artefact was compiled or loaded: the test kernel is 4.14.186 (eBPF needs 5.10+), the host has no aarch64 cross-compiler, make or ndk-build, and there is no kernel source. Structural correction with teeth: an ordinary KernelSU module is a userspace module and cannot change a syscall return value, so a template that claims to do so is wrong regardless of the toolchain."
+    },
+    {
+      "capability": "svc-site-scanning",
+      "group": "kernel",
+      "status": "ok",
+      "route_measured": true,
+      "strength": "observed",
+      "benchmark_rows": ["B13"],
+      "evidence": ["references/kernel-and-environment-hardening.md", "scripts/svc_scan.py"],
+      "evidence_not_shipped": ["docs/tool-verification/EXTENSION-detection-pipeline.md section 5 (repository root, not shipped)", "tests/benchmark.md row B13 (repository root, not shipped)"],
+      "limits": "Two independent decoders (a hand-written word scan and a capstone-based scan) returned an identical 214-site set on a device linker64, with an empty set difference, which is what makes the output usable as evidence about a library rather than about the scanner. A byte scan also matches data, so neighbour context decides whether a site is code: the hardened shell library's 21 svc sites are all data, and an ordinary module cannot act on them."
+    },
+    {
+      "capability": "on-device-tooling-mt-manager",
+      "group": "device",
+      "status": "partial",
+      "route_measured": true,
+      "strength": "observed",
+      "benchmark_rows": [],
+      "evidence": ["references/on-device-tooling.md", "scripts/mt_mcp_probe.py"],
+      "evidence_not_shipped": ["docs/tool-verification/EXTENSION-kernel-ondevice.md (repository root, not shipped)"],
+      "limits": "The 'service is down' path is measured: the probe prints start-it-by-hand instructions and exits 2. The connected path needs MT Manager's APK MCP started by hand, so it is documented rather than measured, and the MCP surface itself was inventoried from the tool's own listing rather than exercised against a target."
+    },
+    {
+      "capability": "client-side-ads-and-server-issued-ui-config",
+      "group": "deliverable",
+      "status": "ok",
+      "route_measured": true,
+      "strength": "observed",
+      "benchmark_rows": ["B1"],
+      "evidence": ["references/ad-removal.md", "references/server-config-and-updates.md", "references/membership-and-limits.md"],
+      "evidence_not_shipped": ["docs/tool-verification/TOOL-VERDICTS.md (repository root, not shipped)"],
+      "limits": "Verified on a real mid-size Flutter-AOT-shaped target and its ad chain, where the dex reader was the primary workhorse of the analysis and a repacked build's on-screen behaviour change was confirmed. A splash, popup or tab set that arrives as server-issued UI config is a routing decision, not an SDK hunt, and the deliverable is the check that stops it, not the string that names it."
+    },
+    {
+      "capability": "membership-paywall-gate-client-enforceability-decision",
+      "group": "deliverable",
+      "status": "ok",
+      "route_measured": false,
+      "strength": "inferred",
+      "benchmark_rows": [],
+      "evidence": ["references/membership-and-limits.md", "references/account-gates.md", "references/handoff-boundaries.md"],
+      "evidence_not_shipped": ["docs/tool-verification/README.md (repository root, not shipped)"],
+      "limits": "The decision framework is documented and its purpose is to say plainly when a gate is not client-enforceable; no gate-shaped public target was put through it in this record, so the framework is itself inferred rather than measured. A gate the server enforces is out of scope by design (see blocked-server-side-authority), and promising an unlock before classifying the owning layer is the specific failure this row prevents."
+    },
+    {
+      "capability": "update-and-forced-upgrade-neutralisation",
+      "group": "deliverable",
+      "status": "partial",
+      "route_measured": false,
+      "strength": "inferred",
+      "benchmark_rows": [],
+      "evidence": ["references/updates-and-forced-upgrade.md", "references/signature-derived-keys.md"],
+      "evidence_not_shipped": ["docs/tool-verification/README.md (repository root, not shipped)"],
+      "limits": "Documented route with no public-target measurement in this record. The shape to expect is not a crash: a rebuilt build installs, runs, and fails every signed request, so a version check and a signature-derived key must be classified before the artifact is called finished. This is an every-deliverable concern, not an optional one."
+    },
+    {
+      "capability": "publishing-sanitisation-leak-scan",
+      "group": "governance",
+      "status": "ok",
+      "route_measured": true,
+      "strength": "observed",
+      "benchmark_rows": [],
+      "evidence": ["references/desensitization-and-leak-scans.md", "scripts/scan_leaks.py", "references/precedents/manual-grep-finds-what-nobody-grepped-case-5.md"],
+      "evidence_not_shipped": ["docs/tool-verification/EXTENSION-desensitization.md (repository root, not shipped)"],
+      "limits": "Measured against a planted corpus (30 findings across 6 categories, every rule firing, zero false positives on the do-not-anonymize list) and against this repository (26 strong hits, all inside its own evidence file, reduced to 0 strong and 4 weak across 129 files after correction). One thing it cannot do: the scanner was never run against the pre-correction historical tree, so 'the scan would have caught it' is inferred. A strong hit is a prompt to look, not a verdict, and over-redaction is the failure on the other side."
+    },
+    {
+      "capability": "signature-derived-keys",
+      "group": "deliverable",
+      "status": "partial",
+      "route_measured": false,
+      "strength": "unverified",
+      "benchmark_rows": [],
+      "evidence": ["references/signature-derived-keys.md", "scripts/sig_probe.py"],
+      "evidence_not_shipped": ["docs/tool-verification/README.md (repository root, not shipped)"],
+      "limits": "The offline candidate path from an APK and the authoritative live read are both documented in the reference; neither has a public-target measurement here. The failure shape is a rebuilt APK that installs, launches, and then fails every signed request, which is easy to report as a server problem and is not one."
+    },
+    {
+      "capability": "blocked-unity-il2cpp-react-native-ios",
+      "group": "boundary",
+      "status": "blocked",
+      "route_measured": false,
+      "strength": "unverified",
+      "benchmark_rows": [],
+      "evidence": ["references/framework-runtimes.md", "references/coverage-and-limits.md"],
+      "evidence_not_shipped": ["docs/tool-verification/README.md (repository root, not shipped)"],
+      "limits": "Unity / IL2CPP logic recovery, React Native / Hermes bytecode and Cordova internals, and every iOS or .ipa workflow are outside this skill. references/framework-runtimes.md identifies the runtime and establishes that the dex is not the battlefield; there is no verified recipe here for locating a method inside libil2cpp.so plus global-metadata.dat. Say so instead of improvising."
+    },
+    {
+      "capability": "blocked-server-side-authority",
+      "group": "boundary",
+      "status": "blocked",
+      "route_measured": false,
+      "strength": "unverified",
+      "benchmark_rows": [],
+      "evidence": ["references/server-api.md", "references/handoff-boundaries.md"],
+      "evidence_not_shipped": ["docs/tool-verification/README.md (repository root, not shipped)"],
+      "limits": "Determining who owns a gate is covered; breaking an authorization the server performs is not. There is no client-side patch that reaches it, and the honest deliverable is the residual: which authority decides, and why the artifact cannot change it."
+    }
+  ]
+}

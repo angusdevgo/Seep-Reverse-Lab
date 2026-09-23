@@ -1,0 +1,11 @@
+prefix=D:/a/radare2/radare2/radare2-5.9.8-w64
+libdir=${prefix}/lib
+includedir=${prefix}/include
+
+Name: r_asm
+Description: radare foundation libraries
+Version: 5.9.8
+Requires: r_util, r_syscall, r_reg, r_flag, r_arch, r_socket, r_esil, r_crypto
+Libs: -L${libdir} -lr_asm
+Libs.private: -lws2_32 -lwininet -lpsapi
+Cflags: -I${includedir}/libr

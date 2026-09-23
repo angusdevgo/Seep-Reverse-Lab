@@ -1,0 +1,30 @@
+// ============================================================
+//  LSPilot Hook Plugin - HookReplace
+//  Generated: ${GEN_TIME}
+//  Plugin: ${PLUGIN_NAME}
+//  Target:  ${TARGET_CLASS}.${TARGET_METHOD}${TARGET_DESC}
+// ============================================================
+
+import android.util.Log;
+import me.yun.lspilot.loader.api.HookRouter;
+import me.yun.lspilot.loader.api.ReflectUtils;
+import me.yun.lspilot.dexkit.DexKitFinder;
+
+Log.d("LSPilot", "Plugin ${PLUGIN_NAME} loaded");
+
+targetClass = ReflectUtils.findClass("${TARGET_CLASS}", hostLoader);
+if (targetClass == null) {
+    Log.e("LSPilot", "Target class not found: ${TARGET_CLASS}");
+} else {
+    ${PRE_FIND_METHOD}
+
+    HookRouter.hookReplace(targetMethod, "${PLUGIN_NAME}", new JavaHookCallback() {
+        @Override
+        public void onHook(HookParam param) {
+            Log.d("LSPilot", "HookReplace: ${TARGET_CLASS}.${TARGET_METHOD} triggered");
+            ${CALLBACK_CODE}
+        }
+    });
+
+    Log.d("LSPilot", "Hook ${TARGET_CLASS}.${TARGET_METHOD} registered");
+}

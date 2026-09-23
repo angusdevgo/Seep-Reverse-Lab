@@ -1,0 +1,39 @@
+# Python-generated files
+__pycache__/
+*.py[oc]
+build/
+dist/
+wheels/
+*.egg-info
+
+# Virtual environments
+.venv*/
+venv*/
+
+# Logs
+*.log
+
+# Test files
+*.idb
+*.i64
+*.nam
+*.id0
+*.id1
+*.id2
+*.til
+*.elf
+!tests/typed_fixture.elf
+
+# Generated server files
+server_generated.py
+
+# Coverage
+.coverage*
+htmlcov/
+scalene-profile.json
+.omp/
+
+# MCP config
+.mcp.json
+
+.DS_Store

@@ -1,0 +1,100 @@
+.Dd August 29, 2024
+.Dt R2PM 1
+.Sh NAME
+.Nm r2pm
+.Nd radare2 package manager
+.Sh SYNOPSIS
+.Nm r2pm
+.Op [adhHIipuUglsv]
+.Op [pkg ...]
+.Sh DESCRIPTION
+Allows to install, update, uninstall and discover plugins and tools that can be used with radare2.
+.Bl -tag -width Fl
+.It Fl a, Cm repo
+Adds an external r2pm repository, no arguments to -a will list all the registered repos, use '-a - repo' to unregister/remove those repos.
+.It Fl I
+Show information about repository and installed packages
+.It Fl i Ar pkgname
+Install a package
+.It Fl e Ar pkgname
+Open the package script with your favourite editor
+.It Fl d Ar pkgname
+Show source code of the r2pm package
+.It Fl gi Ar pkgname
+Install a package in the system directory
+.It Fl u Ar pkgname
+Uninstall a package
+.It Fl uu Ar pkgname
+Force uninstall a package
+.It Fl U
+Initialize or Update the package database
+.It Fl UU
+Same as -U, but then upgrade all the installed packages
+.It Fl gu Ar pkgname
+Uninstall a package from the system directory
+.It Fl l
+List installed packages
+.It Fl s Ar keyword
+Search in database for packages matching keyword
+.It Fl t Ar YYYY-MM-DD
+Set the R2PM_TIME env var to tell the time to take package source from git
+.It Fl r Ar command ...args
+Run command with R2PM_BINDIR in PATH
+.It Fl p
+Requires -c to clean the R2PM_PLUGDIR
+.It Fl v
+Show version information
+.It Fl h
+Show usage help message
+.It Fl H
+List all special env-vars defined by r2pm internally
+.It Fl H Ar env-var-name
+Show value of given internal environment variable
+.It Fl c
+Clean the source cache
+.El
+.Sh EXAMPLES
+.Pp
+The database is initialized and pulled automatically, all the named actions have been deprecated, use only flags
+.Pp
+Install a package
+.Pp
+  $ r2pm -i yara3
+.Pp
+Install a test package (don't git pull on $R2PM_GITDIR/yara3)
+.Pp
+  $ R2PM_GITSKIP=1 r2pm -ci yara3
+.Pp
+Avoid init/update calls (don't git pull on $R2PM_DBDIR)
+.Pp
+ $ R2PM_OFFLINE=1 r2pm -i yara
+.Pp
+Uninstall a package
+.Pp
+  $ r2pm -u yara3
+.Pp
+Search a package
+.Pp
+  $ r2pm -s yara
+.Pp
+List installed packages
+.Pp
+  $ r2pm -l
+.Sh ENVIRONMENT
+.Pp
+ SUDO=sudo
+ R2PM_PLUGDIR=~/.local/share/radare2/plugins
+ R2PM_BINDIR=~/.local/share/radare2/prefix/bin
+ R2PM_OFFLINE=0
+ R2PM_DBDIR=~/.local/share/radare2/r2pm/db
+ R2PM_GITDIR=~/.local/share/radare2/r2pm/git
+ R2PM_GITSKIP=
+ R2PM_TIME=
+ R2_LOG_LEVEL
+ R2PM_INCDIR
+ R2PM_LIBDIR
+ R2PM_PREFIX
+ R2PM_LEGACY
+.Sh SEE ALSO
+.Pp
+.Xr radare2(1)

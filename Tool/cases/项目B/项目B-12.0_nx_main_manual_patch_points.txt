@@ -1,0 +1,145 @@
+# 项目B 12.0 nx_main 手动修复点位
+
+> 适用对象：`项目B-12.0/nx_main` 同版本三大 EXE。本文的点位均为 **文件偏移 File Offset**，不是 VA/RVA。
+
+## 重要说明
+
+- 本文用于手动十六进制修复；会修改 EXE 本体。
+- 如果想保持“原版 EXE + DLL-only 运行时补丁”，不要按本文写 EXE，改用 `dinput8.dll + version.dll + 项目B_local_guard.dll` 方案。
+- 手动修复前必须备份三个 EXE。每个点位先核对“原始字节”，完全匹配才写入“修补字节”。
+- 如果当前位置已经是“修补字节”，说明已修过，可跳过。若既不是原始字节也不是修补字节，停止处理，说明版本不匹配或被其他补丁污染。
+- 回滚方式：把每个点位的“修补字节”写回“原始字节”，或直接恢复备份 EXE。
+
+## 适用版本哈希
+
+| 文件 | 原始 SHA256 | 全量手动修复后 SHA256 | 点位数 |
+|---|---|---|---:|
+| `项目B.exe` | `<实测哈希>` | `<实测哈希>` | 30 |
+| `项目B.exe` | `<实测哈希>` | `<实测哈希>` | 20 |
+| `项目B.exe` | `<实测哈希>` | `<实测哈希>` | 3 |
+
+Windows 下可用以下命令核对哈希：
+
+```bat
+certutil -hashfile 项目B.exe SHA256
+certutil -hashfile 项目B.exe SHA256
+certutil -hashfile 项目B.exe SHA256
+```
+
+## 手动修复流程
+
+1. 完全退出 项目B。
+2. 如果 `项目B.exe` 被占用，管理员 CMD 执行：
+
+```bat
+sc queryex 项目B
+sc stop 项目B
+```
+
+3. 备份：
+
+```bat
+copy 项目B.exe 项目B.exe.orig
+copy 项目B.exe 项目B.exe.orig
+copy 项目B.exe 项目B.exe.orig
+```
+
+4. 用 HxD / 010 Editor 打开对应 EXE，跳转到下表 File Offset。
+5. 核对原始字节，写入修补字节，保存。
+6. 重启 项目B，验证会员状态、VIP 徽标、VIP 皮肤、试用入口和远程云控状态。
+
+## 点位摘要
+
+| 文件 | 点位数 | 覆盖范围 |
+|---|---:|---|
+| `项目B.exe` | 30 | UI 展示、会员状态、账号缓存读写、试用入口、SDK 过期提醒 |
+| `项目B.exe` | 20 | 云端试用接口、本地会员默认值、账号缓存解析/序列化、有效标志 |
+| `项目B.exe` | 3 | 远程云控禁用、阻止远程后端/健康进程启动 |
+
+## 项目B.exe
+
+| # | 文件偏移 | 功能 | 原始字节 | 修补字节 | ID |
+|---:|---:|---|---|---|---|
+| 1 | `0xcf9b21` | 到期时间固定为 2099-12-31 | `e8 f8 f7 32 ff` | `b8 7f e6 85 f4` | `nxmain_account_info_expiry_2099_12_31` |
+| 2 | `0xcf9e34` | 试用状态置为已使用/非活动 | `e8 30 8e 30 ff` | `b8 02 00 00 00` | `nxmain_account_info_trial_status_ever_not_active` |
+| 3 | `0x573197` | 默认启用会员皮肤 | `66 c7 44 24 60 30 00` | `66 c7 44 24 60 31 00` | `nxmain_config_default_member_theme_enabled` |
+| 4 | `0xcf9bb4` | 会员状态置为启用 | `e8 b0 90 30 ff` | `b8 01 00 00 00` | `nxmain_user_info_member_status_enabled` |
+| 5 | `0xcf9c32` | 会员类型置为 VIP | `e8 32 90 30 ff` | `b8 01 00 00 00` | `nxmain_user_info_member_type_vip` |
+| 6 | `0xcfa181` | 当前设备权益置为启用 | `e8 e3 8a 30 ff` | `b8 01 00 00 00` | `nxmain_user_info_current_device_privilege_enabled` |
+| 7 | `0xcf9e39` | 本地会员/远程防护补丁 | `44 8b f8` | `44 8b f8`<br>兼容旧补丁字节：`45 31 ff` | `nxmain_migrate_prior_trial_zero_patch` |
+| 8 | `0xd018f3` | 隐藏免费试用展示 | `44 8b e0` | `45 31 e4` | `nxmain_hide_free_trial_banner` |
+| 9 | `0xce9989` | 跳过试用 banner 分支 | `0f 8e ed 00 00 00` | `e9 ee 00 00 00 90` | `nxmain_skip_trial_banner_account_flow` |
+| 10 | `0xea8b48` | 到期时间固定为 2099-12-31 | `e8 d1 07 18 ff` | `b8 7f e6 85 f4` | `nxmain_account_cache_parse_a_expiry_2099_12_31` |
+| 11 | `0xea89ee` | 会员状态置为启用 | `e8 76 a2 15 ff` | `b8 01 00 00 00` | `nxmain_account_cache_parse_a_device_member_status_enabled` |
+| 12 | `0xea8bab` | 会员状态置为启用 | `e8 b9 a0 15 ff` | `b8 01 00 00 00` | `nxmain_account_cache_parse_a_member_status_enabled` |
+| 13 | `0xea8c6d` | 试用状态置为已使用/非活动 | `e8 f7 9f 15 ff` | `b8 02 00 00 00` | `nxmain_account_cache_parse_a_member_trail_status_used` |
+| 14 | `0xea8ce4` | 会员类型置为 VIP | `e8 80 9f 15 ff` | `b8 01 00 00 00` | `nxmain_account_cache_parse_a_member_type_vip` |
+| 15 | `0xeabe95` | 到期时间固定为 2099-12-31 | `e8 84 d4 17 ff` | `b8 7f e6 85 f4` | `nxmain_account_cache_parse_b_expiry_2099_12_31` |
+| 16 | `0xeabf1d` | 会员状态置为启用 | `e8 47 6d 15 ff` | `b8 01 00 00 00` | `nxmain_account_cache_parse_b_member_status_enabled` |
+| 17 | `0xeabf70` | 会员状态置为启用 | `e8 f4 6c 15 ff` | `b8 01 00 00 00` | `nxmain_account_cache_parse_b_device_member_status_enabled` |
+| 18 | `0xeac111` | 试用状态置为已使用/非活动 | `e8 53 6b 15 ff` | `b8 02 00 00 00` | `nxmain_account_cache_parse_b_member_trail_status_used` |
+| 19 | `0xeac1f8` | 会员类型置为 VIP | `e8 6c 6a 15 ff` | `b8 01 00 00 00` | `nxmain_account_cache_parse_b_member_type_vip` |
+| 20 | `0xea28ce` | 到期时间固定为 2099-12-31 | `48 8b 85 c8 02 00 00` | `b8 7f e6 85 f4 90 90` | `nxmain_account_cache_serialize_a_expiry_2099_12_31` |
+| 21 | `0xea29cf` | 会员状态置为启用 | `8b 85 d4 02 00 00` | `b8 01 00 00 00 90` | `nxmain_account_cache_serialize_a_member_status_enabled` |
+| 22 | `0xea2ac0` | 会员类型置为 VIP | `8b 85 d8 02 00 00` | `b8 01 00 00 00 90` | `nxmain_account_cache_serialize_a_member_type_vip` |
+| 23 | `0xea2cb0` | 会员状态置为启用 | `8b 85 08 03 00 00` | `b8 01 00 00 00 90` | `nxmain_account_cache_serialize_a_device_member_status_enabled` |
+| 24 | `0xea2d82` | 试用状态置为已使用/非活动 | `8b 85 00 03 00 00` | `b8 02 00 00 00 90` | `nxmain_account_cache_serialize_a_member_trail_status_used` |
+| 25 | `0xeadba0` | 到期时间固定为 2099-12-31 | `48 8b 8d 78 03 00 00` | `b9 7f e6 85 f4 90 90` | `nxmain_account_cache_serialize_b_expiry_2099_12_31` |
+| 26 | `0xeadca2` | 会员状态置为启用 | `8b 8d 84 03 00 00` | `b9 01 00 00 00 90` | `nxmain_account_cache_serialize_b_member_status_enabled` |
+| 27 | `0xeade6d` | 会员状态置为启用 | `8b 8d 88 03 00 00` | `b9 01 00 00 00 90` | `nxmain_account_cache_serialize_b_device_member_status_enabled` |
+| 28 | `0xeae01e` | 会员类型置为 VIP | `8b 8d b0 03 00 00` | `b9 01 00 00 00 90` | `nxmain_account_cache_serialize_b_member_type_vip` |
+| 29 | `0xeae0fd` | 试用状态置为已使用/非活动 | `8b 8d b4 03 00 00` | `b9 02 00 00 00 90` | `nxmain_account_cache_serialize_b_member_trail_status_used` |
+| 30 | `0x485f20` | 忽略 SDK/云端过期提醒 | `48 89 5c 24 18` | `c3 90 90 90 90` | `nxmain_ignore_sdk_membership_expiration_reminder` |
+
+## 项目B.exe
+
+| # | 文件偏移 | 功能 | 原始字节 | 修补字节 | ID |
+|---:|---:|---|---|---|---|
+| 1 | `0xdee228` | 云端试用接口降级为本地接口 | `76 31 2f 6d 65 6d 62 65 72 2f 74 72 69 61 6c` | `76 31 2f 6d 65 6d 62 65 72 2f 6c 6f 63 61 6c` | `nxservice_disable_cloud_member_trial_endpoint` |
+| 2 | `0x821dee` | 会员状态置为启用 | `e8 ae 03 7e ff` | `b8 01 00 00 00` | `nxservice_account_cache_parse_a_device_member_status_enabled` |
+| 3 | `0x821f48` | 到期时间固定为 2099-12-31 | `e8 db bf 7f ff` | `b8 7f e6 85 f4` | `nxservice_account_cache_parse_a_expiry_2099_12_31` |
+| 4 | `0x821fab` | 会员状态置为启用 | `e8 f1 01 7e ff` | `b8 01 00 00 00` | `nxservice_account_cache_parse_a_member_status_enabled` |
+| 5 | `0x82206d` | 试用状态置为已使用/非活动 | `e8 2f 01 7e ff` | `b8 02 00 00 00` | `nxservice_account_cache_parse_a_member_trail_status_used` |
+| 6 | `0x8220e4` | 会员类型置为 VIP | `e8 b8 00 7e ff` | `b8 01 00 00 00` | `nxservice_account_cache_parse_a_member_type_vip` |
+| 7 | `0x822284` | 账号信息有效标志置真 | `e8 39 79 7e ff` | `b0 01 90 90 90` | `nxservice_account_cache_parse_a_is_valid_infos_true` |
+| 8 | `0x825295` | 到期时间固定为 2099-12-31 | `e8 8e 8c 7f ff` | `b8 7f e6 85 f4` | `nxservice_account_cache_parse_b_expiry_2099_12_31` |
+| 9 | `0x82531d` | 会员状态置为启用 | `e8 7f ce 7d ff` | `b8 01 00 00 00` | `nxservice_account_cache_parse_b_member_status_enabled` |
+| 10 | `0x825370` | 会员状态置为启用 | `e8 2c ce 7d ff` | `b8 01 00 00 00` | `nxservice_account_cache_parse_b_device_member_status_enabled` |
+| 11 | `0x825511` | 试用状态置为已使用/非活动 | `e8 8b cc 7d ff` | `b8 02 00 00 00` | `nxservice_account_cache_parse_b_member_trail_status_used` |
+| 12 | `0x8255f8` | 会员类型置为 VIP | `e8 a4 cb 7d ff` | `b8 01 00 00 00` | `nxservice_account_cache_parse_b_member_type_vip` |
+| 13 | `0x8271b0` | 到期时间固定为 2099-12-31 | `48 8b 8d 78 03 00 00` | `b9 7f e6 85 f4 90 90` | `nxservice_account_cache_serialize_expiry_2099_12_31` |
+| 14 | `0x8272b2` | 会员状态置为启用 | `8b 8d 84 03 00 00` | `b9 01 00 00 00 90` | `nxservice_account_cache_serialize_member_status_enabled` |
+| 15 | `0x82747d` | 会员状态置为启用 | `8b 8d 88 03 00 00` | `b9 01 00 00 00 90` | `nxservice_account_cache_serialize_device_member_status_enabled` |
+| 16 | `0x82762e` | 会员类型置为 VIP | `8b 8d b0 03 00 00` | `b9 01 00 00 00 90` | `nxservice_account_cache_serialize_member_type_vip` |
+| 17 | `0x82770d` | 试用状态置为已使用/非活动 | `8b 8d b4 03 00 00` | `b9 02 00 00 00 90` | `nxservice_account_cache_serialize_member_trail_status_used` |
+| 18 | `0x827c0b` | 账号信息有效标志置真 | `0f b6 8d 32 04 00 00` | `b1 01 90 90 90 90 90` | `nxservice_account_cache_serialize_is_valid_infos_true` |
+| 19 | `0x2659ae` | 默认本地会员返回路径 | `cc cc cc cc cc cc cc cc cc cc` | `b8 01 00 00 00 e9 d5 ff ff ff` | `nxservice_default_local_member_cave` |
+| 20 | `0x26598b` | 默认本地会员返回路径 | `33 c0` | `eb 21` | `nxservice_default_local_member_jump` |
+
+## 项目B.exe
+
+| # | 文件偏移 | 功能 | 原始字节 | 修补字节 | ID |
+|---:|---:|---|---|---|---|
+| 1 | `0x320ba` | 关闭远程云控启用标志 | `41 0f 95 c7` | `45 31 ff 90` | `remote_service_force_remote_enable_false` |
+| 2 | `0x30360` | 阻止远程健康进程启动 | `48 89 5c 24 10` | `c3 90 90 90 90` | `remote_service_skip_healthd_launch` |
+| 3 | `0x30ca0` | 阻止远程后端进程启动 | `48 89 5c 24 10` | `c3 90 90 90 90` | `remote_service_skip_backend_launch` |
+
+## 验证点
+
+- Main 弹窗/头像区域应显示本地 VIP、2099-12-31 到期，不显示试用标签。
+- VIP 徽标和 VIP 皮肤在启动、刷新、登录/退出后不应一闪回退。
+- 账号缓存重新生成后仍应保持会员状态、会员类型、当前设备权益启用。
+- RemoteService 不应继续启动远程后端/健康进程。
+
+## 常见失败原因
+
+- 哈希不匹配：不是同一版本，不能套用点位。
+- 只改 Main：Service 会把旧状态写回来，导致 VIP 一闪又回退。
+- 只改 UI：真实权益 gate 仍可能未打开。
+- RemoteService 正在运行：文件保存失败或改了磁盘但旧进程仍在跑。
+- 混用旧 `winmm.dll` / `winhttp.dll` 代理：可能触发入口点缺失报错。
+
+## 来源
+
+- 点位来源：`_项目B_work/package/patch_项目B_local_membership_harden.py` 的 `PATCHES`。
+- 生成时间：2026-06-17T22:11:00。

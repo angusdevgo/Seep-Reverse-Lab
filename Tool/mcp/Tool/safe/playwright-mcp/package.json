@@ -1,0 +1,51 @@
+{
+  "name": "@playwright/mcp",
+  "version": "0.0.77",
+  "description": "Playwright Tools for MCP",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/microsoft/playwright-mcp.git"
+  },
+  "homepage": "https://playwright.dev",
+  "engines": {
+    "node": ">=18"
+  },
+  "author": {
+    "name": "Microsoft Corporation"
+  },
+  "license": "Apache-2.0",
+  "mcpName": "io.github.microsoft/playwright-mcp",
+  "scripts": {
+    "lint": "node update-readme.js",
+    "test": "playwright test",
+    "ctest": "playwright test --project=chrome",
+    "ftest": "playwright test --project=firefox",
+    "wtest": "playwright test --project=webkit",
+    "dtest": "MCP_IN_DOCKER=1 playwright test --project=chromium-docker",
+    "build": "echo OK",
+    "npm-publish": "npm run lint && npm run test && npm publish",
+    "docker-build": "docker build --no-cache -t playwright-mcp-dev:latest .",
+    "docker-rm": "docker rm playwright-mcp-dev",
+    "docker-run": "docker run -it -p 8080:8080 --name playwright-mcp-dev playwright-mcp-dev:latest",
+    "roll": "node roll.js"
+  },
+  "exports": {
+    "./package.json": "./package.json",
+    ".": {
+      "types": "./index.d.ts",
+      "default": "./index.js"
+    }
+  },
+  "dependencies": {
+    "playwright": "1.62.0-alpha-2026-06-29",
+    "playwright-core": "1.62.0-alpha-2026-06-29"
+  },
+  "devDependencies": {
+    "@modelcontextprotocol/sdk": "^1.25.2",
+    "@playwright/test": "1.62.0-alpha-2026-06-29",
+    "@types/node": "^24.3.0"
+  },
+  "bin": {
+    "playwright-mcp": "cli.js"
+  }
+}

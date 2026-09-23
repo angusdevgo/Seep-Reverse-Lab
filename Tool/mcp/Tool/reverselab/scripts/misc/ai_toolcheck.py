@@ -1,0 +1,467 @@
+#!/usr/bin/env python3
+"""
+No-popup AI tool registry checker for ReverseLab.
+
+Reads tools/ai-tool-registry.json and verifies:
+- CLI tools by safe version/help probes.
+- GUI or target-side binaries by file existence/hash only.
+
+This script intentionally never launches entries marked launch_mode=gui.
+"""
+
+from __future__ import annotations
+
+import argparse
+import hashlib
+import json
+import os
+import re
+import shutil
+import subprocess
+import sys
+from collections import Counter, defaultdict
+from datetime import datetime
+from pathlib import Path
+from typing import Any
+
+
+ROOT = Path(__file__).resolve().parents[2]
+REGISTRY = ROOT / "tools" / "ai-tool-registry.json"
+REPORT_DIR = ROOT / "reports" / "misc" / "toolcheck"
+USER_PATH_RE = re.compile(r"\b[A-Za-z]:\\Users\\[^\\\s\"']+", re.I)
+UNIX_USER_PATH_RE = re.compile(r"/(?:home|Users)/[^/\s\"']+")
+
+# Tool id -> concrete fix hint shown to newcomers (issue #13).
+INSTALL_HINTS: dict[str, str] = {
+    # Android
+    "android.apktool": r".\scripts\misc\install_tools.ps1 -Android",
+    "android.jadx": r".\scripts\misc\install_tools.ps1 -Android",
+    "android.uber_apk_signer": r".\scripts\misc\install_tools.ps1 -Android",
+    "android.frida_server_x86_64": r".\scripts\android\install_frida_server.ps1",
+    # Windows
+    "windows.pe_bear": r".\scripts\misc\install_tools.ps1 -Windows",
+    "windows.procmon": r".\scripts\misc\install_tools.ps1 -Windows",
+    "windows.cutter": r".\scripts\misc\install_tools.ps1 -Windows",
+    "windows.hxd": "手动安装 HxD（https://mh-nexus.de/en/downloads.php?product=HxD20），装到 tools/windows/HxD/",
+    # CTF (git/pip)
+    "ctf.sqlmap": r".\scripts\misc\install_tools.ps1 -CTF",
+    "ctf.dirsearch": r".\scripts\misc\install_tools.ps1 -CTF（依赖安装失败可重试 pip install -r tools/ctf-website/dirsearch/requirements.txt）",
+    "ctf.jwt_tool": r".\scripts\misc\install_tools.ps1 -CTF（依赖缺失时 pip install pycryptodomex termcolor）",
+    "ctf.tplmap": r".\scripts\misc\install_tools.ps1 -CTF",
+    "ctf.searchsploit": r".\scripts\misc\install_tools.ps1 -CTF",
+    "ctf.nmap": "手动安装 nmap（https://nmap.org/download.html），安装后确保 nmap 在 PATH 中",
+    "ctf.feroxbuster": "手动安装 feroxbuster（https://github.com/epi052/feroxbuster/releases），二进制放到 tools/ctf-website/bin/",
+    "ctf.burp.jar": "手动下载 Burp Suite（https://portswigger.net/burp/releases），jar 放到 tools/ctf-website/burp/",
+    "ctf.burp.wrapper": "先安装 ctf.burp.jar，再运行 .\\scripts\\misc\\install_tools.ps1 -CTF",
+    # Go tools
+    "ctf.ffuf": r".\scripts\misc\install_tools.ps1 -GoTools",
+    "ctf.gobuster": r".\scripts\misc\install_tools.ps1 -GoTools",
+    "ctf.httpx": r".\scripts\misc\install_tools.ps1 -GoTools",
+    "ctf.nuclei": r".\scripts\misc\install_tools.ps1 -GoTools",
+    "ctf.katana": r".\scripts\misc\install_tools.ps1 -GoTools",
+    # misc wrappers / python tools
+    "misc.ai_context": r".\scripts\misc\bootstrap.ps1 -Force",
+    "misc.ai_tool": r".\scripts\misc\bootstrap.ps1 -Force",
+    "misc.ai_finding": r".\scripts\misc\bootstrap.ps1 -Force",
+    "misc.ai_toolcheck": r".\scripts\misc\bootstrap.ps1 -Force",
+    "misc.mitmproxy_capture": "依赖 mitmproxy：pip install mitmproxy 后重试",
+    "misc.proxy_pool": "检查 Python 与网络后重试（tools/proxy_pool/proxy_pool.py）",
+    "misc.proxy_pipeline": "检查 Python 与网络后重试（tools/proxy-pipeline/pipeline.py）",
+    "misc.proxy_test": "检查 Python 与网络后重试（tools/proxy_pool/test_proxy.py）",
+    # System prerequisites
+    "system.python": "安装 Python 3.10+（勾选 Add python.exe to PATH）：https://www.python.org/downloads/windows/",
+    "system.node": "安装 Node.js LTS：https://nodejs.org/",
+    "system.java": "安装 JDK 17+：https://adoptium.net/",
+    "system.rg": "安装 ripgrep：winget install BurntSushi.ripgrep.MSVC",
+    "system.curl": "Windows 10+ 自带 curl；缺失时 winget install curl.curl",
+    "system.git": "安装 Git：https://git-scm.com/download/win",
+    "system.go": "安装 Go：https://go.dev/dl/",
+    "system.docker": "安装 Docker Desktop：https://www.docker.com/products/docker-desktop/",
+}
+
+BOARD_FALLBACK_HINTS: dict[str, str] = {
+    "android": r".\scripts\misc\install_tools.ps1 -Android",
+    "windows": r".\scripts\misc\install_tools.ps1 -Windows",
+    "ctf-website": r".\scripts\misc\install_tools.ps1 -CTF",
+    "common": r".\scripts\misc\install_tools.ps1 -Common",
+    "misc": r".\scripts\misc\bootstrap.ps1 -Force",
+}
+
+
+def build_suggestions(results: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """One actionable fix hint per broken (bad/warn) tool, for newcomers."""
+    suggestions: list[dict[str, Any]] = []
+    for result in results:
+        status = str(result.get("status") or "")
+        if status in {"FOUND", "SKIPPED"}:
+            continue
+        tool_id = str(result.get("id") or "")
+        hint = INSTALL_HINTS.get(tool_id) or BOARD_FALLBACK_HINTS.get(str(result.get("board") or ""))
+        if not hint:
+            hint = f"检查 tools/ai-tool-registry.json 中 {tool_id} 的配置，或重新运行安装脚本"
+        suggestions.append(
+            {
+                "id": tool_id,
+                "board": result.get("board"),
+                "name": result.get("name"),
+                "status": status,
+                # full detail, no truncation: CI logs need the real traceback
+                "detail": str(result.get("detail") or ""),
+                "suggestion": hint,
+            }
+        )
+    return suggestions
+
+
+def current_platform() -> str:
+    if os.name == "nt":
+        return "windows"
+    if sys.platform == "darwin":
+        return "macos"
+    if sys.platform.startswith("linux"):
+        return "linux"
+    return sys.platform
+
+
+def _platform_allowed(tool: dict[str, Any]) -> bool:
+    platforms = tool.get("platforms") or tool.get("platform")
+    if not platforms:
+        return True
+    if isinstance(platforms, str):
+        platforms = [platforms]
+    normalized = {str(item).lower() for item in platforms}
+    platform = current_platform()
+    return "all" in normalized or platform in normalized or (platform == "macos" and "darwin" in normalized)
+
+
+def normalize_registry_path(value: str) -> str:
+    """Registry JSON may use Windows separators; normalize before Path handling."""
+    return value.replace("\\", "/")
+
+
+def repo_path(value: str) -> Path:
+    normalized = normalize_registry_path(value)
+    path = Path(normalized)
+    if not path.is_absolute() and "/" in normalized:
+        return (ROOT / path).resolve()
+    return path
+
+
+def _posix_wrapper_candidates(command_path: Path) -> list[Path]:
+    if command_path.suffix.lower() not in {".bat", ".cmd"}:
+        return [command_path]
+    return [command_path.with_suffix(""), command_path.with_suffix(".sh")]
+
+
+def command_argv(command: str, args: list[str]) -> list[str]:
+    command_path = repo_path(command)
+    suffix = command_path.suffix.lower()
+    if not command_path.is_absolute() and command_path.parts in {("python",), ("python3",)}:
+        return [shutil.which(str(command_path)) or sys.executable, *args]
+    if suffix in {".bat", ".cmd"}:
+        if os.name == "nt":
+            return [os.environ.get("COMSPEC", "cmd.exe"), "/c", str(command_path), *args]
+        for candidate in _posix_wrapper_candidates(command_path):
+            if candidate.exists():
+                if os.access(candidate, os.X_OK):
+                    return [str(candidate), *args]
+                return [os.environ.get("SHELL", "sh"), str(candidate), *args]
+        path_tool = shutil.which(command_path.stem)
+        if path_tool:
+            return [path_tool, *args]
+        return [str(command_path), *args]
+    return [str(command_path), *args]
+
+
+def sha256_file(path: Path) -> str:
+    h = hashlib.sha256()
+    with path.open("rb") as f:
+        for chunk in iter(lambda: f.read(1024 * 1024), b""):
+            h.update(chunk)
+    return h.hexdigest().upper()
+
+
+def one_line(text: str, limit: int = 260) -> str:
+    text = " ".join((text or "").replace("\r", "\n").split())
+    return text[: limit - 3] + "..." if len(text) > limit else text
+
+
+def _private_root_variants() -> list[str]:
+    variants: list[str] = []
+    for raw in os.environ.get("REVERSELAB_PRIVATE_ROOTS", "").split(os.pathsep):
+        raw = raw.strip()
+        if not raw:
+            continue
+        variants.extend({raw, raw.replace("\\", "/"), raw.replace("\\", "\\\\")})
+    return variants
+
+
+def sanitize_text(value: str, root: Path = ROOT) -> str:
+    if not value:
+        return value
+    text = value
+    try:
+        path = Path(value)
+        if path.is_absolute():
+            rel = path.resolve().relative_to(root.resolve())
+            text = rel.as_posix()
+    except (ValueError, OSError):
+        pass
+    text = USER_PATH_RE.sub("<user>", text)
+    text = UNIX_USER_PATH_RE.sub("/<user>", text)
+    for variant in _private_root_variants():
+        text = text.replace(variant, "<private-root>")
+    return text
+
+
+def sanitize_result(result: dict[str, Any], root: Path = ROOT) -> dict[str, Any]:
+    out = dict(result)
+    for key in ("path", "detail"):
+        if key in out and out[key] is not None:
+            out[key] = sanitize_text(str(out[key]), root)
+    return out
+
+
+def sanitize_payload(payload: dict[str, Any], root: Path = ROOT) -> dict[str, Any]:
+    out = dict(payload)
+    out["registry"] = sanitize_text(str(payload.get("registry", "")), root)
+    out["results"] = [sanitize_result(r, root) for r in payload.get("results") or []]
+    return out
+
+
+def check_file(tool: dict[str, Any], probe: dict[str, Any]) -> dict[str, Any]:
+    path = repo_path(str(probe.get("path") or tool.get("command") or ""))
+    if not path.exists():
+        return {"status": "MISSING", "detail": "file missing", "path": str(path)}
+    expected = (probe.get("sha256") or "").upper()
+    actual = ""
+    if expected:
+        actual = sha256_file(path)
+        if actual != expected:
+            return {
+                "status": "FAIL",
+                "detail": f"sha256 mismatch expected={expected} actual={actual}",
+                "path": str(path),
+            }
+    return {
+        "status": "FOUND",
+        "detail": f"file exists size={path.stat().st_size}" + (f" sha256={actual}" if actual else ""),
+        "path": str(path),
+    }
+
+
+def check_command(tool: dict[str, Any], probe: dict[str, Any]) -> dict[str, Any]:
+    command = str(tool["command"])
+    command_path = repo_path(command)
+    args = list(tool.get("args") or [])
+    timeout = int(probe.get("timeout_ms") or 10000) / 1000.0
+    allow_nonzero = bool(probe.get("allow_nonzero"))
+    env = os.environ.copy()
+    env["PATH"] = str(ROOT / "tools" / "bin") + os.pathsep + str(ROOT / "tools" / "ctf-website" / "bin") + os.pathsep + env.get("PATH", "")
+    try:
+        argv = command_argv(command, args)
+        proc = subprocess.run(
+            argv,
+            cwd=str(ROOT),
+            env=env,
+            text=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            timeout=timeout,
+            shell=False,
+        )
+    except FileNotFoundError as exc:
+        return {"status": "MISSING", "detail": str(exc), "path": str(command_path)}
+    except PermissionError as exc:
+        return {"status": "FAIL", "detail": str(exc), "path": str(command_path)}
+    except subprocess.TimeoutExpired:
+        return {"status": "TIMEOUT", "detail": f"probe timed out after {timeout:.1f}s", "path": str(command_path)}
+    output = one_line((proc.stdout or "") + " " + (proc.stderr or ""), limit=1500)
+    if proc.returncode != 0 and not allow_nonzero:
+        return {"status": "FAIL", "detail": f"exit={proc.returncode} {output}", "path": str(command_path)}
+    if proc.returncode != 0 and allow_nonzero:
+        return {
+            "status": "FOUND_WITH_WARN",
+            "detail": f"exit={proc.returncode} (nonzero allowed) {output}",
+            "path": str(command_path),
+        }
+    return {"status": "FOUND", "detail": f"exit={proc.returncode} {output}", "path": str(command_path)}
+
+
+def check_tool(tool: dict[str, Any]) -> dict[str, Any]:
+    probe = tool.get("safe_probe") or {}
+    ptype = probe.get("type")
+    if not _platform_allowed(tool):
+        return {
+            "id": tool.get("id"),
+            "board": tool.get("board"),
+            "name": tool.get("name"),
+            "launch_mode": tool.get("launch_mode"),
+            "ai_callable": bool(tool.get("ai_callable")),
+            "status": "SKIPPED",
+            "detail": f"not supported on {current_platform()}; supported platforms: {tool.get('platforms') or tool.get('platform')}",
+            "path": tool.get("command", ""),
+        }
+    if tool.get("launch_mode") == "gui" and ptype != "file":
+        return {
+            "status": "SKIPPED",
+            "detail": "GUI entry has no file-only safe probe; not launched by design",
+            "path": tool.get("command", ""),
+        }
+    if ptype == "file":
+        result = check_file(tool, probe)
+    elif ptype == "command":
+        result = check_command(tool, probe)
+    else:
+        result = {"status": "FAIL", "detail": f"unknown safe_probe type: {ptype}", "path": tool.get("command", "")}
+    return {
+        "id": tool.get("id"),
+        "board": tool.get("board"),
+        "name": tool.get("name"),
+        "launch_mode": tool.get("launch_mode"),
+        "ai_callable": bool(tool.get("ai_callable")),
+        **result,
+    }
+
+
+def render_md(payload: dict[str, Any]) -> str:
+    lines = [
+        "# ReverseLab AI Toolcheck",
+        "",
+        f"- Time: {payload['time']}",
+        f"- Registry: `{payload['registry']}`",
+        f"- Overall: **{payload['overall']}**",
+        f"- Found: {payload['found']}",
+        f"- Warnings: {payload['warn']}",
+        f"- Missing/Fail/Timeout: {payload['bad']}",
+        "",
+        "## Board Summary",
+        "",
+        "| Board | FOUND | FOUND_WITH_WARN | MISSING | FAIL | TIMEOUT | SKIPPED |",
+        "|---|---:|---:|---:|---:|---:|---:|",
+    ]
+    for board, counts in sorted(payload["boards"].items()):
+        lines.append(
+            f"| {board} | {counts.get('FOUND', 0)} | {counts.get('FOUND_WITH_WARN', 0)} | "
+            f"{counts.get('MISSING', 0)} | {counts.get('FAIL', 0)} | "
+            f"{counts.get('TIMEOUT', 0)} | {counts.get('SKIPPED', 0)} |"
+        )
+    lines += [
+        "",
+        "## Tool Results",
+        "",
+        "| Status | Board | ID | Mode | AI Callable | Detail | Path |",
+        "|---|---|---|---|---:|---|---|",
+    ]
+    for r in payload["results"]:
+        detail = str(r.get("detail", "")).replace("|", "\\|")
+        path = str(r.get("path", "")).replace("|", "\\|")
+        lines.append(
+            f"| {r.get('status')} | {r.get('board')} | {r.get('id')} | {r.get('launch_mode')} | {r.get('ai_callable')} | {detail} | `{path}` |"
+        )
+    lines += [
+        "",
+        "## Next Steps",
+        "",
+    ]
+    suggestions = payload.get("suggestions") or []
+    if suggestions:
+        lines += [
+            "缺失或异常的工具按下面建议处理（Windows PowerShell）：",
+            "",
+            "| Tool | Status | Suggestion |",
+            "|---|---:|---|",
+        ]
+        for s in suggestions:
+            suggestion = str(s.get("suggestion", "")).replace("|", "\\|")
+            lines.append(f"| {s.get('name') or s.get('id')} | {s.get('status')} | {suggestion} |")
+    else:
+        lines += ["所有工具状态正常，无需处理。"]
+    lines += [
+        "",
+        "## No-popup rule",
+        "",
+        "Entries with `launch_mode=gui` are verified by file existence/hash only and are never launched by this check.",
+    ]
+    return "\n".join(lines) + "\n"
+
+
+def main(argv: list[str]) -> int:
+    # Windows consoles/CI runners may use a legacy codepage (cp1252/cp936);
+    # our suggestions contain CJK text, so force UTF-8 stdout/stderr.
+    try:
+        sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+        sys.stderr.reconfigure(encoding="utf-8", errors="replace")
+    except (AttributeError, ValueError):
+        pass
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--registry", default=str(REGISTRY))
+    ap.add_argument("--out-dir", default=str(REPORT_DIR))
+    ap.add_argument("--board", action="append", help="Limit to one board; can repeat")
+    args = ap.parse_args(argv)
+
+    registry_path = Path(args.registry)
+    registry = json.loads(registry_path.read_text(encoding="utf-8"))
+    tools = registry.get("tools") or []
+    if args.board:
+        boards = set(args.board)
+        tools = [t for t in tools if t.get("board") in boards]
+
+    results = [check_tool(t) for t in tools]
+    bad_status = {"MISSING", "FAIL", "TIMEOUT"}
+    warn_status = {"FOUND_WITH_WARN"}
+    found_status = {"FOUND", *warn_status}
+    found = sum(1 for r in results if r["status"] in found_status)
+    warn = sum(1 for r in results if r["status"] in warn_status)
+    bad = sum(1 for r in results if r["status"] in bad_status)
+    overall = "PASS" if bad == 0 else "FAIL"
+    board_counts: dict[str, Counter[str]] = defaultdict(Counter)
+    for result in results:
+        board_counts[str(result.get("board") or "unknown")][str(result.get("status") or "unknown")] += 1
+
+    payload = {
+        "time": datetime.now().astimezone().isoformat(timespec="seconds"),
+        "registry": str(registry_path),
+        "overall": overall,
+        "found": found,
+        "warn": warn,
+        "bad": bad,
+        "boards": {board: dict(counts) for board, counts in board_counts.items()},
+        "results": results,
+        "suggestions": build_suggestions(results),
+    }
+    payload = sanitize_payload(payload, ROOT)
+
+    out_dir = Path(args.out_dir)
+    out_dir.mkdir(parents=True, exist_ok=True)
+    stamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    json_path = out_dir / f"ai_toolcheck_{stamp}.json"
+    md_path = out_dir / f"ai_toolcheck_{stamp}.md"
+    json_path.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
+    md_path.write_text(render_md(payload), encoding="utf-8")
+
+    summary = {
+        "Overall": overall,
+        "Found": found,
+        "Warn": warn,
+        "Bad": bad,
+        "Json": sanitize_text(str(json_path), ROOT),
+        "Markdown": sanitize_text(str(md_path), ROOT),
+    }
+    suggestions = payload.get("suggestions") or []
+    if suggestions:
+        summary["NextSteps"] = [
+            {
+                "Tool": s.get("name") or s.get("id"),
+                "Status": s.get("status"),
+                "Detail": s.get("detail"),
+                "Suggestion": s.get("suggestion"),
+            }
+            for s in suggestions
+        ]
+    print(json.dumps(summary, ensure_ascii=False, indent=2))
+    return 0 if overall == "PASS" else 1
+
+
+if __name__ == "__main__":
+    raise SystemExit(main(sys.argv[1:]))

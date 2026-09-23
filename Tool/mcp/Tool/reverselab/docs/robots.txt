@@ -1,0 +1,45 @@
+Sitemap: https://ling71671.github.io/open-reverselab/sitemap.xml
+
+User-agent: *
+Allow: /
+
+# LLM crawlers — allow, exclude private paths
+User-agent: GPTBot
+Allow: /
+Disallow: /cases/
+Disallow: /samples/
+
+User-agent: Claude-Web
+Allow: /
+Disallow: /cases/
+Disallow: /samples/
+
+User-agent: anthropic-ai
+Allow: /
+Disallow: /cases/
+Disallow: /samples/
+
+User-agent: Google-Extended
+Allow: /
+Disallow: /cases/
+Disallow: /samples/
+
+User-agent: CCBot
+Allow: /
+Disallow: /cases/
+Disallow: /samples/
+
+User-agent: PerplexityBot
+Allow: /
+Disallow: /cases/
+Disallow: /samples/
+
+User-agent: cohere-ai
+Allow: /
+Disallow: /cases/
+Disallow: /samples/
+
+User-agent: facebookexternalfetcher
+Allow: /
+Disallow: /cases/
+Disallow: /samples/

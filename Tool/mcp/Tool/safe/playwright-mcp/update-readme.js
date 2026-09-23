@@ -1,0 +1,251 @@
+#!/usr/bin/env node
+/**
+ * Copyright (c) Microsoft Corporation.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+// @ts-check
+
+const fs = require('fs')
+const path = require('path')
+const { execSync } = require('child_process');
+
+const { tools } = require('playwright-core/lib/coreBundle');
+
+const capabilities = /** @type {Record<string, string>} */ ({
+  'core-navigation': 'Core automation',
+  'core': 'Core automation',
+  'core-tabs': 'Tab management',
+  'core-input': 'Core automation',
+  'core-install': 'Browser installation',
+  'config': 'Configuration',
+  'network': 'Network',
+  'storage': 'Storage',
+  'devtools': 'DevTools',
+  'vision': 'Coordinate-based',
+  'pdf': 'PDF generation',
+  'testing': 'Test assertions',
+});
+
+const knownCapabilities = new Set(Object.keys(capabilities));
+const unknownCapabilities = [...new Set(tools.browserTools.map(tool => tool.capability))].filter(cap => !knownCapabilities.has(cap));
+if (unknownCapabilities.length)
+  throw new Error(`Unknown tool capabilities: ${unknownCapabilities.join(', ')}. Please update the capabilities map in ${path.basename(__filename)}.`);
+
+/** @type {Record<string, any[]>} */
+const toolsByCapability = {};
+for (const capability of Object.keys(capabilities)) {
+  const title = capabilityTitle(capability);
+  let filteredTools = tools.browserTools.filter(tool => tool.capability === capability && !tool.skillOnly);
+  filteredTools = (toolsByCapability[title] || []).concat(filteredTools);
+  toolsByCapability[title] = filteredTools;
+}
+for (const [, tools] of Object.entries(toolsByCapability))
+  tools.sort((a, b) => a.schema.name.localeCompare(b.schema.name));
+
+/**
+ * @param {string} capability
+ * @returns {string}
+ */
+function capabilityTitle(capability) {
+  const title = capabilities[capability];
+  return capability.startsWith('core') ? title : `${title} (opt-in via --caps=${capability})`;
+}
+
+/**
+ * @param {any} tool
+ * @returns {string[]}
+ */
+function formatToolForReadme(tool) {
+  const lines = /** @type {string[]} */ ([]);
+  lines.push(`<!-- NOTE: This has been generated via ${path.basename(__filename)} -->`);
+  lines.push(``);
+  lines.push(`- **${tool.name}**`);
+  lines.push(`  - Title: ${tool.title}`);
+  lines.push(`  - Description: ${tool.description}`);
+
+  const inputSchema = /** @type {any} */ (tool.inputSchema ? tool.inputSchema.toJSONSchema() : {});
+  const requiredParams = inputSchema.required || [];
+  if (inputSchema.properties && Object.keys(inputSchema.properties).length) {
+    lines.push(`  - Parameters:`);
+    Object.entries(inputSchema.properties).forEach(([name, param]) => {
+      const optional = !requiredParams.includes(name);
+      const meta = /** @type {string[]} */ ([]);
+      if (param.type)
+        meta.push(param.type);
+      if (optional)
+        meta.push('optional');
+      lines.push(`    - \`${name}\` ${meta.length ? `(${meta.join(', ')})` : ''}: ${param.description}`);
+    });
+  } else {
+    lines.push(`  - Parameters: None`);
+  }
+  lines.push(`  - Read-only: **${tool.type === 'readOnly'}**`);
+  lines.push('');
+  return lines;
+}
+
+/**
+ * @param {string} content
+ * @param {string} startMarker
+ * @param {string} endMarker
+ * @param {string[]} generatedLines
+ * @returns {Promise<string>}
+ */
+async function updateSection(content, startMarker, endMarker, generatedLines) {
+  const startMarkerIndex = content.indexOf(startMarker);
+  const endMarkerIndex = content.indexOf(endMarker);
+  if (startMarkerIndex === -1 || endMarkerIndex === -1)
+    throw new Error('Markers for generated section not found in README');
+
+  return [
+    content.slice(0, startMarkerIndex + startMarker.length),
+    '',
+    generatedLines.join('\n'),
+    '',
+    content.slice(endMarkerIndex),
+  ].join('\n');
+}
+
+/**
+ * @param {string} content
+ * @returns {Promise<string>}
+ */
+async function updateTools(content) {
+  console.log('Loading tool information from compiled modules...');
+
+  const generatedLines = /** @type {string[]} */ ([]);
+  for (const [capability, tools] of Object.entries(toolsByCapability)) {
+    console.log('Updating tools for capability:', capability);
+    generatedLines.push(`<details>\n<summary><b>${capability}</b></summary>`);
+    generatedLines.push('');
+    for (const tool of tools)
+      generatedLines.push(...formatToolForReadme(tool.schema));
+    generatedLines.push(`</details>`);
+    generatedLines.push('');
+  }
+
+  const startMarker = `<!--- Tools generated by ${path.basename(__filename)} -->`;
+  const endMarker = `<!--- End of tools generated section -->`;
+  return updateSection(content, startMarker, endMarker, generatedLines);
+}
+
+/**
+ * @param {string} prefix
+ * @returns {string}
+ */
+function optionEnvName(prefix) {
+  if (prefix === 'secrets')
+    return 'PLAYWRIGHT_MCP_SECRETS_FILE';
+  if (prefix === 'cdp-header')
+    return 'PLAYWRIGHT_MCP_CDP_HEADERS';
+  return `PLAYWRIGHT_MCP_` + prefix.toUpperCase().replace(/-/g, '_');
+}
+
+/**
+ * @param {string} content
+ * @returns {Promise<string>}
+ */
+async function updateOptions(content) {
+  console.log('Listing options...');
+  execSync('node cli.js --help > help.txt');
+  const output = fs.readFileSync('help.txt');
+  fs.unlinkSync('help.txt');
+  const lines = output.toString().split('\n');
+  const firstLine = lines.findIndex(line => line.includes('--version'));
+  lines.splice(0, firstLine + 1);
+  const lastLine = lines.findIndex(line => line.includes('--help'));
+  lines.splice(lastLine);
+
+  /**
+   * @type {{ name: string, value: string }[]}
+   */
+  const options = [];
+  for (let line of lines) {
+    if (line.startsWith('  --')) {
+      const l = line.substring('  --'.length);
+      const gapIndex = l.indexOf('  ');
+      const name = l.substring(0, gapIndex).trim();
+      const value = l.substring(gapIndex).trim();
+      options.push({ name, value });
+    } else {
+      const value = line.trim();
+      options[options.length - 1].value += ' ' + value;
+    }
+  }
+
+  const table = [];
+  table.push(`| Option | Description |`);
+  table.push(`|--------|-------------|`);
+  for (const option of options) {
+    const prefix = option.name.split(' ')[0];
+    const envName = optionEnvName(prefix);
+    table.push(`| --${option.name} | ${option.value}<br>*env* \`${envName}\` |`);
+  }
+
+  if (process.env.PRINT_ENV) {
+    const envTable = [];
+    envTable.push(`| Environment |`);
+    envTable.push(`|-------------|`);
+    for (const option of options) {
+      const prefix = option.name.split(' ')[0];
+      const envName = optionEnvName(prefix);
+      envTable.push(`| \`${envName}\` ${option.value} |`);
+    }
+    console.log(envTable.join('\n'));
+  }
+
+  const startMarker = `<!--- Options generated by ${path.basename(__filename)} -->`;
+  const endMarker = `<!--- End of options generated section -->`;
+  return updateSection(content, startMarker, endMarker, table);
+}
+
+/**
+ * @param {string} content
+ * @returns {Promise<string>}
+ */
+async function updateConfig(content) {
+  console.log('Updating config schema from config.d.ts...');
+  const configPath = path.join(__dirname, 'config.d.ts');
+  const configContent = await fs.promises.readFile(configPath, 'utf-8');
+
+  // Extract the Config type definition
+  const configTypeMatch = configContent.match(/export type Config = (\{[\s\S]*?\n\});/);
+  if (!configTypeMatch)
+    throw new Error('Config type not found in config.d.ts');
+
+  const configType = configTypeMatch[1]; // Use capture group to get just the object definition
+
+  const startMarker = `<!--- Config generated by ${path.basename(__filename)} -->`;
+  const endMarker = `<!--- End of config generated section -->`;
+  return updateSection(content, startMarker, endMarker, [
+    '```typescript',
+    configType,
+    '```',
+  ]);
+}
+
+async function updateReadme() {
+  const readmePath = path.join(__dirname, 'README.md');
+  const readmeContent = await fs.promises.readFile(readmePath, 'utf-8');
+  const withTools = await updateTools(readmeContent);
+  const withOptions = await updateOptions(withTools);
+  const withConfig = await updateConfig(withOptions);
+  await fs.promises.writeFile(readmePath, withConfig, 'utf-8');
+  console.log('README updated successfully');
+}
+
+updateReadme().catch(err => {
+  console.error('Error updating README:', err);
+  process.exit(1);
+});

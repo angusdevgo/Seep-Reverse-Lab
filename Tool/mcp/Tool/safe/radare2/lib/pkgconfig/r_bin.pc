@@ -1,0 +1,12 @@
+prefix=D:/a/radare2/radare2/radare2-5.9.8-w64
+libdir=${prefix}/lib
+includedir=${prefix}/include
+
+Name: r_bin
+Description: radare foundation libraries
+Version: 5.9.8
+Requires: r_magic, r_util, r_fs, r_io, r_socket, r_syscall
+Requires.private: r_cons, r_crypto
+Libs: -L${libdir} -lr_bin
+Libs.private: -lws2_32 -lwininet -lpsapi
+Cflags: -I${includedir}/libr

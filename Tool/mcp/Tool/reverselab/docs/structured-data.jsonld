@@ -1,0 +1,81 @@
+{
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "SoftwareSourceCode",
+      "@id": "https://github.com/LING71671/open-reverselab#software",
+      "name": "ReverseLab",
+      "description": "Open-source reverse engineering lab: 178-article knowledge base with 100+ MCP automation tools. Covers CTF pentesting, APK reverse engineering, PE binary analysis, cryptography, protocol reversing, and game cheating analysis. Agent-native architecture, directory-as-convention.",
+      "url": "https://github.com/LING71671/open-reverselab",
+      "codeRepository": "https://github.com/LING71671/open-reverselab",
+      "programmingLanguage": ["Python", "JavaScript", "PowerShell", "C++"],
+      "license": "https://www.gnu.org/licenses/gpl-3.0.html",
+      "applicationCategory": "SecurityApplication",
+      "operatingSystem": ["Windows", "Linux", "Android"],
+      "keywords": [
+        "reverse engineering",
+        "CTF",
+        "malware analysis",
+        "APK analysis",
+        "PE analysis",
+        "Frida",
+        "Ghidra",
+        "MCP",
+        "Model Context Protocol",
+        "knowledge base",
+        "web security",
+        "binary analysis",
+        "vulnerability research"
+      ],
+      "author": {
+        "@type": "Person",
+        "name": "LING71671",
+        "url": "https://github.com/LING71671"
+      },
+      "dateCreated": "2026-06-25",
+      "dateModified": "2026-06-28",
+      "version": "1.0.0",
+      "inLanguage": ["zh-CN", "en"],
+      "audience": {
+        "@type": "EducationalAudience",
+        "educationalRole": "security researchers, CTF players, malware analysts, reverse engineers, AI agent developers"
+      },
+      "offers": {
+        "@type": "Offer",
+        "price": "0",
+        "priceCurrency": "USD"
+      }
+    },
+    {
+      "@type": "WebSite",
+      "@id": "https://ling71671.github.io/open-reverselab/#website",
+      "url": "https://ling71671.github.io/open-reverselab/",
+      "name": "ReverseLab Documentation",
+      "description": "Official documentation and knowledge base hub for ReverseLab — open-source reverse engineering lab and MCP tool ecosystem.",
+      "inLanguage": ["zh-CN", "en"],
+      "publisher": {
+        "@type": "Organization",
+        "name": "ReverseLab",
+        "url": "https://github.com/LING71671/open-reverselab"
+      }
+    },
+    {
+      "@type": "SoftwareApplication",
+      "@id": "https://ling71671.github.io/open-reverselab/mcp-tools/#app",
+      "name": "ReverseLab MCP Tools",
+      "applicationCategory": "SecurityApplication",
+      "operatingSystem": "Cross-platform",
+      "description": "100+ MCP (Model Context Protocol) tools for automated reverse engineering. AI agents can directly invoke tools for CTF/web probing, APK/Android analysis, PE/Windows binary analysis, file hashing, pattern searching, cryptography solving, and more.",
+      "offers": {
+        "@type": "Offer",
+        "price": "0",
+        "priceCurrency": "USD"
+      },
+      "isPartOf": {
+        "@type": "SoftwareSourceCode",
+        "name": "ReverseLab",
+        "url": "https://github.com/LING71671/open-reverselab"
+      }
+    }
+  ]
+}

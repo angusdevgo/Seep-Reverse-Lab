@@ -1,0 +1,605 @@
+﻿{
+    "generated_at":  "2026-09-19 02:26:49 +08:00",
+    "routing_entry":  [
+                          "SKILL.md",
+                          "routing.md"
+                      ],
+    "tools":  [
+                  {
+                      "name":  "jadx",
+                      "skill":  "apk-reverse",
+                      "purpose":  "Java 反编译",
+                      "available":  false,
+                      "is_executable":  false,
+                      "is_directory":  false,
+                      "resolved_path":  "",
+                      "version":  "",
+                      "source":  "Missing",
+                      "script_refs":  [
+                                          "apk-reverse/scripts/decode.ps1"
+                                      ]
+                  },
+                  {
+                      "name":  "apktool",
+                      "skill":  "apk-reverse",
+                      "purpose":  "APK 解包与重建",
+                      "available":  false,
+                      "is_executable":  false,
+                      "is_directory":  false,
+                      "resolved_path":  "",
+                      "version":  "",
+                      "source":  "Missing",
+                      "script_refs":  [
+                                          "apk-reverse/scripts/decode.ps1",
+                                          "apk-reverse/scripts/rebuild-sign-install.ps1"
+                                      ]
+                  },
+                  {
+                      "name":  "adb",
+                      "skill":  "apk-reverse",
+                      "purpose":  "设备连接与 logcat",
+                      "available":  true,
+                      "is_executable":  true,
+                      "is_directory":  false,
+                      "resolved_path":  "D:\\Data\\platform-tools\\adb.exe",
+                      "version":  "Android Debug Bridge version 1.0.41",
+                      "source":  "Get-Command",
+                      "script_refs":  [
+                                          "apk-reverse/scripts/rebuild-sign-install.ps1"
+                                      ]
+                  },
+                  {
+                      "name":  "java",
+                      "skill":  "apk-reverse",
+                      "purpose":  "运行 jar 与 Java 工具链",
+                      "available":  false,
+                      "is_executable":  false,
+                      "is_directory":  false,
+                      "resolved_path":  "",
+                      "version":  "",
+                      "source":  "Missing",
+                      "script_refs":  [
+                                          "apk-reverse/scripts/decode.ps1"
+                                      ]
+                  },
+                  {
+                      "name":  "apksigner",
+                      "skill":  "apk-reverse",
+                      "purpose":  "APK 签名",
+                      "available":  false,
+                      "is_executable":  false,
+                      "is_directory":  false,
+                      "resolved_path":  "",
+                      "version":  "",
+                      "source":  "Missing",
+                      "script_refs":  [
+                                          "apk-reverse/scripts/rebuild-sign-install.ps1"
+                                      ]
+                  },
+                  {
+                      "name":  "zipalign",
+                      "skill":  "apk-reverse",
+                      "purpose":  "APK 对齐",
+                      "available":  false,
+                      "is_executable":  false,
+                      "is_directory":  false,
+                      "resolved_path":  "",
+                      "version":  "",
+                      "source":  "Missing",
+                      "script_refs":  [
+                                          "apk-reverse/scripts/rebuild-sign-install.ps1"
+                                      ]
+                  },
+                  {
+                      "name":  "idalib-mcp",
+                      "skill":  "ida-reverse",
+                      "purpose":  "IDA Pro idalib MCP HTTP/stdio 服务器",
+                      "available":  true,
+                      "is_executable":  true,
+                      "is_directory":  false,
+                      "resolved_path":  "D:\\Data\\Python\\Scripts\\idalib-mcp.exe",
+                      "version":  "v0.5.0",
+                      "source":  "Get-Command",
+                      "script_refs":  [
+                                          null
+                                      ]
+                  },
+                  {
+                      "name":  "ida-pro-mcp",
+                      "skill":  "ida-reverse",
+                      "purpose":  "IDA Pro MCP CLI / 插件安装器",
+                      "available":  true,
+                      "is_executable":  true,
+                      "is_directory":  false,
+                      "resolved_path":  "D:\\Data\\Python\\Scripts\\ida-pro-mcp.exe",
+                      "version":  "v0.5.0",
+                      "source":  "Get-Command",
+                      "script_refs":  [
+                                          null
+                                      ]
+                  },
+                  {
+                      "name":  "ida",
+                      "skill":  "ida-reverse",
+                      "purpose":  "IDA Pro 主程序",
+                      "available":  false,
+                      "is_executable":  false,
+                      "is_directory":  false,
+                      "resolved_path":  "",
+                      "version":  "",
+                      "source":  "Missing",
+                      "script_refs":  [
+                                          null
+                                      ]
+                  },
+                  {
+                      "name":  "binaryninja",
+                      "skill":  "binary-ninja-reverse",
+                      "purpose":  "Binary Ninja 商业逆向平台（GUI/Python API）",
+                      "available":  false,
+                      "is_executable":  false,
+                      "is_directory":  false,
+                      "resolved_path":  "",
+                      "version":  "",
+                      "source":  "Missing",
+                      "script_refs":  [
+                                          null
+                                      ]
+                  },
+                  {
+                      "name":  "frida",
+                      "skill":  "apk-reverse",
+                      "purpose":  "Frida 动态注入",
+                      "available":  false,
+                      "is_executable":  false,
+                      "is_directory":  false,
+                      "resolved_path":  "",
+                      "version":  "",
+                      "source":  "Missing",
+                      "script_refs":  [
+                                          "apk-reverse/scripts/frida-run.ps1"
+                                      ]
+                  },
+                  {
+                      "name":  "frida-ps",
+                      "skill":  "apk-reverse",
+                      "purpose":  "Frida 进程枚举",
+                      "available":  false,
+                      "is_executable":  false,
+                      "is_directory":  false,
+                      "resolved_path":  "",
+                      "version":  "",
+                      "source":  "Missing",
+                      "script_refs":  [
+                                          "apk-reverse/scripts/frida-run.ps1"
+                                      ]
+                  },
+                  {
+                      "name":  "r2",
+                      "skill":  "radare2",
+                      "purpose":  "radare2 主分析器",
+                      "available":  false,
+                      "is_executable":  false,
+                      "is_directory":  false,
+                      "resolved_path":  "",
+                      "version":  "",
+                      "source":  "Missing",
+                      "script_refs":  [
+                                          "radare2/scripts/recon.ps1"
+                                      ]
+                  },
+                  {
+                      "name":  "rabin2",
+                      "skill":  "radare2",
+                      "purpose":  "二进制侦察",
+                      "available":  false,
+                      "is_executable":  false,
+                      "is_directory":  false,
+                      "resolved_path":  "",
+                      "version":  "",
+                      "source":  "Missing",
+                      "script_refs":  [
+                                          "radare2/scripts/recon.ps1"
+                                      ]
+                  },
+                  {
+                      "name":  "rasm2",
+                      "skill":  "radare2",
+                      "purpose":  "汇编/反汇编",
+                      "available":  false,
+                      "is_executable":  false,
+                      "is_directory":  false,
+                      "resolved_path":  "",
+                      "version":  "",
+                      "source":  "Missing",
+                      "script_refs":  [
+                                          "radare2/SKILL.md"
+                                      ]
+                  },
+                  {
+                      "name":  "radiff2",
+                      "skill":  "radare2",
+                      "purpose":  "二进制差分",
+                      "available":  false,
+                      "is_executable":  false,
+                      "is_directory":  false,
+                      "resolved_path":  "",
+                      "version":  "",
+                      "source":  "Missing",
+                      "script_refs":  [
+                                          "radare2/SKILL.md"
+                                      ]
+                  },
+                  {
+                      "name":  "rahash2",
+                      "skill":  "radare2",
+                      "purpose":  "哈希与校验",
+                      "available":  false,
+                      "is_executable":  false,
+                      "is_directory":  false,
+                      "resolved_path":  "",
+                      "version":  "",
+                      "source":  "Missing",
+                      "script_refs":  [
+                                          "radare2/SKILL.md"
+                                      ]
+                  },
+                  {
+                      "name":  "rax2",
+                      "skill":  "radare2",
+                      "purpose":  "进制与位运算转换",
+                      "available":  false,
+                      "is_executable":  false,
+                      "is_directory":  false,
+                      "resolved_path":  "",
+                      "version":  "",
+                      "source":  "Missing",
+                      "script_refs":  [
+                                          "radare2/SKILL.md"
+                                      ]
+                  },
+                  {
+                      "name":  "r2pm",
+                      "skill":  "radare2",
+                      "purpose":  "radare2 插件管理",
+                      "available":  false,
+                      "is_executable":  false,
+                      "is_directory":  false,
+                      "resolved_path":  "",
+                      "version":  "",
+                      "source":  "Missing",
+                      "script_refs":  [
+                                          "radare2/SKILL.md"
+                                      ]
+                  },
+                  {
+                      "name":  "r2xsql",
+                      "skill":  "radare2",
+                      "purpose":  "radare2 SQL 查询工具",
+                      "available":  false,
+                      "is_executable":  false,
+                      "is_directory":  false,
+                      "resolved_path":  "",
+                      "version":  "",
+                      "source":  "Missing",
+                      "script_refs":  [
+                                          "radare2/SKILL.md"
+                                      ]
+                  },
+                  {
+                      "name":  "r2xsql-full",
+                      "skill":  "radare2",
+                      "purpose":  "radare2 SQL 查询工具（完整版）",
+                      "available":  false,
+                      "is_executable":  false,
+                      "is_directory":  false,
+                      "resolved_path":  "",
+                      "version":  "",
+                      "source":  "Missing",
+                      "script_refs":  [
+                                          "radare2/SKILL.md"
+                                      ]
+                  },
+                  {
+                      "name":  "r2mcp",
+                      "skill":  "radare2",
+                      "purpose":  "radare2 MCP 协议分析",
+                      "available":  false,
+                      "is_executable":  false,
+                      "is_directory":  false,
+                      "resolved_path":  "",
+                      "version":  "",
+                      "source":  "Missing",
+                      "script_refs":  [
+                                          "radare2/SKILL.md"
+                                      ]
+                  },
+                  {
+                      "name":  "radius2",
+                      "skill":  "radare2",
+                      "purpose":  "radare2 符号执行与动态分析",
+                      "available":  false,
+                      "is_executable":  false,
+                      "is_directory":  false,
+                      "resolved_path":  "",
+                      "version":  "",
+                      "source":  "Missing",
+                      "script_refs":  [
+                                          "radare2/SKILL.md"
+                                      ]
+                  },
+                  {
+                      "name":  "python",
+                      "skill":  "reverse-engineering",
+                      "purpose":  "辅助脚本执行",
+                      "available":  true,
+                      "is_executable":  true,
+                      "is_directory":  false,
+                      "resolved_path":  "D:\\Data\\Python\\python.exe",
+                      "version":  "",
+                      "source":  "Get-Command",
+                      "script_refs":  [
+                                          "apk-reverse/scripts/frida-run.ps1",
+                                          "case-review/scripts/review_case.py"
+                                      ]
+                  },
+                  {
+                      "name":  "pip",
+                      "skill":  "reverse-engineering",
+                      "purpose":  "Python 包管理",
+                      "available":  true,
+                      "is_executable":  true,
+                      "is_directory":  false,
+                      "resolved_path":  "D:\\Data\\Python\\Scripts\\pip.exe",
+                      "version":  "",
+                      "source":  "Get-Command",
+                      "script_refs":  [
+
+                                      ]
+                  },
+                  {
+                      "name":  "node",
+                      "skill":  "js-reverse",
+                      "purpose":  "运行 Node 侧 JS 复现与 MCP 客户端",
+                      "available":  true,
+                      "is_executable":  true,
+                      "is_directory":  false,
+                      "resolved_path":  "D:\\Tool\\node\\node.exe",
+                      "version":  "",
+                      "source":  "Get-Command",
+                      "script_refs":  [
+                                          "js-reverse/SKILL.md"
+                                      ]
+                  },
+                  {
+                      "name":  "npx",
+                      "skill":  "js-reverse",
+                      "purpose":  "运行临时 npm 包与 MCP 入口",
+                      "available":  true,
+                      "is_executable":  true,
+                      "is_directory":  false,
+                      "resolved_path":  "D:\\Tool\\node\\npx.cmd",
+                      "version":  "",
+                      "source":  "Get-Command",
+                      "script_refs":  [
+                                          "js-reverse/SKILL.md"
+                                      ]
+                  },
+                  {
+                      "name":  "jshookmcp",
+                      "skill":  "js-reverse",
+                      "purpose":  "通过 npx 启动 @jshookmcp/jshook MCP（需 MCP 注册；npx 本身不代表该能力已安装）",
+                      "available":  false,
+                      "is_executable":  false,
+                      "is_directory":  false,
+                      "resolved_path":  "",
+                      "version":  "",
+                      "source":  "Missing",
+                      "script_refs":  [
+                                          "js-reverse/SKILL.md"
+                                      ]
+                  },
+                  {
+                      "name":  "reqable-mcp",
+                      "skill":  "pentest-tools",
+                      "purpose":  "通过 npx 启动 Reqable 桌面客户端 MCP（需 MCP 注册与 Reqable；npx 本身不代表该能力已安装）",
+                      "available":  false,
+                      "is_executable":  false,
+                      "is_directory":  false,
+                      "resolved_path":  "",
+                      "version":  "",
+                      "source":  "Missing",
+                      "script_refs":  [
+                                          "pentest-tools/SKILL.md"
+                                      ]
+                  },
+                  {
+                      "name":  "xquik-mcp",
+                      "skill":  "threat-intelligence",
+                      "purpose":  "公开 X/Twitter 威胁情报采集的远程 MCP（需客户端登记与 OAuth）",
+                      "available":  false,
+                      "is_executable":  false,
+                      "is_directory":  false,
+                      "resolved_path":  "",
+                      "version":  "",
+                      "source":  "Missing",
+                      "script_refs":  [
+                                          "threat-intelligence/SKILL.md"
+                                      ]
+                  },
+                  {
+                      "name":  "agent-browser",
+                      "skill":  "browser-automation",
+                      "purpose":  "浏览器自动化（Playwright）：打开页面、点击、填表、爬取、截图",
+                      "available":  false,
+                      "is_executable":  false,
+                      "is_directory":  false,
+                      "resolved_path":  "",
+                      "version":  "",
+                      "source":  "Missing",
+                      "script_refs":  [
+                                          "browser-automation/SKILL.md"
+                                      ]
+                  },
+                  {
+                      "name":  "analyzeHeadless",
+                      "skill":  "reverse-engineering",
+                      "purpose":  "Ghidra 无头分析（免费 IDA 替代）",
+                      "available":  false,
+                      "is_executable":  false,
+                      "is_directory":  false,
+                      "resolved_path":  "",
+                      "version":  "",
+                      "source":  "Missing",
+                      "script_refs":  [
+                                          "reverse-engineering/SKILL.md"
+                                      ]
+                  },
+                  {
+                      "name":  "jeb-pro",
+                      "skill":  "apk-reverse",
+                      "purpose":  "JEB Pro 商业 Android / ARM 反编译器（需用户自备有效许可证）",
+                      "available":  false,
+                      "is_executable":  false,
+                      "is_directory":  false,
+                      "resolved_path":  "",
+                      "version":  "",
+                      "source":  "Missing",
+                      "script_refs":  [
+                                          "apk-reverse/SKILL.md"
+                                      ]
+                  },
+                  {
+                      "name":  "playwright",
+                      "skill":  "browser-automation",
+                      "purpose":  "Playwright 浏览器引擎",
+                      "available":  false,
+                      "is_executable":  false,
+                      "is_directory":  false,
+                      "resolved_path":  "",
+                      "version":  "",
+                      "source":  "Missing",
+                      "script_refs":  [
+                                          "browser-automation/SKILL.md",
+                                          "browser-automation/scripts/setup.ps1"
+                                      ]
+                  },
+                  {
+                      "name":  "proxycat",
+                      "skill":  "pentest-tools",
+                      "purpose":  "代理池管理与轮换",
+                      "available":  false,
+                      "is_executable":  false,
+                      "is_directory":  false,
+                      "resolved_path":  "",
+                      "version":  "",
+                      "source":  "Missing",
+                      "script_refs":  [
+                                          "pentest-tools/SKILL.md"
+                                      ]
+                  },
+                  {
+                      "name":  "seclists",
+                      "skill":  "pentest-tools",
+                      "purpose":  "Security wordlists",
+                      "available":  false,
+                      "is_executable":  false,
+                      "is_directory":  false,
+                      "resolved_path":  "",
+                      "version":  "",
+                      "source":  "Missing",
+                      "script_refs":  [
+                                          "pentest-tools/SKILL.md"
+                                      ]
+                  },
+                  {
+                      "name":  "pentestswarm",
+                      "skill":  "pentest-tools",
+                      "purpose":  "群体智能自主渗透与 MCP 执行",
+                      "available":  false,
+                      "is_executable":  false,
+                      "is_directory":  false,
+                      "resolved_path":  "",
+                      "version":  "",
+                      "source":  "Missing",
+                      "script_refs":  [
+                                          "pentest-tools/SKILL.md"
+                                      ]
+                  },
+                  {
+                      "name":  "nmap",
+                      "skill":  "pentest-tools",
+                      "purpose":  "端口扫描与服务识别",
+                      "available":  false,
+                      "is_executable":  false,
+                      "is_directory":  false,
+                      "resolved_path":  "",
+                      "version":  "",
+                      "source":  "Missing",
+                      "script_refs":  [
+                                          "pentest-tools/SKILL.md"
+                                      ]
+                  },
+                  {
+                      "name":  "binwalk",
+                      "skill":  "firmware-pentest",
+                      "purpose":  "固件提取与分析",
+                      "available":  false,
+                      "is_executable":  false,
+                      "is_directory":  false,
+                      "resolved_path":  "",
+                      "version":  "",
+                      "source":  "Missing",
+                      "script_refs":  [
+                                          "firmware-pentest/SKILL.md"
+                                      ]
+                  },
+                  {
+                      "name":  "yara",
+                      "skill":  "malware-analysis",
+                      "purpose":  "恶意软件规则匹配引擎",
+                      "available":  false,
+                      "is_executable":  false,
+                      "is_directory":  false,
+                      "resolved_path":  "",
+                      "version":  "",
+                      "source":  "Missing",
+                      "script_refs":  [
+                                          "malware-analysis/SKILL.md"
+                                      ]
+                  },
+                  {
+                      "name":  "pwntools",
+                      "skill":  "reverse-engineering",
+                      "purpose":  "CTF pwn 利用开发框架",
+                      "available":  false,
+                      "is_executable":  false,
+                      "is_directory":  false,
+                      "resolved_path":  "",
+                      "version":  "",
+                      "source":  "Missing",
+                      "script_refs":  [
+                                          "reverse-engineering/SKILL.md",
+                                          "reverse-engineering/patterns-ctf*.md"
+                                      ]
+                  },
+                  {
+                      "name":  "bkcrack",
+                      "skill":  "reverse-engineering",
+                      "purpose":  "CTF ZIP/PKZIP ZipCrypto 已知明文攻击",
+                      "available":  false,
+                      "is_executable":  false,
+                      "is_directory":  false,
+                      "resolved_path":  "",
+                      "version":  "",
+                      "source":  "Missing",
+                      "script_refs":  [
+                                          "reverse-engineering/crypto-decode-tools.md",
+                                          "../CTF-Sandbox-Orchestrator/competition-zip-archive/SKILL.md"
+                                      ]
+                  }
+              ],
+    "capabilities":  [
+
+                     ]
+}

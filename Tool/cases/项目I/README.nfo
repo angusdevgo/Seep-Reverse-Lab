@@ -1,0 +1,106 @@
+__________________________________________________________________________
+|                                                                          |
+|                     ██╗███╗   ██╗████████╗  ██████╗                      |
+|                     ██║████╗  ██║╚══██╔══╝ ██╔═████╗                     |
+|                     ██║██╔██╗ ██║   ██║    ██║██╔██║                     |
+|                     ██║██║╚██╗██║   ██║    ████╔╝██║                     |
+|                     ██║██║ ╚████║   ██║    ╚██████╔╝                     |
+|                     ╚═╝╚═╝  ╚═══╝   ╚═╝     ╚═════╝                      |
+|                                                                          |
+|                   [ INT0 RESEARCH GROUP // SCENE NFO ]                   |
+|__________________________________________________________________________|
+
+ - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+   RELEASE INFORMATION
+ - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+   Application  : 项目I (Windows 11 Shell Enhancer)
+   Version      : <目标版本>
+   Target DLL   : 项目IX64.dll
+   Release Date : 2026-09-01
+   Release Name : 项目I.<目标版本>.Activator-INT0
+   Release Type : Crypto Reversing, Atomic Patch & Rollback Suppression
+   Platform     : Windows 11 (x86_64)
+   Protection   : CNG RSA-1024 / 1016-bit Weak Modulus / Ordinal_102 Validation
+   SHA256       : <实测哈希>
+   Subsite URL  : https://项目I.int0.cc
+   Main Portal  : https://int0.cc
+
+ - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+   REVERSE ENGINEERING & CRYPTOGRAPHIC NOTES
+ - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+   项目I <目标版本> enforces license integrity through a hybrid asymmetric
+   signing protocol validated inside 项目IX64.dll:
+
+     1. Asymmetric Signature Challenge:
+        The client builds a plaintext payload:
+          P = md5(key) + (CONST | (md5(DiskSN) + md5(UUID))) + "SABALL" + pad
+        The vendor activation server signs this payload using RSA private key 'd':
+          ActivationData = base64(P^d mod n)
+        The client verifies this signature locally using public exponent e=65537
+        via CNG (BCryptVerifySignature / Ordinal_102).
+
+     2. Keygen Infeasibility Proof:
+        Although the vendor's RSA public modulus n is 1016 bits (composite with
+        small prime factor 2663 discovered via Pollard's rho algorithm),
+        the remaining 1005-bit composite number is computationally infeasible
+        to factor in practical time without nation-state compute. Therefore,
+        a pure mathematical offline key generator is impossible.
+
+     3. Atomic Binary Patch (Ordinal_102):
+        Function FUN_180002188 (Ordinal_102) is the central dispatcher for license
+        evaluation. A 12-byte atomic prologue patch:
+          c7 01 31 00 00 00 b8 01 00 00 00 c3
+          mov dword ptr [rcx], 0x31  ; Write license state
+          mov eax, 1                 ; Return TRUE
+          ret
+        permanently satisfies all caller validation checks.
+
+     4. Anti-Rollback & Update Suppression:
+        项目I schedules background tasks and update beacons that can
+        revert patched DLLs. The suite automatically injects StopAutoDownload=1
+        into the registry and disables the 项目I auto-update scheduled task.
+
+ - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+   INSTALLATION & USAGE
+ - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+   1. Install official 项目I using 项目I_3.9.25_setup.exe.
+   2. Right-click sab_oneclick.cmd and select "Run as administrator".
+      - Backs up original 项目IX64.dll to ./backup/
+      - Applies 12-byte atomic patch to Ordinal_102
+      - Configures registry activation state
+      - Applies rollback protection & disables auto-update task
+   3. Restart Windows Explorer (or reboot system).
+   4. (Optional) Run SabActivate.exe GUI to audit system state.
+   5. To revert: Run sab_oneclick.cmd --undo as administrator.
+
+ - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+   PACKAGE FILE MANIFEST
+ - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+   - 项目I_3.9.25_setup.exe          Untouched Authenticode Installer
+   - SabActivate.exe                       GUI State & Rollback Config Tool
+   - sab_oneclick.cmd                      Elevated One-Click Shell Runner
+   - sab_oneclick.py                       Automated Pipeline Engine
+   - sab_patch_activation.py               Atomic 12-Byte PE Patcher
+   - 项目I.<目标版本>.Activator-INT0.nfo Scene NFO Information File
+   - README.txt                            Bilingual Documentation
+   - SHA256SUMS.txt                        Component Checksums List
+   - docs/algorithm.md                     CNG Cryptographic Deconstruction
+   - docs/reverse-engineering.md           Ghidra Disassembly Analysis
+
+ ==========================================================================
+   GREETS TO:
+   CORE - Razor1911 - RELOADED - FFF - EMBRACE - TBE - DVT - BLiZZARD
+   & all non-profit reverse engineers and scene archivists worldwide.
+ ==========================================================================
+
+ - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+   DISCLAIMER & LEGAL
+ - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+   This research package is distributed strictly for educational, security
+   auditing, and academic research purposes. Reverse engineering is protected
+   for interoperability and security research. If you enjoy 项目I,
+   please support the developer by purchasing a commercial license:
+   https://www.项目I.com
+ __________________________________________________________________________
+|                                              INT0 REVERSE ENGINEERING    |
+|__________________________________________________________________________|

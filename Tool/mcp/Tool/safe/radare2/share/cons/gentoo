@@ -1,0 +1,68 @@
+ecd
+ec comment cyan
+ec usrcmt cyan
+ec args cyan
+ec fname green
+ec floc yellow
+ec fline blue
+ec flag green
+ec label yellow
+ec help cyan
+ec flow cyan
+ec flow2 blue
+ec prompt green
+ec offset yellow
+ec input rgb:f03030
+ec invalid red
+ec other rgb:c0c0c0
+ec b0x00 rgb:808080
+ec b0x7f rgb:c0c0c0
+ec b0xff cyan
+ec math white
+ec bin rgb:f0f0f0
+ec btext rgb:009000
+ec push yellow
+ec pop yellow
+ec crypto cyan
+ec call green
+ec ucall green
+ec nop rgb:3030f0
+ec ret rgb:30f030
+ec trap rgb:f03030
+ec ujmp rgb:009000
+ec jmp rgb:009000
+ec cjmp rgb:009000
+ec swi black yellow
+ec cmp cyan
+ec reg rgb:f0f0f0
+ec creg yellow
+ec num yellow black
+ec mov rgb:d0d0d0
+ec var white
+ec var.type yellow
+ec var.addr white
+ec var.name white
+ec ai.read rgb:e0e0e0
+ec ai.write rgb:d0d0d0
+ec ai.exec rgb:f0f0f0
+ec ai.seq rgb:f03030
+ec ai.ascii rgb:f03030
+ec graph.box rgb:3030f0
+ec graph.box2 cyan
+ec graph.box3 rgb:30f030
+ec graph.box4 rgb:30f030
+ec graph.true rgb:30f030
+ec graph.false rgb:f03030
+ec graph.trufae rgb:3030f0
+ec graph.current rgb:f03030
+ec graph.traced rgb:f00000
+ec gui.cflow rgb:f03030
+ec gui.dataoffset rgb:3030f0
+ec gui.background rgb:000000
+ec gui.background2 rgb:ffffff
+ec gui.border rgb:000000
+ec wordhl rgb:ff0000
+ec linehl rgb:101010
+
+ec widget.bg cyan rgb:3030f0
+ec widget.sel yellow rgb:090

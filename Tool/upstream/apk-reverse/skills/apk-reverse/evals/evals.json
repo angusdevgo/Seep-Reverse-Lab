@@ -1,0 +1,56 @@
+{
+  "skill_name": "apk-reverse",
+  "_status": "unverified -- skeleton only",
+  "_warning": "NOTHING IN THIS FILE HAS EVER BEEN EXECUTED. These are three test cases with expected outcomes, written so that a future run has something concrete to grade against. No with-skill run and no without-skill run has been performed in this repository, so not one of the expected_output fields below has any evidence behind it. Do not cite this file as a quality measurement.",
+  "_why_not_run": "Running these evals means running the agent itself twice per case and grading the transcripts. That was explicitly out of scope for this pass (see tools/_work/REBUILD-BRIEF.md section 2, the do-not-do list: no real agent eval scoring). The executable side of this repository's testing lives in tests/ and in .github/workflows/ci.yml, neither of which can observe agent behaviour.",
+  "_how_to_run": {
+    "workspace": "Create a workspace directory BESIDE the skill directory, never inside it: <parent>/apk-reverse-workspace/iteration-N/<eval-id>/{with_skill,without_skill}/{outputs,timing.json,grading.json}, plus benchmark.json at the iteration root.",
+    "isolation": "Each run must start from a clean context -- a fresh subagent or a fresh session -- so that only skills/apk-reverse/SKILL.md and its references influence the with-skill arm. A run that inherits the skill author's reasoning grades the author, not the skill.",
+    "arms": [
+      "with_skill: the skill directory is mounted and the prompt is the eval prompt verbatim.",
+      "without_skill: identical prompt, identical tools, no skill mounted. This is the baseline; a case where both arms do equally well tests nothing."
+    ],
+    "recording": "Per run, capture the produced files under outputs/, token and wall-clock totals in timing.json, and one grading.json holding the per-assertion verdicts.",
+    "grading": "Grade against the _assertions list on each case, not against the prose in expected_output. Mark an assertion as ungradable rather than guessing: a wrong pass is worse than a recorded gap.",
+    "aggregation": "Write benchmark.json with, per case, the pass count in each arm and the delta. Report a case whose with-skill arm does not beat the baseline as a skill defect, not as a flaky run."
+  },
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "I patched one method inside classes.dex, repacked the APK and signed it, and now the install fails. adb says INSTALL_FAILED_INVALID_APK, and on another device I got INSTALL_PARSE_FAILED_NO_CERTIFICATES. Is the hardening on this app blocking my build? Should I switch to a Frida hook instead?",
+      "expected_output": "The answer routes to the repack layer, not to the anti-tamper layer, and says why. It should name the concrete repack-time causes and the check that distinguishes them: resources.arsc losing its STORED method and 4-byte alignment because the whole archive was re-compressed, ZipInfo fields (extra, external_attr, create_system) being dropped when entries are rebuilt, and extractNativeLibs=false packages refusing a re-compressed native library. It should point at the repository's own repack path rather than hand-rolled zipfile writing, and it should state that an install failure after an unsigned or badly signed rebuild is not evidence of hardening. Answering \"yes, it is the anti-tamper layer, use Frida\" is a failure.",
+      "_assertions": [
+        "Names ZIP metadata loss and/or resources.arsc re-compression plus 4-byte alignment as the leading cause.",
+        "Names at least one concrete check the user can run (compression method of resources.arsc, alignment, ZipInfo field preservation, or extractNativeLibs).",
+        "Explicitly declines to attribute the install failure to hardening without evidence.",
+        "Routes to the repository's repacking route rather than recommending a Frida hook as the first move."
+      ],
+      "_targets_reference": "references/repack-and-sign.md, references/byte-level-patching.md"
+    },
+    {
+      "id": 2,
+      "prompt": "I decompiled the dex and most of the method bodies are empty or just throw an exception. That means this app uses dex VMP (virtualization), right? Write me the section of the report that says it is protected with dex VMP so I can put it in the deliverable.",
+      "expected_output": "It refuses to declare dex VMP and explains what would have to be measured first. A hand-written opcode table or a hand-counted stub ratio is not sufficient evidence, because a decode desync produces exactly the same appearance; the failure count has to come from an official disassembler on the same image, and the empty-body ratio needs a zero-change control for comparison. It should also separate the neighbouring diagnosis -- a Java2C / JNI-sinking shell also shows 'everything moved out' while containing no virtualized bytecode at all -- and offer to run the repository's dex-side tooling to produce the numbers before writing any conclusion.",
+      "_assertions": [
+        "Does not produce the requested VMP verdict.",
+        "Requires an official disassembler's structural failure count (dexdump / baksmali) as the deciding evidence.",
+        "Requires a zero-change or alternative-hypothesis control before reading a stub ratio as extraction or virtualization.",
+        "Distinguishes dex VMP from Java2C / JNI sinking, or asks which of the two is being claimed.",
+        "Offers a concrete command sequence that would produce the missing evidence."
+      ],
+      "_targets_reference": "references/advanced-unpacking.md, references/java2c-and-jni-sinking.md, references/detection-and-anti-analysis.md"
+    },
+    {
+      "id": 3,
+      "prompt": "In this classes.dex, find every string containing 'http' and tell me which methods reference them.",
+      "expected_output": "It actually runs the repository's tooling and reports real output: the strings route through the dex string table (dex_strings.py) and the referencing-method route through the instruction/field-index readers (find_refs.py, dexutil.py, or dexdump for an independent second opinion). The deliverable contains the exact commands, the counts, and at least one concrete string with its referencing method rendered from real output. Describing what one could do, naming generic tools, or listing strings from memory with no command behind them is a failure.",
+      "_assertions": [
+        "At least one repository script is executed and its command line appears in the answer.",
+        "The reported strings come from real output, not from memory or paraphrase.",
+        "Referencing methods are identified, not only the strings.",
+        "At least one cross-check with an independent decoder is performed or explicitly flagged as not done."
+      ],
+      "_targets_reference": "scripts/dex_strings.py, scripts/dexutil.py, scripts/find_refs.py, references/byte-level-patching.md"
+    }
+  ]
+}

@@ -1,0 +1,32 @@
+__________________________________________________________________________
+|                                                                          |
+|                     ██╗███╗   ██╗████████╗  ██████╗                      |
+|                     ██║████╗  ██║╚══██╔══╝ ██╔═████╗                     |
+|                     ██║██╔██╗ ██║   ██║    ██║██╔██║                     |
+|                     ██║██║╚██╗██║   ██║    ████╔╝██║                     |
+|                     ██║██║ ╚████║   ██║    ╚██████╔╝                     |
+|                     ╚═╝╚═╝  ╚═══╝   ╚═╝     ╚═════╝                      |
+|                                                                          |
+|                   [ INT0 RESEARCH GROUP // SCENE NFO ]                   |
+|__________________________________________________________________________|
+ 
+   TARGET: 项目F Pro 5.x / 6.x (Banyan)
+   RELEASE: 项目F.Pro.v5.v6.Activation.Tool-INT0
+   TYPE: CheckLicense Crypto Reversing & Offline Config Injector
+   ARCH: x86_64 / Windows
+   SHA256: <实测哈希>
+   ONLINE TOOL: https://项目F.int0.cc
+   DISTRIBUTION: https://int0.cc & P2P Mirrors
+
+   TECHNICAL REVERSING NOTES:
+   --------------------------
+   Disassembled 项目F.Core.Pro.LicenseChecker.CheckLicense. 
+   Identified that manual activation inputs trigger forced remote POST to
+   account.项目F.com/api/v1/activate, while startup sequence relies on
+   CheckLicenseSafe local cryptographic hash assertion.
+
+   Features:
+   - Automated 192-char cryptographic offline key generation with local self-validation.
+   - Atomic Preferences.json configuration injection with automated process triage.
+   - Rollback prevention: resets disguised LastUpdateTimeV1 timestamp and provides
+     one-click hosts patch (0.0.0.0 account.项目F.com) to neutralize server revokes.

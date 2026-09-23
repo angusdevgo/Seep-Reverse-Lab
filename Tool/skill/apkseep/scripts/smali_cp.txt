@@ -1,0 +1,10 @@
+# One jar path per line. Adjust the directory to your own tools.
+# Needed: smali baksmali dexlib2 util antlr-runtime stringtemplate jcommander guava
+smali-2.5.2.jar
+antlr-runtime-3.5.2.jar
+stringtemplate-3.2.1.jar
+baksmali-2.5.2.jar
+util-2.5.2.jar
+jcommander-1.64.jar
+guava-27.1-android.jar
+dexlib2-2.5.2.jar

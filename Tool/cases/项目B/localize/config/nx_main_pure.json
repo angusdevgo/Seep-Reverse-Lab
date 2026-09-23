@@ -1,0 +1,47 @@
+{
+  "nxmain": {
+    "android15_guide_dialog_shown": "1",
+    "cloud_phone": {
+      "guide_need_shown": "false"
+    },
+    "first_laucnh": "false",
+    "last_use": {
+      "logged_in_user_id": "pure_local_user"
+    },
+    "member_status": {
+      "last_info": {
+        "device_member_status": "1",
+        "user_id": "pure_local_user"
+      }
+    },
+    "message_id": {
+      "list": ""
+    },
+    "项目B_remote": {
+      "guide_need_shown": "false"
+    },
+    "novice_guide_is_shown": "true",
+    "privacy": {
+      "version": "1001"
+    },
+    "quit_status": "0",
+    "report": {
+      "close": {
+        "last_timestamp": "0"
+      },
+      "launch": {
+        "last_timestamp": "0"
+      },
+      "running": {
+        "last_timestamp": "0"
+      }
+    },
+    "setting": {
+      "apk_association": "1"
+    },
+    "signaling_connect": {
+      "log_report_config": "[]"
+    },
+    "theme": "1"
+  }
+}

@@ -1,0 +1,20 @@
+*** *** *** *** *** *** *** *** *** *** *** *** *** *** *** ***
+Build fingerprint: 'google/sdk_gphone64_arm64/sdk_gphone64_arm64:14/UE1A.230829.036/11228888:userdebug/dev-keys'
+Revision: '0'
+ABI: 'arm64'
+Timestamp: 2026-01-01 10:00:01.500000000+0000
+Process uptime: 5
+Cmdline: com.example.app
+pid: 12345, tid: 12345, name: com.example.app  >>> com.example.app <<<
+uid: 10123
+signal 11 (SIGSEGV), code 1 (SEGV_MAPERR), fault addr 0x0000000000000010
+    x0  0000000000000010  x1  0000007a12345678  x2  0000000000000000  x3  0000000000000020
+    x4  0000007a98765432  x5  0000000000000001  x6  0000000000000000  x7  0000000000000008
+    x8  0000000000000098  x9  0000000000000000  x10 0000007ffabc1234  x11 0000000000000000
+    sp  0000007ffabc1110  lr  0000007a11112222  pc  0000007a111128cc  pst 0000000060001000
+backtrace:
+      #00 pc 00000000000128cc  /data/app/~~AbCdEf==/com.example.app-1/lib/arm64/libfoo.so
+      #01 pc 0000000000020f40  /data/app/~~AbCdEf==/com.example.app-1/lib/arm64/libfoo.so (Java_com_example_app_Native_check+120)
+      #02 pc 00000000000cccd0  /apex/com.android.runtime/lib64/bionic/libc.so (__pthread_start+256)
+      #03 pc 0000000000055488  /apex/com.android.runtime/lib64/bionic/libc.so (__start_thread+68)
+Cause: null pointer dereference? no -- read of a small integer address

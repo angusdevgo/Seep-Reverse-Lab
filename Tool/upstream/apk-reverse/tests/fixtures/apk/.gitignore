@@ -1,0 +1,9 @@
+# The APKs in this directory are committed on purpose.
+#
+# They are synthesised by ../make_fixture_apk.py (a few kilobytes each, no target data)
+# and they are the input of tests/test_so_constpatch.py, which pins the contract that
+# scripts/so_constpatch.py must keep when it rebuilds an archive: STORED stays STORED,
+# extra / external_attr / create_system survive, and resources.arsc keeps its 4-byte
+# alignment. The repository-wide `*.apk` rule exists to keep pulled samples out of the
+# tree, which is a different thing from a generated fixture.
+!*.apk

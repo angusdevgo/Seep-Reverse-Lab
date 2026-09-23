@@ -1,0 +1,17 @@
+__________________________________________________________________________
+|   INT0 SCENE RELEASE // 项目G PRO <目标版本> ACTIVATOR SUITE                   |
+|__________________________________________________________________________|
+ 
+   TARGET: 项目G Pro <目标版本> (Windows Spacebar Quick Look by Corey)
+   TYPE: 项目G::isLicensed Byte-Level Reversing & Guard Utility
+   ARCH: x86_64 / Windows
+   SHA256: <实测哈希>
+   ONLINE TOOL: https://项目G.int0.cc
+   DISTRIBUTION: https://int0.cc & P2P Mirrors
+
+   TECHNICAL DETAILS:
+   ------------------
+   V1 Online activation is tied to 1218.io backend signing (unforgable offline).
+   V2 Payload check requires sha384(p) == payload["key_hash"] (self-referential).
+   Root gate 项目G::isLicensed(void) at offset 0xB82D10 patched with
+   b0 01 c3 90 90 (mov al, 1; ret). Includes logon anti-rollback guard.

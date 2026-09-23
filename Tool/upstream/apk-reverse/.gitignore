@@ -1,0 +1,54 @@
+# build artifacts
+*.class
+*.jar
+!skills/apk-reverse/scripts/dexpatch/*.java
+
+# working data -- never commit samples or outputs
+*.apk
+*.aab
+*.dex
+*.odex
+*.vdex
+*.oat
+*.so
+*.jks
+*.keystore
+*.pk8
+*.pem
+*.p12
+
+# local scratch
+_tmp/
+out/
+work/
+audit_out/
+
+# local extension-pass workspace: toolchains, device archives, dumped images, scratch notes.
+# Nothing under tools/ belongs to the repository -- the skill's own evidence record lives in
+# docs/tool-verification/ and carries no target identity or vendored binaries.
+tools/
+
+# local input material (the reporting sample and the analysis notes it came with)
+存在问题和例子/
+
+# sandbox installs made while testing `npx skills add .` against this repo
+.claude/
+.agents/
+*.log
+*.jsonl
+*.pcap
+*.png
+*.jpg
+
+# python / editors
+__pycache__/
+*.pyc
+.venv/
+.vscode/
+.idea/
+.DS_Store
+
+# local input material -- the same rule as 存在问题和例子/: the reports these passes are based on
+# are the user's material, not content of this repository
+新的建议和思路/
+朋友全面审查和建议/
