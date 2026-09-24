@@ -36,8 +36,8 @@
 ---
 
 > 🔗 **Attribution & Reference Sources**:
-> - Core mobile reverse engineering and verification methodology referenced from the upstream benchmark project: [**newliver666/apk-reverse**](https://github.com/newliver666/apk-reverse) (full upstream mirror and offline verification test suite bundled under [`Tool/upstream/apk-reverse/`](./Tool/upstream/apk-reverse/)).
-> - Community support & technical exchange: [**LINUX DO**](https://linux.do/) (Genuine, Friendly, United, Professional Technical Community).
+> - Mobile reverse engineering methodology referenced from: [**newliver666/apk-reverse**](https://github.com/newliver666/apk-reverse).
+> - Community support & technical discussions: [**LINUX DO**](https://linux.do/).
 
 ---
 

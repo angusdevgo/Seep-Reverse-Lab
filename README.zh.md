@@ -36,8 +36,8 @@
 ---
 
 > 🔗 **致敬与参考源**：
-> - 核心移动端逆向工程与验证规范参考自标杆开源项目：[**newliver666/apk-reverse**](https://github.com/newliver666/apk-reverse)（完整上游镜像与验证测试集内置于 [`Tool/upstream/apk-reverse/`](./Tool/upstream/apk-reverse/)）。
-> - 社区支持与技术讨论：[**LINUX DO**](https://linux.do/)（真诚、友善、团结、专业的技术论坛）。
+> - 移动端逆向工程参考自：[**newliver666/apk-reverse**](https://github.com/newliver666/apk-reverse)。
+> - 社区支持与技术讨论：[**LINUX DO**](https://linux.do/)。
 
 ---
 
