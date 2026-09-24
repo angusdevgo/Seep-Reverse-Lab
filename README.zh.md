@@ -34,7 +34,6 @@
   <a href="#-快速开始与部署">快速开始</a> •
   <a href="#-核心技术范畴">技术范畴</a> •
   <a href="#-智能体消费规范">消费规范</a> •
-  <a href="#️-版本路线图">路线图</a> •
   <a href="#-免责声明">免责声明</a>
 </p>
 
@@ -353,18 +352,6 @@ powershell -ExecutionPolicy Bypass -File .\install.ps1
    - `SetDefaultDllDirectories` → 封堵 DLL 劫持面
    - `ProcessDynamicCodePolicy` → 阻断非法内存执行
    - 服务端权威原则：加密签名 + 短期令牌，严禁本地强判特权
-
----
-
-## 🗺️ 版本路线图
-
-| 版本 | 核心方向 | 状态 |
-|---|---|---|
-| **v1.0** | 核心工具链内置、9 大范式、Lab Mode、22 MCP 工具 | ✅ 已发布 |
-| **v1.1** | MCP 上下文降噪（`fold`/`branch`/`summary`）、`seep_r2_xrefs` 分页器 | ✅ 已发布 |
-| **v1.2** | MANUAL SOP：反调试绕过、脱壳前置分析（VMP/Themida/UPX）、PoC 闭环验证 | ✅ 已发布 |
-| **v2.0** | Frida 自愈 CI 循环、Windows 沙箱加载器、PoC 自动化验证流水线 | 🔨 规划中 |
-| **v2.x** | Linux / macOS 原生支持、Ghidra 无头集成、YARA 规则自动生成 | 💡 提案中 |
 
 ---
 

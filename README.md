@@ -34,7 +34,6 @@
   <a href="#-quick-start--deployment">Quick Start</a> •
   <a href="#-technical-scope">Scope</a> •
   <a href="#-agent-execution-contract">Agent Contract</a> •
-  <a href="#️-roadmap">Roadmap</a> •
   <a href="#-disclaimer">Disclaimer</a>
 </p>
 
@@ -360,18 +359,6 @@ All client-side vulnerability assessments follow a consulting-grade 3-part struc
    - `SetDefaultDllDirectories` → prevent DLL hijacking
    - `ProcessDynamicCodePolicy` → prevent executable memory injection
    - Server-side authority via cryptographic signatures and short-lived tokens
-
----
-
-## 🗺️ Roadmap
-
-| Version | Focus | Status |
-|---|---|---|
-| **v1.0** | Core toolchain bundling, 9 paradigms, Lab Mode, 22 MCP tools | ✅ Released |
-| **v1.1** | Context-aware MCP output (`fold`/`branch`/`summary`), `seep_r2_xrefs` paginator | ✅ Released |
-| **v1.2** | MANUAL SOPs: Anti-Debug bypass, Unpacking (VMP/Themida/UPX), PoC Validation | ✅ Released |
-| **v2.0** | Frida self-healing CI loop, Windows sandbox loader, automated PoC validation pipeline | 🔨 Planned |
-| **v2.x** | Linux / macOS native support, Ghidra headless integration, YARA rule auto-generation | 💡 Proposed |
 
 ---
 
