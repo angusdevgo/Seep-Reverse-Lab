@@ -277,47 +277,145 @@ def seep_r2_functions(binary_path: str, filter_name: Optional[str] = None, limit
         return "\n".join(res)
 
 @server.tool()
-def seep_r2_disasm(binary_path: str, target: str = "main", lines: int = 60) -> str:
-    """反汇编指定函数或地址，输出包含交叉引用 (XREF)、局部变量与源码行号提示的汇编代码。
+def seep_r2_disasm(
+    binary_path: str,
+    target: str = "main",
+    lines: int = 60,
+    output_mode: str = "full",
+    limit_tokens: int = 0,
+) -> str:
+    """反汇编指定函数或地址，支持三种输出模式以控制上下文消耗（Context Budget Control）。
 
     Args:
         binary_path: 目标二进制文件路径
         target: 目标函数名、符号或虚拟地址（例如 'main', 'sym.imp.puts', '0x1013ef0'）
         lines: 当以地址为目标时反汇编的最大指令行数，默认 60
+        output_mode: 输出模式：
+            'full'   = 完整原始反汇编（默认，适合精细分析）
+            'branch' = 仅保留条件跳转与调用指令（cmp/test/jcc/call/ret），聚焦控制流骨架
+            'summary'= 不输出指令，只统计：函数大小、块数、调用链、导入函数列表（最省 Token）
+        limit_tokens: 最大输出字符数（0=不限制），超出时尾部截断并附注 Truncated 标记
     """
     if not os.path.isfile(binary_path):
         return f"[ERROR]: Target file does not exist: {binary_path}"
 
-    # 优先尝试函数级反汇编 pdf，若不是已知函数则按指令行数 pd 反汇编
+    if output_mode == "summary":
+        # 仅抽取函数级摘要统计，不输出原始指令
+        info_cmd = f"aaa; afi @ {target}"
+        xref_cmd = f"axt @ {target}"
+        call_cmd = f"axf @ {target}"
+        info_out = _run_cmd([R2_EXE, "-q", "-e", "scr.color=0", "-c", info_cmd, os.path.abspath(binary_path)], timeout=60)
+        xref_out = _run_cmd([R2_EXE, "-q", "-e", "scr.color=0", "-c", xref_cmd, os.path.abspath(binary_path)], timeout=60)
+        call_out = _run_cmd([R2_EXE, "-q", "-e", "scr.color=0", "-c", call_cmd, os.path.abspath(binary_path)], timeout=60)
+        summary = (
+            f"[DISASM SUMMARY MODE — 上下文降噪 Token 节省模式]\n"
+            f"Target: {target}\n"
+            f"--- Function Info (afi) ---\n{_clean_r2_output(info_out)[:800]}\n"
+            f"--- Callers (axt / xrefs-to) ---\n{_clean_r2_output(xref_out)[:600]}\n"
+            f"--- Callees (axf / xrefs-from) ---\n{_clean_r2_output(call_out)[:600]}\n"
+            f"提示: 使用 output_mode='branch' 或 'full' 获取指令级详情。"
+        )
+        return summary
+
+    # 获取完整反汇编
     cmd = f"aaa; pdf @ {target}"
     out = _run_cmd([R2_EXE, "-q", "-e", "scr.color=0", "-c", cmd, os.path.abspath(binary_path)], timeout=60)
     cleaned = _clean_r2_output(out)
     output_lines = [l for l in cleaned.splitlines() if not l.startswith("INFO:") and not l.startswith("WARN:")]
-    
+
     if not output_lines or all(not l.strip() for l in output_lines):
         cmd = f"pd {lines} @ {target}"
         out = _run_cmd([R2_EXE, "-q", "-e", "scr.color=0", "-c", cmd, os.path.abspath(binary_path)], timeout=60)
         cleaned = _clean_r2_output(out)
         output_lines = [l for l in cleaned.splitlines() if not l.startswith("INFO:") and not l.startswith("WARN:")]
 
-    return "\n".join(output_lines) or "[Disassembly empty or symbol not found]"
+    if output_mode == "branch":
+        # 过滤：仅保留含有控制流关键词的行（条件跳转、调用、返回）
+        branch_keywords = ("cmp ", "test ", "je ", "jne ", "jz ", "jnz ", "jb ", "jbe ",
+                           "ja ", "jae ", "jl ", "jle ", "jg ", "jge ", "jmp ", "call ",
+                           "ret", "jcc", "cbz ", "cbnz ", "bl ", "bne ", "beq ")
+        filtered = [l for l in output_lines if any(kw in l.lower() for kw in branch_keywords)]
+        total = len(output_lines)
+        kept = len(filtered)
+        header = (
+            f"[DISASM BRANCH MODE — 控制流骨架截面，已过滤 {total - kept}/{total} 行纯数据指令]\n"
+            f"Target: {target} | 保留行: {kept} | 完整输出请用 output_mode='full'\n"
+            "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+        )
+        output_lines = filtered
+        result = header + "\n".join(output_lines)
+    else:
+        result = "\n".join(output_lines)
+
+    if limit_tokens > 0 and len(result) > limit_tokens:
+        result = result[:limit_tokens] + f"\n... [TRUNCATED at {limit_tokens} chars — use offset/target narrowing for full output]"
+
+    return result or "[Disassembly empty or symbol not found]"
 
 @server.tool()
-def seep_r2_decompile(binary_path: str, target: str = "main") -> str:
-    """将目标函数反编译为类 C 伪代码（使用 radare2 内置反编译引擎 pdc）。
+def seep_r2_decompile(
+    binary_path: str,
+    target: str = "main",
+    output_mode: str = "full",
+    limit_tokens: int = 8000,
+) -> str:
+    """将目标函数反编译为类 C 伪代码，支持三档输出模式以控制 Token 消耗（Context Budget Control）。
 
     Args:
         binary_path: 目标二进制文件路径
         target: 目标函数名称或虚拟地址（例如 'main', 'sym.verify_key'）
+        output_mode: 输出控制模式（默认 full）：
+            'full'    = 完整伪代码（适合深度分析，默认）
+            'fold'    = 折叠纯计算/赋值语句，仅保留 if/else/switch/return/API调用行（减少 ~60% Token）
+            'summary' = 不输出伪代码，仅返回：函数签名、入参、出参、直接调用的 API/函数名列表（最省 Token）
+        limit_tokens: 最大输出字符数（默认 8000），超出则截断附 Truncated 标记；设 0 表示不限制
     """
     if not os.path.isfile(binary_path):
         return f"[ERROR]: Target file does not exist: {binary_path}"
+
+    if output_mode == "summary":
+        # 获取函数摘要信息（不输出函数体）
+        cmds = f"aaa; afi @ {target}; axf @ {target}"
+        out = _run_cmd([R2_EXE, "-q", "-e", "scr.color=0", "-c", cmds, os.path.abspath(binary_path)], timeout=60)
+        clean = _clean_r2_output(out)
+        return (
+            f"[DECOMPILE SUMMARY MODE — 最省 Token 函数摘要]\n"
+            f"Target: {target}\n"
+            f"{clean[:1200]}\n"
+            f"提示: 使用 output_mode='fold' 或 'full' 获取伪代码详情。"
+        )
 
     cmd = f"aaa; pdc @ {target}"
     out = _run_cmd([R2_EXE, "-q", "-e", "scr.color=0", "-c", cmd, os.path.abspath(binary_path)], timeout=60)
     cleaned = _clean_r2_output(out)
     output_lines = [l for l in cleaned.splitlines() if not l.startswith("INFO:") and not l.startswith("WARN:")]
-    return "\n".join(output_lines) or "[Decompile output empty]"
+
+    if output_mode == "fold":
+        # 折叠模式：去除纯赋值/加减乘除/临时变量行，仅保留控制流与 API 调用
+        def _is_control_or_call(line: str) -> bool:
+            stripped = line.strip()
+            keywords = ("if ", "else", "switch", "case ", "return", "while ", "for ",
+                        "do {", "goto ", "break", "continue",
+                        "call ", "(", "->")
+            # 包含括号 = 可能是函数调用，包含关键词 = 控制流
+            return any(k in stripped for k in keywords) or stripped.startswith("//")
+
+        folded = [l for l in output_lines if _is_control_or_call(l)]
+        total = len(output_lines)
+        kept = len(folded)
+        header = (
+            f"[DECOMPILE FOLD MODE — 已折叠 {total - kept}/{total} 行纯赋值/计算语句，上下文降噪约 {int((total-kept)/max(total,1)*100)}%]\n"
+            f"Target: {target} | 保留行: {kept} | 完整输出请用 output_mode='full'\n"
+            "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+        )
+        result = header + "\n".join(folded)
+    else:
+        result = "\n".join(output_lines)
+
+    if limit_tokens > 0 and len(result) > limit_tokens:
+        result = result[:limit_tokens] + f"\n... [TRUNCATED at {limit_tokens} chars — 使用 target 缩小范围或 output_mode='fold'/'summary' 降低消耗]"
+
+    return result or "[Decompile output empty]"
 
 @server.tool()
 def seep_r2_diff(file_a: str, file_b: str, mode: str = "code") -> str:
@@ -365,6 +463,43 @@ def seep_r2_asm(code_or_hex: str, arch: str = "x86", bits: int = 64, disasm: boo
 # ---------------------------------------------------------------------------
 # 3. Android APK 逆向与动态 Hook 生成
 # ---------------------------------------------------------------------------
+@server.tool()
+def seep_r2_xrefs(
+    binary_path: str,
+    target: str,
+    direction: str = "to",
+    limit: int = 10,
+) -> str:
+    """获取指定地址/函数的交叉引用关系，内置分页与统计摘要避免大量 xref 结果内爆上下文。
+
+    Args:
+        binary_path: 目标二进制文件路径
+        target: 目标函数名或地址（如 'sym.check_license', '0x401234'）
+        direction: 方向— 'to'=谁引用了它(调用方), 'from'=它引用了谁(被调用方)
+        limit: 最多返回多少条引用（默认 10），超出部分附加统计摘要
+    """
+    if not os.path.isfile(binary_path):
+        return f"[ERROR]: Target file does not exist: {binary_path}"
+
+    r2_cmd = f"aaa; {'axt' if direction == 'to' else 'axf'} @ {target}"
+    out = _run_cmd([R2_EXE, "-q", "-e", "scr.color=0", "-c", r2_cmd, os.path.abspath(binary_path)], timeout=60)
+    cleaned = _clean_r2_output(out)
+    lines = [l for l in cleaned.splitlines() if l.strip() and not l.startswith("INFO:") and not l.startswith("WARN:")]
+
+    total = len(lines)
+    shown = lines[:limit]
+    result_lines = [
+        f"[XREFS {direction.upper()} — {target} | 共 {total} 条引用，显示前 {min(limit, total)} 条]",
+        f"注意: 若 total 远大于 limit，考虑缩小 limit 或先查 summary 模式确定目标函数。",
+        "━" * 60,
+    ] + shown
+
+    if total > limit:
+        result_lines.append(f"... [已截断，剩余 {total - limit} 条未展示 | 增大 limit 或用 filter_name 缩小目标范围]"
+                            f"\n模块来源分布小计: {dict(list({l.split()[2] if len(l.split())>2 else '?' for l in lines}))[:3]}"
+        )
+
+    return "\n".join(result_lines)
 @server.tool()
 def seep_apk_info(apk_path: str) -> str:
     """原生解析 APK 压缩包结构：统计 DEX 文件、Native .so 架构动态库、资源分布，并提取 AndroidManifest.xml 关键字符串（免 Java 环境）。

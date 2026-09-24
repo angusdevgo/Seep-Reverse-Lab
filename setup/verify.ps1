@@ -157,7 +157,7 @@ if (Test-Path $AgentDir) {
 # -----------------------------------------------------------------------------
 # 5. MCP 自动化服务层与底层工具 (MCP & Native Tools)
 # -----------------------------------------------------------------------------
-Write-Host "`n[5/6] 🔌 MCP 服务引擎与物理内置工具箱 (Native Tools)" -ForegroundColor White
+Write-Host "`n[5/7] 🔌 MCP 服务引擎与物理内置工具箱 (Native Tools)" -ForegroundColor White
 
 Test-CheckItem "MCP" "核心服务端脚本 (seep_mcp_server.py 语法自洽)" {
     $sp = Join-Path $ToolDir 'mcp\seep_mcp_server.py'
@@ -206,7 +206,7 @@ Test-CheckItem "依赖" "Playwright 浏览器自动化依赖已解压 (playwrigh
 # -----------------------------------------------------------------------------
 # 6. 环境运行时与第三方依赖配置
 # -----------------------------------------------------------------------------
-Write-Host "`n[6/6] ⚙️ 外部运行时与商业授权协同 (Runtime & Commercial)" -ForegroundColor White
+Write-Host "`n[6/7] ⚙️ 外部运行时与商业授权协同 (Runtime & Commercial)" -ForegroundColor White
 Test-CheckItem "运行时" "Python 解释器 (3.11+ 且可执行)" {
     $py = Get-Command python -ErrorAction SilentlyContinue
     $py -ne $null
@@ -235,6 +235,33 @@ Test-ManualItem "配置" "Claude Code 项目级 MCP 注册 (.mcp.json 在根目�
 # -----------------------------------------------------------------------------
 # 汇总仪表盘
 # -----------------------------------------------------------------------------
+
+# -----------------------------------------------------------------------------
+# 7. MANUAL/ 战术手册完备性校验 (Tactical Manuals)
+# -----------------------------------------------------------------------------
+Write-Host "`n[7/7] 📚 MANUAL/ 战术手册完备性校验" -ForegroundColor White
+$ManualDir = Join-Path $Root 'MANUAL'
+
+Test-CheckItem "手册" "环境预要求指南 (MANUAL/PREREQUISITES.md)" {
+    Test-Path (Join-Path $ManualDir 'PREREQUISITES.md')
+} "安装指南缺失，重新拉取仓库"
+
+Test-CheckItem "手册" "IDA Pro 商业软件接入指南 (MANUAL/IDA-PRO.md)" {
+    Test-Path (Join-Path $ManualDir 'IDA-PRO.md')
+} "IDA-PRO 指南缺失"
+
+Test-CheckItem "手册" "反调试绕过战术手册 (MANUAL/ANTI-DEBUG.md)" {
+    Test-Path (Join-Path $ManualDir 'ANTI-DEBUG.md')
+} "调试应对手册缺失，重新拉取仓库"
+
+Test-CheckItem "手册" "通用脱壳前置分析 SOP (MANUAL/UNPACKING.md)" {
+    Test-Path (Join-Path $ManualDir 'UNPACKING.md')
+} "脱壳手册缺失，重新拉取仓库"
+
+Test-CheckItem "手册" "PoC 闭环自动化验证 SOP (MANUAL/POC-VALIDATION.md)" {
+    Test-Path (Join-Path $ManualDir 'POC-VALIDATION.md')
+} "PoC 验证手册缺失，重新拉取仓库"
+
 Write-Host "`n================================================================================" -ForegroundColor White
 Write-Host ("  [体检报告] 核心检查通过: {0} 项" -f $script:OkCount) -ForegroundColor Green
 

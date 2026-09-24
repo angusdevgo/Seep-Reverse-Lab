@@ -241,6 +241,18 @@ metadata:
 | `references/license-validation.md` | 393 | 许可 / 激活 / 卡密 / 订阅类目标（16 节全量手册） |
 | `references/tooling.md` | 42 | 找现成脚本 / 工程模板时 |
 
+### MANUAL/ 战术手册索引（按需查阅）
+
+> MANUAL/ 存放深度专项 SOP，由 Agent 在触碰对应信号时主动加载。
+
+| 手册 | 触发条件 | 核心内容 |
+| :--- | :--- | :--- |
+| `MANUAL/ANTI-DEBUG.md` | G0/G1 检测到 `IsDebuggerPresent`、`NtQueryInformationProcess`、驱动级检测、时序反调试等信号 | 全量反调试绕过字典、代理 DLL 打桩框架、内核层 SOP 与两击熔断规则 |
+| `MANUAL/UNPACKING.md` | G0/G1 检测到 `MPRESS/UPX/Themida/.vmp` 节名，或 `seep_auto_triage` 熵值 > 7.2 | 壳类型速查表、OEP 定位三策略、Scylla 内存 Dump 全流程、VMP 动态 trace 路线 |
+| `MANUAL/POC-VALIDATION.md` | G4/G5 生成 PoC 后（Frida 脚本 / Smali 补丁 / 代理 DLL）必读 | 三阶段闭环验证模型、Frida 自愈映射表、Smali/DLL 本地加载器、断网铁证流程 |
+| `MANUAL/IDA-PRO.md` | 用户询问 IDA Pro 接入或 ida MCP 无法启动时 | IDA 安装配置、install-ida.ps1、Radare2 降级路线 |
+| `MANUAL/PREREQUISITES.md` | 首次部署或环境报错时 | Python/Node/JDK/ADB 版本要求与修复指引 |
+
 ### 快速对应
 
 | 你要做的事 | 加载 |
