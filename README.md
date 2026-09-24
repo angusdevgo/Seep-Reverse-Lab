@@ -112,6 +112,10 @@ User Input (plain language — "bypass the premium check in FooBar.apk")
 
 ## ⚡ 30-Second Demo
 
+<p align="center">
+  <img src="docs/images/agent-workflow.png" alt="Seep Autonomous Reversing Workflow" width="850">
+</p>
+
 Once deployed, just talk to your agent in plain language:
 
 ```
@@ -268,6 +272,10 @@ Run the 7-section health verifier (35 checks) using any of these methods:
 | ⭐ Double-click (easiest) | `check.bat` in project root |
 | PowerShell | `powershell -ExecutionPolicy Bypass -File .\check.ps1` |
 | Agent chat | Send `check` (or `doctor` / `检查`) — agent runs and reports inline |
+
+<p align="center">
+  <img src="docs/images/verifier-check.png" alt="Seep Health Verifier Dashboard (35 Checks Passed)" width="850">
+</p>
 
 ---
 

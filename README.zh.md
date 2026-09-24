@@ -110,6 +110,10 @@
 
 ## ⚡ 30 秒感受一下
 
+<p align="center">
+  <img src="docs/images/agent-workflow.png" alt="Seep 智能体逆向工作流实录" width="850">
+</p>
+
 部署完成后，直接在 Agent 对话框发一句大白话：
 
 ```
@@ -263,6 +267,10 @@ powershell -ExecutionPolicy Bypass -File .\install.ps1
 | ⭐ 双击一键（最简单）| 双击项目根目录下的 `check.bat` |
 | PowerShell | `powershell -ExecutionPolicy Bypass -File .\check.ps1` |
 | Agent 对话框 | 发送 `check`（或 `检查` / `doctor`）— Agent 自动运行并内联输出报告 |
+
+<p align="center">
+  <img src="docs/images/verifier-check.png" alt="Seep 部署完备性体检全绿看板 (35 项全部通过)" width="850">
+</p>
 
 ---
 
