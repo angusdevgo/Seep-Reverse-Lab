@@ -217,6 +217,19 @@ powershell -ExecutionPolicy Bypass -File .\install.ps1
 | **DeepSeek Harness (DSH)** | `Tool/prompts/AGENTS.md` | `DSH-PROFILE.md` (Cordis YAML) | Copy generic instructions to workspace root and paste plugin config into DSH profile |
 | **OpenCode / Codex** | `AGENTS.md` (Project root) | Client global config | Copy `Tool/prompts/AGENTS.md` to project root |
 
+### 4. Verification & Integrity Health Check (部署完备性校验)
+Once deployed, verify that all 9 skills, 4 MCP services, prompts, and reversing toolchains are complete:
+- **Option A (One-Click GUI / Double-Click)**: Simply double-click `check.bat` in the project root.
+- **Option B (PowerShell Command)**:
+  ```powershell
+  powershell -ExecutionPolicy Bypass -File .\check.ps1
+  ```
+- **Option C (Agent Interactive Verification)**: In your agent chat session, send:
+  ```text
+  check
+  ```
+  *(or `doctor` / `检查`), the agent will automatically execute the verifier and report the health status across all components.*
+
 ---
 
 ## 🎮 Workflow & Lab Mode Protocol
@@ -237,6 +250,7 @@ To maintain a strict boundary between normal casual conversation and sensitive r
 - `hook <function>`: Generates Frida hooks with stack tracing and return-value replacement.
 - `gen-patch <offset>`: Outputs binary patch byte sequences or proxy DLL scaffolding.
 - `triage <sample>`: Runs initial triage covering architecture, imports, packers, and strings.
+- `check`: Executes full workbench health check (`verify.ps1`) and reports skill/MCP/runtime status.
 - `report`: Synthesizes evidence in the active directory and exports a standardized 3-part audit report.
 
 ---

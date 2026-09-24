@@ -205,6 +205,19 @@ powershell -ExecutionPolicy Bypass -File .\install.ps1
 | **DeepSeek Harness (DSH)** | `Tool/prompts/AGENTS.md` | `DSH-PROFILE.md` (Cordis YAML) | 将通用指令部署至工作目录，将 MCP 插件配置写入 DSH Profile |
 | **OpenCode / Codex** | 项目根 `AGENTS.md` | 客户端全局配置 | 复制 `AGENTS.md` 至当前项目工作根目录即可 |
 
+### 4. 部署完备性校验与健康体检 (Verification & Health Check)
+部署完成后，可以通过以下三种极其简单的方式一键校验所有 9 个 Skill、4 个 MCP 服务、提示词及工具箱是否已完整就绪：
+- **方式一（双击一键体检 · 最推荐）**：直接双击项目根目录下的 **`check.bat`**，控制台将自动逐项校验并生成全彩打勾体检报告（窗口不会自动关闭，方便查看）。
+- **方式二（PowerShell 命令行）**：
+  ```powershell
+  powershell -ExecutionPolicy Bypass -File .\check.ps1
+  ```
+- **方式三（Agent 对话框内校验）**：在任意已接入的 Agent（Pi / Claude / DSH / Codex）对话中直接发送：
+  ```text
+  check
+  ```
+  *(或输入 `检查` / `doctor`)*，Agent 将自动调用后端体检脚本并以结构化卡片输出当前工作台健康度。
+
 ---
 
 ## 🎮 操作工作流与交互规范 (Workflow & Lab Mode)
@@ -226,6 +239,7 @@ powershell -ExecutionPolicy Bypass -File .\install.ps1
 - `hook <函数/方法>`：针对指定符号自动生成带堆栈打印与返回值拦截的 Frida 验证脚本。
 - `gen-patch <位点>`：输出指定 RVA 或文件偏移的二进制内存补丁代码或代理 DLL 框架。
 - `triage <样本>`：执行包括架构、导入表、加壳形态与关键字符串在内的快速体检。
+- `check`：执行工作台部署完备性自检（`verify.ps1`），分类汇报 Skill/MCP/工具链健康状态。
 - `report`：一键扫描当前分析目录留存的全部技术证据，自动导出符合行业交付规格的三段式安全审计报告。
 
 ---
