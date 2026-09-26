@@ -63,14 +63,27 @@ Gen 4  回到 AOB，并补齐全部工程保障
 ├── docs/
 │   ├── reverse-engineering.md         ← 逆向方法论（本案例核心）
 │   └── algorithm.md                   ← 授权校验链与 14 位点分析
-├── 项目D_Pro_Tool/                     ← 当前工程（AOB 特征码引擎）
-│   ├── src/Program.cs
+├── 项目D_Pro_Tool/                     ← 当前工程（AOB 特征码引擎 v1.3.0）
+│   ├── src/Program.cs                 ← AOB 双态特征码引擎 + PE 结构门禁
+│   ├── tests/PatchEngineTests.cs      ← 回归测试套件（61 项断言）
+│   ├── tests/build_tests.bat
 │   ├── README.md
 │   └── build.bat
-├── 项目D_Pro_Tool_原理参考源码/          ← 原理参考版（硬编码偏移，对照用）
+├── 项目D_Pro_Tool_原理参考源码/          ← 原理参考版（硬编码偏移，反面教材对照）
 │   └── 项目D_激活注册原理.cs
 ├── 项目D_archive_v20.7/                ← 原版 Crack 样本的逆向分析报告
 │   └── 逆向分析报告.md
+├── tools/                             ← 版本扩展流水线（9 脚本，路径可移植）
+│   ├── 00_scan_only.py                ← 打补丁前只读体检
+│   ├── 01_extract_sfx.py              ← 自定义 SFX 安装包拆解
+│   ├── 02_locate_points.py            ← 滑动汉明距离定位位点
+│   ├── 03_gen_signatures.py           ← 多版本共同稳定区 → 双态特征码表
+│   ├── 04_emit_cs_table.py            ← 生成 C# 特征码表
+│   ├── 05_verify_disasm.py            ← capstone 反汇编语义比对
+│   ├── 06_e2e_validate.py             ← 端到端打补丁验证
+│   ├── 07_splice_into_cs.py           ← 自动拼接到源码
+│   ├── 08_compare_versions.py         ← 多版本授权校验链对比
+│   └── README.md
 └── archive/
     ├── python_src/                    ← Gen 1（AOB 特征码搜索，12 条）
     └── docs/                          ← 早期工程文档
@@ -88,6 +101,39 @@ Gen 4  回到 AOB，并补齐全部工程保障
 | `pe-reverse/10-license-keygen/02-validation-function-location` | 校验函数定位 |
 | `pe-reverse/10-license-keygen/08-cross-version-aob-migration` | **本案例沉淀的跨版本迁移方法论** |
 | `pe-reverse/08-patch/01-code-patching` | 通用代码修补 |
+
+---
+
+## 工程与测试
+
+### 当前工程（v1.3.0 · AOB 特征码引擎）
+
+```
+src/Program.cs          零外部依赖，csc.exe 直接编译（WPF + CLI）
+tests/                  回归测试套件
+build.bat               构建脚本
+```
+
+**回归测试 61 项断言**：
+
+| 类别 | 内容 |
+|---|---|
+| 校验和算法 | 三版本官方原版 PE 校验和复现 |
+| 端到端 | b10 / 11.2 / 11.3 打补丁 + 合法性 + 幂等 |
+| 差异白名单 | 所有改动必须落在预期位点内 |
+| 陈旧 BAK | 自动刷新 + 旧备份归档 + 还原正确 |
+| 还原守卫 | 版本不一致必须拒绝且不覆盖 |
+| 负向用例 | 节区截断 / 特征码不符 / 空文件 / 非 PE → 拒绝且零写入 |
+
+### 版本扩展流水线（`tools/`）
+
+9 个脚本，路径基于脚本位置自动解析，可直接复用于其它目标：
+
+```
+安装包 → 提取 → 判性质 → 迁位点 → 生特征码 → 验语义 → 端到端 → 拼接源码
+```
+
+详见 `tools/README.md`。
 
 ---
 
