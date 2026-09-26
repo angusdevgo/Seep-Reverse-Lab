@@ -264,7 +264,16 @@
         "licensed",
         "trial",
         "key file",
-        "注册表授权"
+        "注册表授权",
+        "跨版本补丁",
+        "特征码迁移",
+        "代码位移",
+        "重编译",
+        "COMDAT 折叠",
+        "双态特征码",
+        "回滚点错版",
+        "跨版本",
+        "特征码"
       ],
       "files": [
         "10-license-keygen/01-license-mechanism-classification.md",
@@ -273,7 +282,8 @@
         "10-license-keygen/04-signature-chain-pubkey-swap.md",
         "10-license-keygen/05-keygen-frida-verification-loop.md",
         "10-license-keygen/06-cloud-license-frida-hook.md",
-        "10-license-keygen/07-self-referencing-signature-convergence.md"
+        "10-license-keygen/07-self-referencing-signature-convergence.md",
+        "10-license-keygen/08-cross-version-aob-migration.md"
       ],
       "priority": 9
     }
