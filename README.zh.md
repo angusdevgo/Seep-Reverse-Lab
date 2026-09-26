@@ -315,7 +315,7 @@ powershell -ExecutionPolicy Bypass -File .\install.ps1
 | **A** | 单进程纯离线 PE | 标量返回值强制（`mov eax,1; ret`）|
 | **B** | 多进程复杂拓扑 | 代理 DLL 分流 + 三层状态持久化 |
 | **C** | 资源模板 + UI 层 | 双射掩码解码 + `SetDlgItemTextW` IAT Hook |
-| **D** | MPRESS 压缩壳 | 18 点微创修补 + ACL 注册表冻结 |
+| **D** | 重编译非均匀位移 | **AOB 双态特征码迁移**（3 版本）+ PE 结构门禁 + ACL 冻结 |
 | **E** | EXECryptor VM 仲裁 | 2 点 Call 指令重定向至内存 Stub |
 | **F** | .NET 动态混淆 | Harmony 内存转储 + 96 位组合哈希算号 |
 | **G** | 自引用 SHA-384 | 5 字节函数入口补丁 + 启动项守护 |
