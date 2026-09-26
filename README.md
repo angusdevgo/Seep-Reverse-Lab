@@ -162,12 +162,11 @@ Seep\ (251 MB)
 ├── check.ps1                      ← PowerShell health verifier entry point
 │
 ├── Tool\
-│   ├── skill\                     ← 10 specialized reverse engineering & ops skills
+│   ├── skill\                     ← 9 specialized reverse engineering skills
 │   │   ├── softseep\              ← ⭐ Master orchestrator (Router + 8 on-demand references)
 │   │   ├── apkseep\               ← End-to-end Android APK/DEX/SO skill (115 files)
 │   │   ├── ida-reverse\           ← IDA Pro automated spawning & MCP coordination
 │   │   ├── client-license-validation-bypass\ ← Cross-runtime license attack playbook
-│   │   ├── update\                ← 🔄 Explicit-target release & GitHub sync skill
 │   │   └── safe-skills\           ← 5 standalone tool packages
 │   │
 │   ├── mcp\                       ← MCP Engine

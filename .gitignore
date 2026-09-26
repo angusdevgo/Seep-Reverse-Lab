@@ -1,4 +1,7 @@
-# Logs and temporary files
+# Maintenance Tools (Host Private)
+Tool/skill/update/
+setup/sync-hub.ps1
+
 *.log
 *.tmp
 *.bak

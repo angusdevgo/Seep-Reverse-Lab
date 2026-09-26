@@ -120,7 +120,7 @@ Test-CheckItem "扩展"   "底层安全放行与 Lab 状态机扩展 (.ts)" {
 # -----------------------------------------------------------------------------
 # 4. 技能系统完备性 (Skills System)
 # -----------------------------------------------------------------------------
-Write-Host "`n[4/7] 🛠️ 逆向工程专业技能库 (Skills - 10大组件)" -ForegroundColor White
+Write-Host "`n[4/7] 🛠️ 逆向工程专业技能库 (Skills - 9大组件)" -ForegroundColor White
 $localSkills = Join-Path $ToolDir 'skill'
 Test-CheckItem "Skill" "核心总控调度器 (softseep 包含 8 大专题库)" {
     $r = Join-Path $localSkills 'softseep\references'
@@ -146,9 +146,6 @@ Test-CheckItem "Skill" "独立战术安全技能包 (safe-skills 5组)" {
     $ss = Join-Path $localSkills 'safe-skills'
     (Test-Path $ss) -and ((Get-ChildItem $ss -Directory).Count -ge 5)
 } "safe-skills 目录缺失或不足 5 个技能包"
-Test-CheckItem "Skill" "自动化发布与同步总控 (update skill)" {
-    Test-Path (Join-Path $localSkills 'update\SKILL.md')
-} "update 技能缺失，检查 Tool/skill/update 目录"
 
 
 # 如果检测到用户本地的 Pi Agent 目录，则额外校验是否已同步部署到系统
