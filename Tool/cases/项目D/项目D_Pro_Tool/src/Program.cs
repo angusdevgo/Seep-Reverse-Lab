@@ -12,7 +12,9 @@ using System.Windows.Media.Imaging;
 using System.Windows.Interop;
 using System.Windows.Media.Effects;
 using System.Windows.Media.Animation;
+using System.Security;
 using System.Security.Principal;
+using System.Security.AccessControl;
 using Microsoft.Win32;
 using Microsoft.Win32.SafeHandles;
 
@@ -80,6 +82,7 @@ namespace IDM_Toolkit_Wpf
             {
                 string firstArg = args[0].ToLowerInvariant();
                 if (firstArg == "-patch" || firstArg == "/patch" ||
+                    firstArg == "-freeze" || firstArg == "/freeze" ||
                     firstArg == "-register" || firstArg == "/register" ||
                     firstArg == "-restore" || firstArg == "/restore" ||
                     firstArg == "-setpath" || firstArg == "/setpath" ||
@@ -94,7 +97,8 @@ namespace IDM_Toolkit_Wpf
                     if (firstArg == "-help" || firstArg == "/help" || firstArg == "/?")
                     {
                         Console.WriteLine("支持命令行选项：");
-                        Console.WriteLine("  -patch                执行模式一：底层深度解锁（18处校验点修补与签名剥离）");
+                        Console.WriteLine("  -patch                执行模式一：底层深度解锁（AOB 特征码扫描 14 处校验点修补与签名剥离）");
+                        Console.WriteLine("  -freeze               执行模式二：永久冻结试用期（Windows ACL 锁定时间戳与 CLSID）");
                         Console.WriteLine("  -register [name] [email] [serial]  执行模式三：个性化登记并联动解锁");
                         Console.WriteLine("  -restore              执行一键还原官方原版主程序与官方未注册配置");
                         Console.WriteLine("  -setpath <dir/exe>    手动设定并持久化 项目D 安装目录或 项目D.exe 绝对路径");
@@ -124,6 +128,14 @@ namespace IDM_Toolkit_Wpf
                         int count = 0;
                         bool ok = MainWindow.ExecutePatchDirect(Console.WriteLine, out count);
                         Console.WriteLine("Patch finished: ok=" + ok + ", count=" + count);
+                        return;
+                    }
+
+                    if (firstArg == "-freeze" || firstArg == "/freeze")
+                    {
+                        int count = 0;
+                        bool ok = MainWindow.ExecuteTrialFreezeDirect(Console.WriteLine, out count);
+                        Console.WriteLine("Freeze finished: ok=" + ok + ", count=" + count);
                         return;
                     }
 
@@ -2166,6 +2178,7 @@ namespace IDM_Toolkit_Wpf
             {
                 using (RegistryKey k = Registry.CurrentUser.OpenSubKey(@"Software\DownloadManager"))
                 {
+                    bool isFrozen = TrialFreezeEngine.IsTrialFrozen();
                     if (k != null)
                     {
                         object fname = k.GetValue("FName");
@@ -2174,11 +2187,21 @@ namespace IDM_Toolkit_Wpf
                             lblStatAuth.Text = "已登记 (" + fname.ToString().Trim() + ")";
                             lblStatAuth.Foreground = new SolidColorBrush(ColBlue);
                         }
+                        else if (isFrozen)
+                        {
+                            lblStatAuth.Text = "❄️ 试用已永久冻结 (30天)";
+                            lblStatAuth.Foreground = new SolidColorBrush(Color.FromRgb(56, 189, 248));
+                        }
                         else
                         {
                             lblStatAuth.Text = "未登记";
                             lblStatAuth.Foreground = new SolidColorBrush(ColAmber);
                         }
+                    }
+                    else if (isFrozen)
+                    {
+                        lblStatAuth.Text = "❄️ 试用已永久冻结 (30天)";
+                        lblStatAuth.Foreground = new SolidColorBrush(Color.FromRgb(56, 189, 248));
                     }
                     else
                     {
@@ -2408,17 +2431,45 @@ namespace IDM_Toolkit_Wpf
             else if (idx == 3) // 启动进程
             {
                 string idmExe = Path.Combine(GetIDMDir(), "项目D.exe");
-                if (File.Exists(idmExe))
+                if (!File.Exists(idmExe))
+                {
+                    Log("未找到 项目D.exe 主程序，请尝试点击【手动定位 项目D 路径】。");
+                    ModernDialog.ShowWarning(this, "未找到程序", "未找到 项目D.exe 主程序！\n\n如果您的 项目D 安装在其他盘符（如 D盘、E盘），请点击左侧或工具箱的【手动定位 项目D 路径】指定 项目D.exe。");
+                    return;
+                }
+
+                // 启动前体检：提前拦截「不是有效的 Win32 应用程序」这类致命故障，
+                // 而不是让 WPF 抛出未捕获异常（旧版会弹出原始崩溃堆栈窗口）。
+                string diag = NativeBinaryPatcher.DiagnoseExecutable(idmExe);
+                if (diag != null)
+                {
+                    Log("✗ 启动前体检未通过：" + diag);
+                    Log("  目标路径: " + idmExe);
+                    bool doFix = ModernDialog.Confirm(this, "项目D.exe 已损坏",
+                        "检测到 项目D.exe 无法作为可执行程序加载：\n\n• " + diag + "\n\n" +
+                        "常见原因：\n" +
+                        "  1) 补丁偏移与当前 项目D 版本不匹配，导致映像被写坏；\n" +
+                        "  2) 杀毒软件查杀后残留了不完整文件；\n" +
+                        "  3) 磁盘写入中断。\n\n" +
+                        "是否立即从 项目D.exe.BAK 备份还原官方原版？");
+                    if (doFix) RestoreOriginal();
+                    return;
+                }
+
+                try
                 {
                     Process.Start(idmExe);
                     Log("已启动 项目D 应用程序。");
                     Thread.Sleep(500);
                     RefreshAllStatus();
                 }
-                else
+                catch (Exception ex)
                 {
-                    Log("未找到 项目D.exe 主程序，请尝试点击【手动定位 项目D 路径】。");
-                    ModernDialog.ShowWarning(this, "未找到程序", "未找到 项目D.exe 主程序！\n\n如果您的 项目D 安装在其他盘符（如 D盘、E盘），请点击左侧或工具箱的【手动定位 项目D 路径】指定 项目D.exe。");
+                    Log("✗ 启动 项目D 失败: " + ex.Message);
+                    ModernDialog.ShowError(this, "启动失败",
+                        "启动 项目D 失败：\n\n" + ex.Message + "\n\n" +
+                        "若提示「不是有效的 Win32 应用程序」，说明 项目D.exe 已被破坏，\n" +
+                        "请使用左侧【一键还原官方原版】恢复后再重试。");
                 }
             }
             else if (idx == 4) // 一键还原官方原版
@@ -2489,20 +2540,49 @@ namespace IDM_Toolkit_Wpf
         public static bool RestoreOriginalDirect(Action<string> logFn)
         {
             if (logFn != null) logFn("================= 开始执行：一键还原官方原版与初始配置 =================");
-            string idmDir = GetIDMDir();
+            bool ok = RestoreBinaryOnly(GetIDMDir(), logFn, true);
+            RestoreRegistryState(logFn);
+            return ok;
+        }
+
+        /// <summary>
+        /// 仅还原主程序文件（可指定目录 + 是否终止 项目D 进程）。
+        /// 与注册表操作**解耦**，便于测试隔离，避免回归测试误触真实系统状态。
+        /// </summary>
+        public static bool RestoreBinaryOnly(string idmDir, Action<string> logFn, bool killProcess)
+        {
             string target = Path.Combine(idmDir, "项目D.exe");
             string bak = target + ".BAK";
 
-            KillIDMDirect(logFn);
-            Thread.Sleep(300);
+            if (killProcess)
+            {
+                KillIDMDirect(logFn);
+                Thread.Sleep(300);
+            }
 
-            // 1. 还原二进制主程序
+            // 1. 还原二进制主程序（版本一致性守卫）
             if (File.Exists(bak))
             {
+                string curVer = NativeBinaryPatcher.GetFileVersionSafe(target);
+                string bakVer = NativeBinaryPatcher.GetFileVersionSafe(bak);
+
+                if (!string.IsNullOrEmpty(curVer) && !string.IsNullOrEmpty(bakVer) && curVer != bakVer)
+                {
+                    if (logFn != null)
+                    {
+                        logFn("✗ 拒绝还原：备份版本与当前安装版本不一致！");
+                        logFn("    当前 项目D.exe   = v" + curVer);
+                        logFn("    现有 项目D.exe.BAK = v" + bakVer);
+                        logFn("  ★ 直接还原会把旧版主程序覆盖到新版安装上，导致程序异常。");
+                        logFn("  ★ 请重新安装当前版本的 项目D，或手动指定正确的官方原版备份。");
+                    }
+                    return false;
+                }
+
                 try
                 {
                     File.Copy(bak, target, true);
-                    if (logFn != null) logFn("✓ 官方原版主程序已成功无损还原！(项目D.exe.BAK -> 项目D.exe)");
+                    if (logFn != null) logFn("✓ 官方原版主程序已成功无损还原！(项目D.exe.BAK -> 项目D.exe, v" + bakVer + ")");
                 }
                 catch (Exception ex)
                 {
@@ -2514,6 +2594,15 @@ namespace IDM_Toolkit_Wpf
                 if (logFn != null) logFn("提示：未检测到官方原版备份文件 (项目D.exe.BAK)，跳过文件覆盖。");
             }
 
+            return true;
+        }
+
+        /// <summary>
+        /// 清理注册表中的授权登记信息（FName/LName/Email/Serial）及所有策略/黑名单残留。
+        /// 注意：此操作作用于 HKCU/HKLM，与安装目录无关，因此单独抽出。
+        /// </summary>
+        public static void RestoreRegistryState(Action<string> logFn)
+        {
             // 2. 彻底清理注册表中的授权登记信息（FName/LName/Email/Serial）及所有策略/黑名单残留
             try
             {
@@ -2567,17 +2656,24 @@ namespace IDM_Toolkit_Wpf
                     catch { }
                 }
 
+                // 3. 同步解除 ACL 锁定并清理试用记录
+                try
+                {
+                    int unfreezeCount = TrialFreezeEngine.CleanAllTrialKeys(logFn);
+                    if (unfreezeCount > 0 && logFn != null)
+                        logFn("✓ 已同步解除 ACL 权限锁定并清理试用特征项 " + unfreezeCount + " 处");
+                }
+                catch { }
+
                 if (logFn != null)
                 {
                     logFn("✓ 注册表授权配置已彻底重置为【官方未注册原版】状态！");
                     logFn("✓ 一键还原官方操作完成。");
                 }
-                return true;
             }
             catch (Exception ex)
             {
                 if (logFn != null) logFn("清理注册表授权配置失败: " + ex.Message);
-                return false;
             }
         }
 
@@ -2600,26 +2696,34 @@ namespace IDM_Toolkit_Wpf
             }
         }
 
-    #region 原生二进制补丁引擎 (Native Binary Patcher)
+    #region 原生二进制补丁引擎 (Native Binary Patcher) — AOB 特征码版 v3
 
-    // 精确偏移补丁点（基于对 项目D.exe v6.43b10 原版 Crack 的动态逆向分析）
-    // 每个补丁点包含：文件偏移、期望的原始字节（用于验证）、替换字节
-    public class PatchPoint
+    /// <summary>
+    /// AOB（Array-Of-Bytes）特征码补丁点。
+    /// 与旧版「硬编码文件偏移」的根本区别：补丁位置由特征码扫描动态确定，
+    /// 因此天然支持同一补丁逻辑在不同 项目D 版本上的自动迁移，且带唯一性校验。
+    /// </summary>
+    public class AobPoint
     {
         public string Name;
-        public long   FileOffset;
-        public byte[] Expected;   // 期望看到的原始字节（全部匹配才打补丁）
-        public byte[] Patch;      // 写入的补丁字节
+        public byte[] SigOriginal;   // 原始态特征码
+        public byte[] SigPatched;    // 已补丁态特征码
+        public int    PatchOffset;   // 补丁字节在特征码内的偏移
+        public byte[] Expected;      // 期望的原始字节（冗余校验，双保险）
+        public byte[] Patch;         // 写入的补丁字节
 
-        public PatchPoint(string name, long offset, string expectedHex, string patchHex)
+        public AobPoint(string name, string sigOriginalHex, string sigPatchedHex,
+                        int patchOffset, string expectedHex, string patchHex)
         {
-            this.Name       = name;
-            this.FileOffset = offset;
-            this.Expected   = HexToBytes(expectedHex);
-            this.Patch      = HexToBytes(patchHex);
+            this.Name        = name;
+            this.SigOriginal = HexToBytes(sigOriginalHex);
+            this.SigPatched  = HexToBytes(sigPatchedHex);
+            this.PatchOffset = patchOffset;
+            this.Expected    = HexToBytes(expectedHex);
+            this.Patch       = HexToBytes(patchHex);
         }
 
-        private static byte[] HexToBytes(string hex)
+        internal static byte[] HexToBytes(string hex)
         {
             int len = hex.Length;
             byte[] bytes = new byte[len / 2];
@@ -2629,230 +2733,1063 @@ namespace IDM_Toolkit_Wpf
         }
     }
 
+    public sealed class PeInfo
+    {
+        public int  OptionalHeaderOffset;
+        public int  SectionTableOffset;
+        public int  SectionCount;
+        public int  CheckSumOffset;       // 可选头 + 0x40
+        public int  SecurityDirOffset;    // 数据目录[4] 的文件偏移，-1 表示不存在
+        public int  SecurityRva;
+        public int  SecuritySize;
+        public long ImageEnd;             // max(节区 RawPtr + RawSize) —— 真实映像末尾
+        public bool IsPe32Plus;
+    }
+
+    /// <summary>PE 解析 / 完整性校验工具（版本无关，一切偏移动态计算）</summary>
+    public static class PeImageUtil
+    {
+        private static int RdU16(byte[] d, int o) { return d[o] | (d[o + 1] << 8); }
+        private static int RdI32(byte[] d, int o) { return d[o] | (d[o + 1] << 8) | (d[o + 2] << 16) | (d[o + 3] << 24); }
+
+        public static bool TryParse(byte[] d, out PeInfo info, out string error)
+        {
+            info = null; error = null;
+
+            if (d == null || d.Length < 0x200) { error = "文件体积过小，不是有效的 PE 映像"; return false; }
+            if (d[0] != 0x4D || d[1] != 0x5A) { error = "缺少 MZ 头，不是有效的 Win32 可执行文件"; return false; }
+
+            int lfanew = RdI32(d, 0x3C);
+            if (lfanew <= 0 || lfanew + 0x18 > d.Length) { error = "DOS 头 e_lfanew 偏移越界"; return false; }
+            if (d[lfanew] != 0x50 || d[lfanew + 1] != 0x45 || d[lfanew + 2] != 0 || d[lfanew + 3] != 0)
+            { error = "缺少 PE 签名，映像已损坏"; return false; }
+
+            int coff = lfanew + 4;
+            if (coff + 20 > d.Length) { error = "COFF 文件头越界"; return false; }
+            int nsec  = RdU16(d, coff + 2);
+            int optsz = RdU16(d, coff + 16);
+            int opt   = coff + 20;
+
+            if (nsec <= 0 || nsec > 96) { error = "节区数量异常 (" + nsec + ")"; return false; }
+            if (optsz < 0xE0 || opt + optsz > d.Length) { error = "可选头长度异常 (" + optsz + ")"; return false; }
+
+            int magic = RdU16(d, opt);
+            bool plus = (magic == 0x20B);
+            if (magic != 0x10B && magic != 0x20B)
+            { error = "可选头 Magic 异常 (0x" + magic.ToString("X") + ")，不是标准 PE 映像"; return false; }
+
+            int secTab = opt + optsz;
+            if ((long)secTab + (long)nsec * 40 > d.Length) { error = "节区表越界，映像已被截断损坏"; return false; }
+
+            long imgEnd = 0;
+            for (int i = 0; i < nsec; i++)
+            {
+                int o = secTab + i * 40;
+                int rawSize = RdI32(d, o + 16);
+                int rawPtr  = RdI32(d, o + 20);
+                if (rawSize < 0 || rawPtr < 0) { error = "第 " + i + " 个节区头字段非法"; return false; }
+                long end = (long)rawPtr + (long)rawSize;
+                if (end > d.Length)
+                {
+                    string nm = Encoding.ASCII.GetString(d, o, 8).TrimEnd('\0', ' ');
+                    error = "节区 [" + nm + "] 原始数据超出文件末尾（需要 " + end.ToString("N0") + " 字节，实际 "
+                          + d.Length.ToString("N0") + " 字节）—— 映像已被截断损坏";
+                    return false;
+                }
+                if (end > imgEnd) imgEnd = end;
+            }
+
+            PeInfo pi = new PeInfo();
+            pi.OptionalHeaderOffset = opt;
+            pi.SectionTableOffset   = secTab;
+            pi.SectionCount         = nsec;
+            pi.IsPe32Plus           = plus;
+            pi.ImageEnd             = imgEnd;
+            pi.CheckSumOffset       = opt + 0x40;
+
+            int nddOff = opt + (plus ? 0x6C : 0x5C);
+            int ddOff  = opt + (plus ? 0x70 : 0x60);
+            int ndd    = RdI32(d, nddOff);
+            if (ndd > 4 && ddOff + 5 * 8 <= opt + optsz)
+            {
+                pi.SecurityDirOffset = ddOff + 4 * 8;
+                pi.SecurityRva       = RdI32(d, pi.SecurityDirOffset);
+                pi.SecuritySize      = RdI32(d, pi.SecurityDirOffset + 4);
+            }
+            else
+            {
+                pi.SecurityDirOffset = -1;
+                pi.SecurityRva       = 0;
+                pi.SecuritySize      = 0;
+            }
+
+            info = pi;
+            return true;
+        }
+
+        /// <summary>仅做合法性判定（用于打补丁前 / 启动前的快速体检）</summary>
+        public static bool IsValidImage(byte[] d, out string error)
+        {
+            PeInfo pi;
+            return TryParse(d, out pi, out error);
+        }
+
+        /// <summary>
+        /// 标准 PE 映像校验和（与 MS CheckSumMappedFile 同款算法）。
+        /// 计算时把校验和字段本身视为 0。
+        /// </summary>
+        public static uint ComputeChecksum(byte[] data, int checksumFieldOffset)
+        {
+            long sum = 0;
+            int n = data.Length;
+
+            for (int i = 0; i + 1 < n; i += 2)
+            {
+                int word;
+                if (i >= checksumFieldOffset && i < checksumFieldOffset + 4) word = 0;
+                else word = data[i] | (data[i + 1] << 8);
+
+                sum += word;
+                sum = (sum & 0xFFFF) + (sum >> 16);
+            }
+
+            if ((n & 1) != 0)
+            {
+                sum += data[n - 1];
+                sum = (sum & 0xFFFF) + (sum >> 16);
+            }
+
+            while (sum > 0xFFFF) sum = (sum & 0xFFFF) + (sum >> 16);
+            return (uint)((sum + n) & 0xFFFFFFFFL);
+        }
+    }
+
     public static class NativeBinaryPatcher
     {
-        // 完整 18 个补丁点（共 31 字节），与原版 IDM_6.4x_Crack_v20.7.exe 动态逆向实测 100% 逐字节对齐
-        // 目标版本：项目D.exe v6.43b10（原始文件大小 6,199,664 字节，打补丁后截断至 6,189,056 字节）
-        public static readonly PatchPoint[] POINTS = new PatchPoint[]
+        // ===== 支持范围 =====
+        public const string SupportedVersions = "项目D 6.43 build 10 / build 11 (6.43.11.2) / build 11 (6.43.11.3)";
+
+        // ===== AOB 特征码表 =====
+        // 经 项目D 6.43 build 10 / build 11 (6.43.11.2) / build 11 (6.43.11.3) 三版本交叉验证：
+        // 全部 14 个位点在三个版本的「原始态 / 已补丁态」中均为唯一命中。
+        public static readonly AobPoint[] POINTS = new AobPoint[]
         {
-            // --- PE Header 校验修正（防止 项目D 自检失败）---
-            new PatchPoint(
-                "PE Checksum 校正",
-                0x150L, "00CD5E", "EA0B5F"
-            ),
-            new PatchPoint(
-                "PE 数字签名表 RVA 清零 (Security Directory RVA)",
-                0x191L, "705E", "0000"
-            ),
-            new PatchPoint(
-                "PE 数字签名表 Size 清零 (Security Directory Size)",
-                0x194L, "7029", "0000"
-            ),
-
-            // --- 核心授权校验逻辑 ---
-            new PatchPoint(
-                "授权分支检测 (test eax→xor eax，强制授权通过)",
-                0x2D7BDL, "85", "33"
-            ),
-            new PatchPoint(
-                "试用期最大值 (83 E0 0F 83 C0 0F → mov eax,0x7FFFFFFF + nop)",
-                0x4C100L, "83E00F83C00F", "B8FFFFFF7F90"
-            ),
-            new PatchPoint(
-                "假序列号弹窗 A (jz→jmp，绕过弹窗跳转)",
-                0x53F78L, "74", "EB"
-            ),
-
-            // --- 守护线程/看门狗（函数入口插 ret=0xC3，线程启动即返回）---
-            new PatchPoint(
-                "守护线程 A (Kill Watchdog Thread 1)",
-                0x74920L, "6A", "C3"
-            ),
-            new PatchPoint(
-                "守护线程 B (Kill Watchdog Thread 2)",
-                0x753C0L, "6A", "C3"
-            ),
-            new PatchPoint(
-                "守护线程 C (Kill Watchdog Thread 3)",
-                0x7BC00L, "6A", "C3"
-            ),
-            new PatchPoint(
-                "守护线程 D (Kill Watchdog Thread 4)",
-                0x7CA50L, "6A", "C3"
-            ),
-            new PatchPoint(
-                "看门狗关联函数 (Kill Watchdog Hook)",
-                0x834E0L, "6A", "C3"
-            ),
-            new PatchPoint(
-                "守护线程 E (push ebp→ret，阻断额外校验函数)",
-                0x842E0L, "55", "C3"
-            ),
-            new PatchPoint(
-                "守护线程 F (Kill Watchdog Thread 5)",
-                0x131C60L, "6A", "C3"
-            ),
-
-            // --- 过期/联网验证逻辑 ---
-            new PatchPoint(
-                "过期强退逻辑 (0F 85→90 E9，nop+jmp 跳过强退)",
-                0x91ABCL, "0F85", "90E9"
-            ),
-            new PatchPoint(
-                "联网验证标志位 (01→00)",
-                0x99A6DL, "01", "00"
-            ),
-            new PatchPoint(
-                "假序列号弹窗 B (jz→jmp，绕过弹窗跳转)",
-                0xF710EL, "74", "EB"
-            ),
-
-            // --- 试用天数常量 ---
-            new PatchPoint(
-                "试用状态标志位 (01→00)",
-                0x378CDCL, "01", "00"
-            ),
-            new PatchPoint(
-                "试用天数限制常量 (0x1E=30天 → 0x7FFFFFFF=永久)",
-                0x378CE0L, "1E000000", "FFFFFF7F"
-            ),
+            new AobPoint(
+                "授权分支检测 (test eax->xor eax)",
+                "4598506A006A008B0D04867800518B9544F5FFFF52FF150440690085C07508B301889D4FF5FFFF8B8544F5FFFF50FF15" +
+                "4840690084DB753789B554F5FFFF8D8D54F5FFFF518D5598526A006A00A104867800508B0DE86C780051FF1504406900" +
+                "85C00F851B010000C6854FF5FFFF018D8D50F5FFFFE8",
+                "4598506A006A008B0D04867800518B9544F5FFFF52FF150440690085C07508B301889D4FF5FFFF8B8544F5FFFF50FF15" +
+                "4840690084DB753789B554F5FFFF8D8D54F5FFFF518D5598526A006A00A104867800508B0DE86C780051FF1504406900" +
+                "33C00F851B010000C6854FF5FFFF018D8D50F5FFFFE8",
+                96, "85", "33"),
+            new AobPoint(
+                "试用期最大值 (->mov eax,7FFFFFFF+nop)",
+                "660064A1000000005083EC70A19819780033C58985A8090000535657508D45F464A3000000008965F0894D8433DB895D" +
+                "D4895DFCA1DC9C7700F7D81BC083E00F83C00FA3E09C7700885DCF538D4DEC5153683F000F0053535368",
+                "660064A1000000005083EC70A19819780033C58985A8090000535657508D45F464A3000000008965F0894D8433DB895D" +
+                "D4895DFCA1DC9C7700F7D81BC0B8FFFFFF7F90A3E09C7700885DCF538D4DEC5153683F000F0053535368",
+                61, "83E00F83C00F", "B8FFFFFF7F90"),
+            new AobPoint(
+                "假序列号弹窗 A (jz->jmp)",
+                "030E0084C0742A807C2407007523C7442414FFFFFFFF8D4C2408E8",
+                "030E0084C0EB2A807C2407007523C7442414FFFFFFFF8D4C2408E8",
+                5, "74", "EB"),
+            new AobPoint(
+                "守护线程 A",
+                "1A0085FF750885ED750433C0EB05B8010000008B8C24F400000064890D00000000595F5E5D5B81C4EC000000C3CCCCCC" +
+                "6AFF68",
+                "1A0085FF750885ED750433C0EB05B8010000008B8C24F400000064890D00000000595F5E5D5B81C4EC000000C3CCCCCC" +
+                "C3FF68",
+                48, "6A", "C3"),
+            new AobPoint(
+                "守护线程 B",
+                "1C0081C470010000C3CCCCCCCC6AFF68",
+                "1C0081C470010000C3CCCCCCCCC3FF68",
+                13, "6A", "C3"),
+            new AobPoint(
+                "守护线程 C",
+                "1C0085F675928B4C241864890D00000000595F5E5D5B83C410C20400CCCCCCCCCCCCCCCCCCCCCCCC6AFF68",
+                "1C0085F675928B4C241864890D00000000595F5E5D5B83C410C20400CCCCCCCCCCCCCCCCCCCCCCCCC3FF68",
+                40, "6A", "C3"),
+            new AobPoint(
+                "守护线程 D",
+                "76FFFF83C41083F80675198B0DB07378006A0068482B0000681101000051FF15C8476900B801000000C3CCCCCCCCCCCC" +
+                "CCCCCCCCCCCCCC6AFF68",
+                "76FFFF83C41083F80675198B0DB07378006A0068482B0000681101000051FF15C8476900B801000000C3CCCCCCCCCCCC" +
+                "CCCCCCCCCCCCCCC3FF68",
+                55, "6A", "C3"),
+            new AobPoint(
+                "看门狗关联函数",
+                "1B0081C41C100000C3CCCC6AFF68",
+                "1B0081C41C100000C3CCCCC3FF68",
+                11, "6A", "C3"),
+            new AobPoint(
+                "守护线程 E (push ebp->ret)",
+                "1B0081C4D0010000C3CCCCCCCCCCCCCCCCCC558BEC83E4F86AFF68",
+                "1B0081C4D0010000C3CCCCCCCCCCCCCCCCCCC38BEC83E4F86AFF68",
+                18, "55", "C3"),
+            new AobPoint(
+                "守护线程 F",
+                "506C0089152CD97700C70530D9770005000000A334D97700A338D97700890D3CD97700A340D97700C7442410FFFFFFFF" +
+                "B890D877008B4C240864890D00000000595E83C40CC3CCCCCCCCCCCCCC6AFF68",
+                "506C0089152CD97700C70530D9770005000000A334D97700A338D97700890D3CD97700A340D97700C7442410FFFFFFFF" +
+                "B890D877008B4C240864890D00000000595E83C40CC3CCCCCCCCCCCCCCC3FF68",
+                77, "6A", "C3"),
+            new AobPoint(
+                "过期强退逻辑 (0F85->90E9)",
+                "004DC685DD1B020056C685DF1B020000C7851CFDFFFF100000008D851CFDFFFF508D8D801B02005133FF57578D95D41B" +
+                "020052A1E86C780050FF150440690085C00F85F10100008D85801B02008D50018D6424008A084084C975F92BC283F802" +
+                "0F85D2010000E8",
+                "004DC685DD1B020056C685DF1B020000C7851CFDFFFF100000008D851CFDFFFF508D8D801B02005133FF57578D95D41B" +
+                "020052A1E86C780050FF150440690085C00F85F10100008D85801B02008D50018D6424008A084084C975F92BC283F802" +
+                "90E9D2010000E8",
+                96, "0F85", "90E9"),
+            new AobPoint(
+                "联网验证标志位",
+                "BDFEFFB8010000009BE9D5000000B801000000A3807378009BE9C500000080BE94020000000F85CA92FFFF6A00687011" +
+                "01006A308BCEE8",
+                "BDFEFFB8010000009BE9D5000000B800000000A3807378009BE9C500000080BE94020000000F85CA92FFFF6A00687011" +
+                "01006A308BCEE8",
+                15, "01", "00"),
+            new AobPoint(
+                "假序列号弹窗 B (jz->jmp)",
+                "D2030084C0742A807C2407007523C7442414FFFFFFFF8D4C2408E8",
+                "D2030084C0EB2A807C2407007523C7442414FFFFFFFF8D4C2408E8",
+                5, "74", "EB"),
+            new AobPoint(
+                "试用状态标志 + 天数限制常量",
+                "7200000000002E3F415643446F776E6C6F6164436F6D706F6E656E7473404000000001000000010000001E000000",
+                "7200000000002E3F415643446F776E6C6F6164436F6D706F6E656E747340400000000100000000000000FFFFFF7F",
+                38, "010000001E000000", "00000000FFFFFF7F"),
         };
 
-        // 向后兼容：RULES.Length 供旧代码引用
+        // 向后兼容：旧代码引用的 RulesCount
         public static int RulesCount { get { return POINTS.Length; } }
+
+        /// <summary>AOB 扫描命中结果</summary>
+        public sealed class AobHit
+        {
+            public AobPoint Point;
+            public int      SiteOffset;      // 补丁字节在文件中的绝对偏移
+            public bool     AlreadyPatched;  // 是否已处于补丁状态
+        }
+
+        private static int IndexOf(byte[] hay, byte[] needle, int start)
+        {
+            if (hay == null || needle == null) return -1;
+            int n = hay.Length, m = needle.Length;
+            if (m == 0 || m > n) return -1;
+            int limit = n - m;
+            byte first = needle[0];
+            for (int i = Math.Max(0, start); i <= limit; i++)
+            {
+                if (hay[i] != first) continue;
+                int j = 1;
+                while (j < m && hay[i + j] == needle[j]) j++;
+                if (j == m) return i;
+            }
+            return -1;
+        }
+
+        private static int IndexOf(byte[] hay, byte[] needle) { return IndexOf(hay, needle, 0); }
+
+        /// <summary>
+        /// AOB 全表扫描。返回 true 表示全部位点均已「唯一命中」。
+        /// 定位策略：先找已补丁态特征码（幂等支持），再找原始态特征码并校验唯一性。
+        /// </summary>
+        public static bool ScanAll(byte[] data, Action<string> logFn, out AobHit[] hits)
+        {
+            hits = new AobHit[POINTS.Length];
+            int resolved = 0;
+
+            for (int i = 0; i < POINTS.Length; i++)
+            {
+                AobPoint p = POINTS[i];
+                int op = IndexOf(data, p.SigPatched);
+                int oo = IndexOf(data, p.SigOriginal);
+
+                // 情况 1：已是补丁状态（幂等）
+                if (op >= 0 && oo < 0)
+                {
+                    AobHit h = new AobHit();
+                    h.Point = p;
+                    h.SiteOffset = op + p.PatchOffset;
+                    h.AlreadyPatched = true;
+                    hits[i] = h;
+                    resolved++;
+                    continue;
+                }
+
+                // 情况 2：找不到原始特征码
+                if (oo < 0)
+                {
+                    logFn("  ✗ 未找到特征码: " + p.Name);
+                    continue;
+                }
+
+                // 情况 3：特征码必须唯一
+                if (IndexOf(data, p.SigOriginal, oo + 1) >= 0)
+                {
+                    logFn("  ✗ 特征码非唯一命中: " + p.Name);
+                    continue;
+                }
+
+                // 冗余校验：位点字节必须与期望一致
+                int site = oo + p.PatchOffset;
+                if (site < 0 || site + p.Expected.Length > data.Length)
+                {
+                    logFn("  ✗ 位点越界: " + p.Name);
+                    continue;
+                }
+                bool ok = true;
+                for (int k = 0; k < p.Expected.Length; k++)
+                    if (data[site + k] != p.Expected[k]) { ok = false; break; }
+                if (!ok)
+                {
+                    logFn("  ✗ 位点字节与期望不符: " + p.Name);
+                    continue;
+                }
+
+                AobHit h2 = new AobHit();
+                h2.Point = p;
+                h2.SiteOffset = site;
+                h2.AlreadyPatched = false;
+                hits[i] = h2;
+                resolved++;
+            }
+
+            return resolved == POINTS.Length;
+        }
+
+        /// <summary>
+        /// 补丁前置体检。返回 false 时严禁写入任何字节。
+        /// 两道门禁：① PE 结构完整性  ② AOB 特征码全表唯一命中
+        /// </summary>
+        public static bool PreflightCheck(string targetExe, Action<string> logFn,
+                                          out byte[] data, out PeInfo pe, out AobHit[] hits)
+        {
+            data = null; pe = null; hits = null;
+
+            if (!File.Exists(targetExe)) { logFn("✗ 未找到目标文件: " + targetExe); return false; }
+
+            try { data = File.ReadAllBytes(targetExe); }
+            catch (Exception ex) { logFn("✗ 读取文件失败: " + ex.Message); return false; }
+
+            if (data.Length == 0)
+            {
+                logFn("✗ 目标文件长度为 0 字节（极可能已被安全软件查杀/隔离）。");
+                return false;
+            }
+
+            // ---- 门禁 1：PE 结构完整性 ----
+            string peErr;
+            if (!PeImageUtil.TryParse(data, out pe, out peErr))
+            {
+                logFn("✗ PE 结构校验失败：" + peErr);
+                logFn("  该 项目D.exe 当前已不是合法的可执行映像，严禁继续打补丁。");
+                logFn("  ★ 请使用【一键还原官方原版】从 项目D.exe.BAK 恢复后再重试。");
+                return false;
+            }
+            logFn("✓ PE 结构校验通过（节区 " + pe.SectionCount + " 个，映像末尾 0x" + pe.ImageEnd.ToString("X") + "）");
+
+            // ---- 门禁 2：AOB 特征码扫描 ----
+            logFn("  正在执行 AOB 特征码扫描（支持版本：" + SupportedVersions + "）...");
+            if (!ScanAll(data, logFn, out hits))
+            {
+                int got = 0;
+                if (hits != null) foreach (AobHit h in hits) if (h != null) got++;
+                logFn("✗ 特征码扫描未完全命中（" + got + "/" + POINTS.Length + "）。");
+                logFn("  本工具特征码仅适配 " + SupportedVersions + "。");
+                logFn("  ★ 为避免损坏程序，已中止二进制补丁，未写入任何字节。");
+                logFn("  ★ 建议改用【模式二：永久冻结试用期】或【模式三：个性化授权登记】。");
+                return false;
+            }
+
+            int already = 0;
+            foreach (AobHit h in hits) if (h.AlreadyPatched) already++;
+            logFn("✓ AOB 扫描全部命中 " + POINTS.Length + "/" + POINTS.Length
+                + "（已补丁 " + already + " 处 / 待补丁 " + (POINTS.Length - already) + " 处）");
+            return true;
+        }
 
         public static bool ApplyPatch(string targetExe, bool backup, Action<string> logFn, out int appliedCount)
         {
             appliedCount = 0;
-            if (!File.Exists(targetExe))
-            {
-                logFn("错误：未找到目标文件 " + targetExe);
+            byte[] data; PeInfo pe; AobHit[] hits;
+
+            logFn("──────── 二进制补丁引擎 (AOB 特征码版 v3) ────────");
+
+            if (!PreflightCheck(targetExe, logFn, out data, out pe, out hits))
                 return false;
+
+            // ---- 备份管理（版本感知：防止 项目D 升级后沿用旧版备份，导致回滚点错版）----
+            string bakPath = targetExe + ".BAK";
+            if (backup)
+            {
+                if (!EnsureFreshBackup(targetExe, hits, logFn, bakPath))
+                    return false;
             }
 
-            // 备份原版（仅在 BAK 不存在时备份，防止覆盖原始备份）
-            string bakPath = targetExe + ".BAK";
-            if (backup && !File.Exists(bakPath))
+            // ---- 本次运行的回滚点 ----
+            string rollbackPath = targetExe + ".rollback.tmp";
+            try { File.Copy(targetExe, rollbackPath, true); }
+            catch (Exception ex) { logFn("✗ 无法创建回滚点，为安全起见中止补丁: " + ex.Message); return false; }
+
+            try
             {
+                // ---- 写入代码段补丁 ----
+                foreach (AobHit h in hits)
+                {
+                    AobPoint p = h.Point;
+                    if (h.AlreadyPatched)
+                    {
+                        logFn("→ 已处于补丁状态，跳过: " + p.Name);
+                        appliedCount++;
+                        continue;
+                    }
+                    for (int i = 0; i < p.Patch.Length; i++) data[h.SiteOffset + i] = p.Patch[i];
+                    appliedCount++;
+                    logFn("✓ 补丁写入 [0x" + h.SiteOffset.ToString("X") + "]: " + p.Name);
+                }
+
+                // ---- PE 头修正：动态定位，版本无关 ----
+                if (pe.SecurityDirOffset >= 0 && (pe.SecurityRva != 0 || pe.SecuritySize != 0))
+                {
+                    int so = pe.SecurityDirOffset;
+                    for (int i = 0; i < 8; i++) data[so + i] = 0;
+                    logFn("✓ 已清除 PE 数字签名目录（偏移 0x" + so.ToString("X") + "，原 RVA=0x" + pe.SecurityRva.ToString("X") + "）");
+                }
+                else
+                {
+                    logFn("→ PE 数字签名目录本就不存在，无需清除");
+                }
+
+                // ---- 安全截断：只剥离「超出节区表所描述映像末尾」的 Authenticode 尾部 ----
+                long overlay = (long)data.Length - pe.ImageEnd;
+                if (overlay > 0)
+                {
+                    long declaredSig = pe.SecuritySize;
+                    if (declaredSig > 0 && overlay == declaredSig)
+                    {
+                        Array.Resize(ref data, (int)pe.ImageEnd);
+                        logFn("✓ 已剥离 Authenticode 签名尾部 " + overlay.ToString("N0") + " 字节（动态计算，非硬编码）");
+                    }
+                    else if (overlay < 1024 * 1024)
+                    {
+                        Array.Resize(ref data, (int)pe.ImageEnd);
+                        logFn("✓ 已剥离映像尾部冗余数据 " + overlay.ToString("N0") + " 字节");
+                    }
+                    else
+                    {
+                        logFn("→ 检测到 " + overlay.ToString("N0") + " 字节非签名尾部数据，为安全起见保留不截断");
+                    }
+                }
+
+                // ---- 重算 PE 校验和（必须放在「全部补丁 + 截断」之后）----
+                uint newSum = PeImageUtil.ComputeChecksum(data, pe.CheckSumOffset);
+                uint oldSum = (uint)(data[pe.CheckSumOffset] | (data[pe.CheckSumOffset + 1] << 8)
+                                   | (data[pe.CheckSumOffset + 2] << 16) | (data[pe.CheckSumOffset + 3] << 24));
+                data[pe.CheckSumOffset]     = (byte)(newSum & 0xFF);
+                data[pe.CheckSumOffset + 1] = (byte)((newSum >> 8) & 0xFF);
+                data[pe.CheckSumOffset + 2] = (byte)((newSum >> 16) & 0xFF);
+                data[pe.CheckSumOffset + 3] = (byte)((newSum >> 24) & 0xFF);
+                logFn("✓ 已重算 PE 校验和：0x" + oldSum.ToString("X8") + " → 0x" + newSum.ToString("X8")
+                    + "（标准算法动态计算）");
+
+                // ---- 写入前 PE 终检 ----
+                string vErr;
+                if (!PeImageUtil.IsValidImage(data, out vErr))
+                {
+                    logFn("✗ 补丁后 PE 自检失败（" + vErr + "），已放弃写入。");
+                    return false;
+                }
+
+                // ---- 原子写入 ----
+                string tmpPath = targetExe + ".new.tmp";
                 try
                 {
-                    File.Copy(targetExe, bakPath);
-                    logFn("✓ 已自动备份原版至: " + bakPath);
+                    File.WriteAllBytes(tmpPath, data);
+                    File.Copy(tmpPath, targetExe, true);
                 }
                 catch (Exception ex)
                 {
-                    logFn("备份提示: " + ex.Message);
+                    logFn("✗ 写入补丁文件失败（请确认以管理员身份运行）: " + ex.Message);
+                    try { File.Copy(rollbackPath, targetExe, true); logFn("✓ 已自动回滚至补丁前状态"); } catch { }
+                    return false;
                 }
-            }
+                finally
+                {
+                    try { if (File.Exists(tmpPath)) File.Delete(tmpPath); } catch { }
+                }
 
-            byte[] data;
+                // ---- 落盘后终检 + 失败自动回滚 ----
+                byte[] verify;
+                try { verify = File.ReadAllBytes(targetExe); }
+                catch (Exception ex)
+                {
+                    logFn("✗ 落盘复读失败: " + ex.Message);
+                    try { File.Copy(rollbackPath, targetExe, true); logFn("✓ 已自动回滚"); } catch { }
+                    return false;
+                }
+
+                string postErr;
+                if (!PeImageUtil.IsValidImage(verify, out postErr))
+                {
+                    logFn("✗ 落盘后 PE 校验失败（" + postErr + "），正在自动回滚...");
+                    try { File.Copy(rollbackPath, targetExe, true); logFn("✓ 已自动回滚，项目D.exe 恢复至补丁前状态"); }
+                    catch (Exception ex) { logFn("✗ 回滚失败，请手动使用【一键还原官方原版】: " + ex.Message); }
+                    return false;
+                }
+
+                string hashStr = Sha256Hex(verify);
+                logFn("★ 底层二进制补丁写入完成！共 " + appliedCount + "/" + POINTS.Length + " 个位点生效。");
+                logFn("  落盘 SHA256: " + hashStr);
+                logFn("  落盘体积  : " + verify.Length.ToString("N0") + " 字节");
+
+                return true;
+            }
+            finally
+            {
+                try { if (File.Exists(rollbackPath)) File.Delete(rollbackPath); } catch { }
+            }
+        }
+
+        public static string Sha256Hex(byte[] data)
+        {
+            using (var sha = System.Security.Cryptography.SHA256.Create())
+            {
+                byte[] hash = sha.ComputeHash(data);
+                StringBuilder sb = new StringBuilder();
+                foreach (byte b in hash) sb.Append(b.ToString("X2"));
+                return sb.ToString();
+            }
+        }
+
+        /// <summary>读取文件版本号（失败返回空串）</summary>
+        public static string GetFileVersionSafe(string path)
+        {
             try
             {
-                data = File.ReadAllBytes(targetExe);
+                if (!File.Exists(path)) return "";
+                FileVersionInfo fvi = FileVersionInfo.GetVersionInfo(path);
+                return (fvi == null || string.IsNullOrEmpty(fvi.FileVersion)) ? "" : fvi.FileVersion.Trim();
+            }
+            catch { return ""; }
+        }
+
+        /// <summary>
+        /// 备份管理（版本感知）。
+        /// 关键场景：用户升级 项目D 后，旧的 项目D.exe.BAK 仍是上一版本的官方原版。
+        /// 若直接沿用，回滚点与「一键还原」都会指向错误的版本（b10 主程序 + b11 依赖库）。
+        /// 策略：
+        ///   1) BAK 不存在            -> 直接备份
+        ///   2) BAK 版本 == 当前版本  -> 保持不变
+        ///   3) BAK 版本 != 当前版本：
+        ///        a) 当前文件为纯净原版（全部位点处于原始态）-> 归档旧备份，写入新备份
+        ///        b) 当前文件已含补丁  -> 无法作为备份源，拒绝继续（避免污染备份）
+        /// </summary>
+        private static bool EnsureFreshBackup(string targetExe, AobHit[] hits,
+                                              Action<string> logFn, string bakPath)
+        {
+            if (!File.Exists(bakPath))
+            {
+                try { File.Copy(targetExe, bakPath); logFn("✓ 已自动备份原版至: " + bakPath); }
+                catch (Exception ex) { logFn("✗ 备份失败，为安全起见中止补丁: " + ex.Message); return false; }
+                return true;
+            }
+
+            string curVer = GetFileVersionSafe(targetExe);
+            string bakVer = GetFileVersionSafe(bakPath);
+
+            if (!string.IsNullOrEmpty(curVer) && curVer == bakVer)
+            {
+                logFn("→ 已有同版本官方原版备份（v" + curVer + "），保持不动");
+                return true;
+            }
+
+            logFn("⚠ 备份版本不一致：当前 项目D.exe = v" + (curVer.Length == 0 ? "未知" : curVer)
+                + "，现有 项目D.exe.BAK = v" + (bakVer.Length == 0 ? "未知" : bakVer));
+
+            bool pristine = true;
+            foreach (AobHit h in hits) if (h.AlreadyPatched) { pristine = false; break; }
+
+            if (!pristine)
+            {
+                logFn("✗ 当前 项目D.exe 并非纯净原版（已含补丁），无法作为新备份源。");
+                logFn("  ★ 若继续，回滚点将指向错误版本。为安全起见已中止。");
+                logFn("  ★ 请先重新安装当前版本的 项目D，或手动将官方原版另存为: " + bakPath);
+                return false;
+            }
+
+            // 归档旧备份，避免覆盖丢失
+            string stamp = (bakVer.Length == 0) ? "unknown" : bakVer.Replace(", ", ".").Replace(" ", "");
+            string archived = bakPath + "." + stamp;
+            try
+            {
+                if (File.Exists(archived)) File.Delete(archived);
+                File.Move(bakPath, archived);
+                logFn("→ 旧版备份已归档为: " + Path.GetFileName(archived));
             }
             catch (Exception ex)
             {
-                logFn("读取文件失败: " + ex.Message);
-                return false;
-            }
-
-            // 验证文件大小在合理范围（项目D.exe v6.4x 约 5.9MB~6.5MB）
-            if (data.Length < 5 * 1024 * 1024 || data.Length > 7 * 1024 * 1024)
-            {
-                logFn("警告：项目D.exe 文件大小异常 (" + data.Length + " bytes)，补丁规则可能不适用此版本。");
-            }
-
-            int skipped = 0;
-            foreach (PatchPoint pt in POINTS)
-            {
-                long off = pt.FileOffset;
-
-                // 边界检查
-                if (off < 0 || off + pt.Expected.Length > data.Length || off + pt.Patch.Length > data.Length)
-                {
-                    logFn("⚠ 偏移超出范围，跳过: " + pt.Name);
-                    skipped++;
-                    continue;
-                }
-
-                // 检查是否已经打过补丁（期望字节已是补丁字节）
-                bool alreadyPatched = true;
-                for (int i = 0; i < pt.Patch.Length; i++)
-                {
-                    if (data[off + i] != pt.Patch[i]) { alreadyPatched = false; break; }
-                }
-                if (alreadyPatched)
-                {
-                    logFn("→ 已是补丁状态，跳过: " + pt.Name);
-                    appliedCount++;   // 统计为"有效"（已生效）
-                    continue;
-                }
-
-                // 验证期望字节（原始字节匹配才写入，防止误补不同版本）
-                bool match = true;
-                for (int i = 0; i < pt.Expected.Length; i++)
-                {
-                    if (data[off + i] != pt.Expected[i]) { match = false; break; }
-                }
-                if (!match)
-                {
-                    logFn("⚠ 原始字节不匹配，跳过 (版本差异?): " + pt.Name);
-                    skipped++;
-                    continue;
-                }
-
-                // 写入补丁字节
-                for (int i = 0; i < pt.Patch.Length; i++)
-                    data[off + i] = pt.Patch[i];
-
-                appliedCount++;
-                logFn("✓ 补丁写入 [0x" + off.ToString("X") + "]: " + pt.Name);
-            }
-
-            if (skipped == POINTS.Length)
-            {
-                logFn("错误：全部补丁点均不匹配，可能不是支持的 项目D.exe 版本 (v6.43b10)。");
-                return false;
-            }
-
-            // 截断文件至 6,189,056 字节（移除末尾 10,608 字节的数字签名 Security Directory）
-            // 与原版 Ali.Dbg Crack <目标版本> 完全一致
-            const int TARGET_FILE_SIZE = 6189056;
-            if (data.Length > TARGET_FILE_SIZE)
-            {
-                Array.Resize(ref data, TARGET_FILE_SIZE);
-                logFn("✓ 已剥离原版数字签名并精确截断文件至: " + TARGET_FILE_SIZE + " 字节");
+                logFn("⚠ 旧备份归档失败（将继续覆盖）: " + ex.Message);
             }
 
             try
             {
-                File.WriteAllBytes(targetExe, data);
-                logFn("★ 底层二进制补丁写入完成！共 " + appliedCount + "/" + POINTS.Length + " 个位点生效。");
+                File.Copy(targetExe, bakPath, true);
+                logFn("✓ 已更新官方原版备份至当前版本 v" + curVer + ": " + bakPath);
+            }
+            catch (Exception ex) { logFn("✗ 写入新备份失败，为安全起见中止补丁: " + ex.Message); return false; }
 
-                // 校验 SHA256
+            return true;
+        }
+
+        /// <summary>启动前体检：返回 null 表示健康，否则返回人类可读的故障描述</summary>
+        public static string DiagnoseExecutable(string exePath)
+        {
+            try
+            {
+                if (!File.Exists(exePath)) return "目标文件不存在";
+                FileInfo fi = new FileInfo(exePath);
+                if (fi.Length == 0) return "文件长度为 0 字节（极可能被杀毒软件查杀/隔离后残留空文件）";
+                byte[] d = File.ReadAllBytes(exePath);
+                string err;
+                if (!PeImageUtil.IsValidImage(d, out err)) return err;
+                return null;
+            }
+            catch (Exception ex) { return "读取失败: " + ex.Message; }
+        }
+    }
+
+    #endregion
+
+    #region 原生 ACL 试用期永久冻结引擎 (Trial Freeze & ACL Engine)
+
+    public static class TrialFreezeEngine
+    {
+        [DllImport("ntdll.dll", SetLastError = true)]
+        private static extern int RtlAdjustPrivilege(int privilege, bool enable, bool currentThread, out bool enabled);
+
+        private const int SE_TAKE_OWNERSHIP_PRIVILEGE = 9;
+        private const int SE_BACKUP_PRIVILEGE = 17;
+        private const int SE_RESTORE_PRIVILEGE = 18;
+
+        public static void EnableTokenPrivileges()
+        {
+            try
+            {
+                bool prev;
+                RtlAdjustPrivilege(SE_TAKE_OWNERSHIP_PRIVILEGE, true, false, out prev);
+                RtlAdjustPrivilege(SE_BACKUP_PRIVILEGE, true, false, out prev);
+                RtlAdjustPrivilege(SE_RESTORE_PRIVILEGE, true, false, out prev);
+            }
+            catch { }
+        }
+
+        private static readonly Regex GuidRegex = new Regex(
+            @"^\{[A-F0-9]{8}-[A-F0-9]{4}-[A-F0-9]{4}-[A-F0-9]{4}-[A-F0-9]{12}\}$",
+            RegexOptions.IgnoreCase);
+
+        private static readonly string[] ExcludeSubKeys = new string[] {
+            "LocalServer32", "InProcServer32", "InProcHandler32"
+        };
+
+        private static readonly string[] IdmValueNames = new string[] {
+            "MData", "Model", "scansk", "Therad"
+        };
+
+        private static readonly SecurityIdentifier EveryoneSid = new SecurityIdentifier(WellKnownSidType.WorldSid, null);
+        private static readonly SecurityIdentifier AdminSid = new SecurityIdentifier(WellKnownSidType.BuiltinAdministratorsSid, null);
+
+        private const RegistryRights DenyRights = RegistryRights.SetValue | RegistryRights.CreateSubKey | RegistryRights.Delete | RegistryRights.WriteKey;
+
+        public static string[] GetClsidRoots()
+        {
+            if (Environment.Is64BitOperatingSystem)
+            {
+                return new string[] {
+                    @"Software\Classes\WOW6432Node\CLSID",
+                    @"Software\Classes\CLSID"
+                };
+            }
+            else
+            {
+                return new string[] {
+                    @"Software\Classes\CLSID"
+                };
+            }
+        }
+
+        public static bool IsIdmClsidKey(RegistryKey parentKey, string subName)
+        {
+            if (string.IsNullOrEmpty(subName) || !GuidRegex.IsMatch(subName))
+                return false;
+
+            bool isLocked = false;
+            try
+            {
+                using (RegistryKey testKey = parentKey.OpenSubKey(subName, false))
+                {
+                    if (testKey == null)
+                    {
+                        // 无法打开（已被 ACL 拒绝读取/写入），判定为锁定的试用项
+                        return true;
+                    }
+
+                    string[] subKeys = testKey.GetSubKeyNames();
+                    foreach (string exclude in ExcludeSubKeys)
+                    {
+                        if (Array.IndexOf(subKeys, exclude) >= 0)
+                            return false; // 排除标准 COM 系统组件
+                    }
+
+                    // 检查 DACL 中是否已有针对 Everyone 的 Deny 规则
+                    try
+                    {
+                        RegistrySecurity sec = testKey.GetAccessControl();
+                        AuthorizationRuleCollection rules = sec.GetAccessRules(true, true, typeof(SecurityIdentifier));
+                        foreach (RegistryAccessRule rule in rules)
+                        {
+                            if (rule.AccessControlType == AccessControlType.Deny)
+                            {
+                                isLocked = true;
+                                break;
+                            }
+                        }
+                    }
+                    catch { }
+
+                    if (isLocked) return true;
+
+                    // 规则 A: 默认值为纯数字且无子项
+                    object defVal = testKey.GetValue("");
+                    string sDef = defVal != null ? defVal.ToString() : null;
+                    if (sDef != null)
+                    {
+                        if (subKeys.Length == 0 && Regex.IsMatch(sDef, @"^\d+$"))
+                            return true;
+                        // 规则 B: 默认值含 '+' 或 '=' 且无子项
+                        if (subKeys.Length == 0 && (sDef.Contains("+") || sDef.Contains("=")))
+                            return true;
+                    }
+
+                    // 规则 C: 包含 Version 子项且其默认值为纯数字
+                    if (subKeys.Length == 1 && string.Equals(subKeys[0], "Version", StringComparison.OrdinalIgnoreCase))
+                    {
+                        using (RegistryKey verKey = testKey.OpenSubKey("Version", false))
+                        {
+                            if (verKey != null)
+                            {
+                                object verVal = verKey.GetValue("");
+                                if (verVal != null && Regex.IsMatch(verVal.ToString(), @"^\d+$"))
+                                    return true;
+                            }
+                        }
+                    }
+
+                    // 规则 D: 包含 MData/Model/scansk/Therad 特征值
+                    string[] valNames = testKey.GetValueNames();
+                    foreach (string vn in valNames)
+                    {
+                        foreach (string idmVn in IdmValueNames)
+                        {
+                            if (string.Equals(vn, idmVn, StringComparison.OrdinalIgnoreCase))
+                                return true;
+                        }
+                    }
+
+                    // 规则 E: 0 值且 0 子项的幽灵空键
+                    if (valNames.Length == 0 && subKeys.Length == 0)
+                        return true;
+                }
+            }
+            catch (SecurityException)
+            {
+                return true;
+            }
+            catch (UnauthorizedAccessException)
+            {
+                return true;
+            }
+            catch { }
+
+            return false;
+        }
+
+        public static bool LockKey(RegistryKey parentKey, string subName)
+        {
+            EnableTokenPrivileges();
+            try
+            {
+                UnlockKey(parentKey, subName);
+
+                using (RegistryKey key = parentKey.OpenSubKey(subName, RegistryKeyPermissionCheck.ReadWriteSubTree, RegistryRights.ChangePermissions | RegistryRights.ReadKey))
+                {
+                    if (key == null) return false;
+                    RegistrySecurity sec = key.GetAccessControl();
+                    sec.AddAccessRule(new RegistryAccessRule(
+                        EveryoneSid,
+                        DenyRights,
+                        InheritanceFlags.ContainerInherit,
+                        PropagationFlags.None,
+                        AccessControlType.Deny
+                    ));
+                    key.SetAccessControl(sec);
+                    return true;
+                }
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        public static bool UnlockKey(RegistryKey parentKey, string subName)
+        {
+            EnableTokenPrivileges();
+            try
+            {
+                // 1. 尝试直接以 ChangePermissions 打开并移除 Deny 规则
                 try
                 {
-                    using (var sha = System.Security.Cryptography.SHA256.Create())
+                    using (RegistryKey key = parentKey.OpenSubKey(subName, RegistryKeyPermissionCheck.ReadWriteSubTree, RegistryRights.ChangePermissions | RegistryRights.ReadKey))
                     {
-                        byte[] hash = sha.ComputeHash(data);
-                        StringBuilder sb = new StringBuilder();
-                        foreach (byte b in hash) sb.Append(b.ToString("X2"));
-                        string hashStr = sb.ToString();
-                        if (hashStr.Equals("E0C308B1150E748C26D1F7105F5F6C287C1881288B46AEEAC68383D166A72183", StringComparison.OrdinalIgnoreCase))
+                        if (key != null)
                         {
-                            logFn("★ 完整性验证通过：SHA256 与原版 Crack 100% 逐字节对齐 (" + hashStr.Substring(0, 16) + "...)！");
+                            RegistrySecurity sec = key.GetAccessControl();
+                            sec.RemoveAccessRule(new RegistryAccessRule(
+                                EveryoneSid,
+                                DenyRights,
+                                InheritanceFlags.ContainerInherit,
+                                PropagationFlags.None,
+                                AccessControlType.Deny
+                            ));
+                            AuthorizationRuleCollection rules = sec.GetAccessRules(true, true, typeof(SecurityIdentifier));
+                            for (int i = rules.Count - 1; i >= 0; i--)
+                            {
+                                RegistryAccessRule r = rules[i] as RegistryAccessRule;
+                                if (r != null && r.AccessControlType == AccessControlType.Deny)
+                                {
+                                    sec.RemoveAccessRuleSpecific(r);
+                                }
+                            }
+                            key.SetAccessControl(sec);
+                            return true;
                         }
                     }
                 }
                 catch { }
 
-                return true;
+                // 2. 若直接打开被拒绝，尝试先获取所有权再重写 DACL
+                try
+                {
+                    using (RegistryKey key = parentKey.OpenSubKey(subName, RegistryKeyPermissionCheck.ReadWriteSubTree, RegistryRights.TakeOwnership))
+                    {
+                        if (key != null)
+                        {
+                            RegistrySecurity sec = new RegistrySecurity();
+                            sec.SetOwner(AdminSid);
+                            key.SetAccessControl(sec);
+                        }
+                    }
+                }
+                catch { }
+
+                try
+                {
+                    using (RegistryKey key = parentKey.OpenSubKey(subName, RegistryKeyPermissionCheck.ReadWriteSubTree, RegistryRights.ChangePermissions))
+                    {
+                        if (key != null)
+                        {
+                            RegistrySecurity sec = new RegistrySecurity();
+                            sec.ResetAccessRule(new RegistryAccessRule(
+                                EveryoneSid,
+                                RegistryRights.FullControl,
+                                InheritanceFlags.ContainerInherit,
+                                PropagationFlags.None,
+                                AccessControlType.Allow
+                            ));
+                            key.SetAccessControl(sec);
+                            return true;
+                        }
+                    }
+                }
+                catch { }
             }
-            catch (Exception ex)
+            catch { }
+            return false;
+        }
+
+        public static void TriggerTrialInitialization(string idmDir, Action<string> logFn)
+        {
+            string idmExe = Path.Combine(idmDir, "项目D.exe");
+            if (!File.Exists(idmExe)) return;
+
+            if (logFn != null) logFn("正在唤醒 项目D 初始化全新 30 天试用基线...");
+
+            string tempFile = Path.Combine(Path.GetTempPath(), "idm_trial_probe.png");
+            try { if (File.Exists(tempFile)) File.Delete(tempFile); } catch { }
+
+            bool probeSuccess = false;
+            try
             {
-                logFn("写入补丁文件失败 (请确认以管理员身份运行): " + ex.Message);
-                return false;
+                ProcessStartInfo psi = new ProcessStartInfo();
+                psi.FileName = idmExe;
+                psi.Arguments = "/n /d \"https://www.internetdownloadmanager.com/images/idm_box_min.png\" /p \"" + Path.GetTempPath().TrimEnd('\\') + "\" /f idm_trial_probe.png";
+                psi.CreateNoWindow = true;
+                psi.UseShellExecute = false;
+
+                using (Process p = Process.Start(psi))
+                {
+                    for (int i = 0; i < 15; i++)
+                    {
+                        Thread.Sleep(200);
+                        if (File.Exists(tempFile))
+                        {
+                            probeSuccess = true;
+                            break;
+                        }
+                    }
+                }
             }
+            catch { }
+
+            if (!probeSuccess)
+            {
+                try
+                {
+                    ProcessStartInfo psi = new ProcessStartInfo();
+                    psi.FileName = idmExe;
+                    psi.CreateNoWindow = true;
+                    psi.UseShellExecute = false;
+                    using (Process p = Process.Start(psi))
+                    {
+                        Thread.Sleep(1200);
+                    }
+                }
+                catch { }
+            }
+
+            try { if (File.Exists(tempFile)) File.Delete(tempFile); } catch { }
+            MainWindow.KillIDMDirect(null);
+            Thread.Sleep(300);
+        }
+
+        public static int CleanAllTrialKeys(Action<string> logFn)
+        {
+            EnableTokenPrivileges();
+            int cleanedCount = 0;
+            string[] clsidRoots = GetClsidRoots();
+
+            foreach (string rootPath in clsidRoots)
+            {
+                try
+                {
+                    using (RegistryKey clsidKey = Registry.CurrentUser.OpenSubKey(rootPath, true))
+                    {
+                        if (clsidKey == null) continue;
+                        string[] subKeyNames = clsidKey.GetSubKeyNames();
+                        foreach (string subName in subKeyNames)
+                        {
+                            if (IsIdmClsidKey(clsidKey, subName))
+                            {
+                                UnlockKey(clsidKey, subName);
+                                try
+                                {
+                                    clsidKey.DeleteSubKeyTree(subName, false);
+                                    cleanedCount++;
+                                    if (logFn != null) logFn("已解除锁定并清除旧试用特征项: " + subName);
+                                }
+                                catch { }
+                            }
+                        }
+                    }
+                }
+                catch { }
+            }
+            return cleanedCount;
+        }
+
+        public static int LockAllTrialKeys(Action<string> logFn)
+        {
+            EnableTokenPrivileges();
+            int lockedCount = 0;
+            string[] clsidRoots = GetClsidRoots();
+
+            foreach (string rootPath in clsidRoots)
+            {
+                try
+                {
+                    using (RegistryKey clsidKey = Registry.CurrentUser.OpenSubKey(rootPath, true))
+                    {
+                        if (clsidKey == null) continue;
+                        string[] subKeyNames = clsidKey.GetSubKeyNames();
+                        foreach (string subName in subKeyNames)
+                        {
+                            if (IsIdmClsidKey(clsidKey, subName))
+                            {
+                                if (LockKey(clsidKey, subName))
+                                {
+                                    lockedCount++;
+                                    if (logFn != null) logFn("✓ 已通过 ACL 权限锁定试用项: " + subName);
+                                }
+                            }
+                        }
+                    }
+                }
+                catch { }
+            }
+            return lockedCount;
+        }
+
+        public static bool IsTrialFrozen()
+        {
+            try
+            {
+                string[] clsidRoots = GetClsidRoots();
+                foreach (string rootPath in clsidRoots)
+                {
+                    using (RegistryKey clsidKey = Registry.CurrentUser.OpenSubKey(rootPath, false))
+                    {
+                        if (clsidKey == null) continue;
+                        string[] subKeyNames = clsidKey.GetSubKeyNames();
+                        foreach (string subName in subKeyNames)
+                        {
+                            if (GuidRegex.IsMatch(subName))
+                            {
+                                try
+                                {
+                                    using (RegistryKey testKey = clsidKey.OpenSubKey(subName, false))
+                                    {
+                                        if (testKey != null)
+                                        {
+                                            RegistrySecurity sec = testKey.GetAccessControl();
+                                            AuthorizationRuleCollection rules = sec.GetAccessRules(true, true, typeof(SecurityIdentifier));
+                                            foreach (RegistryAccessRule rule in rules)
+                                            {
+                                                if (rule.AccessControlType == AccessControlType.Deny)
+                                                    return true;
+                                            }
+                                        }
+                                    }
+                                }
+                                catch (SecurityException)
+                                {
+                                    return true;
+                                }
+                                catch (UnauthorizedAccessException)
+                                {
+                                    return true;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            catch { }
+            return false;
         }
     }
 
@@ -2990,26 +3927,139 @@ namespace IDM_Toolkit_Wpf
             else
             {
                 Log("模式一执行遇到异常，详情请查看上方日志。");
-                ModernDialog.ShowWarning(this, "解锁异常", "底层指令优化失败，请确认以管理员身份运行并关闭安全防护软件。");
+                ModernDialog.ShowWarning(this, "解锁异常",
+                    "底层指令优化未能完成，已自动放弃写入（项目D.exe 未被修改）。\n\n" +
+                    "最常见原因：当前 项目D 版本不在本工具补丁指纹支持范围内\n" +
+                    "（本工具仅适配 项目D " + NativeBinaryPatcher.SupportedVersions + "）。\n\n" +
+                    "请查看控制台日志确认具体原因。建议改用【模式二：永久冻结试用期】\n" +
+                    "或【模式三：个性化授权登记】。\n\n" +
+                    "若确为权限问题，请以管理员身份运行并暂时关闭安全防护软件。");
             }
         }
 
         private void ExecuteTrialFreeze()
         {
             SwitchTab(2);
-            Log("================= 开始执行模式二：永久冻结试用期 =================");
-            KillIDM();
+            int lockedCount = 0;
+            bool ok = ExecuteTrialFreezeDirect(Log, out lockedCount);
+            RefreshAllStatus();
+
+            if (ok)
+            {
+                ModernDialog.ShowSuccess(this, "试用期冻结成功",
+                    "项目D 试用期已成功永久冻结！\n\n" +
+                    "• 已通过 Windows ACL 权限锁定 " + lockedCount + " 处试用策略键\n" +
+                    "• 试用状态：永久锁定在剩余 30 天，零弹窗骚扰\n" +
+                    "• 核心优势：完全未修改任何二进制，支持官方在线静默更新！\n\n" +
+                    "若后续需出厂重置或改用其他激活模式，可随时使用模式四或还原功能。");
+            }
+            else
+            {
+                ModernDialog.ShowWarning(this, "冻结提示",
+                    "未能成功锁定试用策略键，详情请查看控制台日志。\n\n" +
+                    "建议确保以管理员权限运行，并在退出安全防护软件拦截后重试。");
+            }
+        }
+
+        public static bool ExecuteTrialFreezeDirect(Action<string> logFn, out int lockedCount)
+        {
+            lockedCount = 0;
+            if (logFn != null) logFn("================= 开始执行模式二：一键永久冻结试用期 =================");
+
+            string idmDir = GetIDMDir();
+            string targetExe = Path.Combine(idmDir, "项目D.exe");
+            if (!File.Exists(targetExe))
+            {
+                if (logFn != null) logFn("错误：未找到 项目D.exe，请先确认 项目D 是否已安装。");
+                return false;
+            }
+
+            // 步骤 1: 终止后台进程
+            if (logFn != null) logFn("步骤 1/4: 正在安全终止后台运行的 项目D 监控与下载进程...");
+            KillIDMDirect(logFn);
+            Thread.Sleep(300);
+
+            // 步骤 2: 清理 DownloadManager 注册表中的追踪/黑名单/假序列号字段，并配置底层策略
+            if (logFn != null) logFn("步骤 2/4: 正在清理历史授权追踪与黑名单遥测项，同步底层驱动策略...");
             try
             {
-                Log("正在检索 Windows Classes CLSID 时间策略键...");
-                Thread.Sleep(200);
-                Log("已通过系统 ACL 特权锁定试用时间戳为永久剩余 30 天。");
-                Log("✓ 试用期冻结生效！完全支持 项目D 官方无缝在线静默更新。");
-                RefreshAllStatus();
+                using (RegistryKey k = Registry.CurrentUser.CreateSubKey(@"Software\DownloadManager"))
+                {
+                    if (k != null)
+                    {
+                        string[] cleanList = new string[] {
+                            "FName", "LName", "Email", "Serial", "scansk", "tvfrdt",
+                            "radxcnt", "LstCheck", "ptrk_scdt", "LastCheckQU",
+                            "scTime", "NextCheck", "BList", "md5pks", "itb_r", "ncl_r"
+                        };
+                        foreach (string field in cleanList)
+                        {
+                            try { k.DeleteValue(field, false); } catch { }
+                        }
+                        k.SetValue("CheckUpdtVM", 0, RegistryValueKind.DWord);
+                        k.SetValue("LstCheck", "0", RegistryValueKind.String);
+                    }
+                }
+
+                // HKLM 驱动策略
+                string hklmPath = Environment.Is64BitOperatingSystem
+                    ? @"SOFTWARE\Wow6432Node\项目D"
+                    : @"SOFTWARE\项目D";
+                try
+                {
+                    using (RegistryKey hk = Registry.LocalMachine.CreateSubKey(hklmPath))
+                    {
+                        if (hk != null)
+                        {
+                            hk.SetValue("AdvIntDriverEnabled2", 1, RegistryValueKind.DWord);
+                        }
+                    }
+                }
+                catch { }
             }
             catch (Exception ex)
             {
-                Log("冻结失败: " + ex.Message);
+                if (logFn != null) logFn("清理追踪项提示: " + ex.Message);
+            }
+
+            // 解除并清理现存旧的/过期的 CLSID 试用键
+            int cleaned = TrialFreezeEngine.CleanAllTrialKeys(logFn);
+            if (logFn != null) logFn("✓ 已清理旧试用与过期特征项共 " + cleaned + " 处");
+
+            // 步骤 3: 触发 项目D 生成全新 30 天试用基线
+            if (logFn != null) logFn("步骤 3/4: 触发 项目D 引擎初始化全新 30 天官方评估基线...");
+            TrialFreezeEngine.TriggerTrialInitialization(idmDir, logFn);
+
+            // 步骤 4: 扫描并锁定全新生成的 CLSID 试用时间策略键
+            if (logFn != null) logFn("步骤 4/4: 正在通过 Windows ACL 权限机制锁定试用策略键...");
+            lockedCount = TrialFreezeEngine.LockAllTrialKeys(logFn);
+
+            if (lockedCount > 0)
+            {
+                if (logFn != null)
+                {
+                    logFn("★ 永久冻结试用期成功！共锁定 " + lockedCount + " 处核心 CLSID 试用时间策略键。");
+                    logFn("✓ 运行状态：试用倒计时永久停留在剩余 30 天，无任何弹窗骚扰。");
+                    logFn("✓ 升级兼容：未修改任何二进制文件，完全兼容 项目D 官方无缝在线静默更新！");
+                }
+                return true;
+            }
+            else
+            {
+                if (logFn != null)
+                {
+                    logFn("⚠ 提示：未检测到新生成的 CLSID 试用键，正在重试深度扫描...");
+                }
+                // 再次短暂启动 项目D 并扫描
+                TrialFreezeEngine.TriggerTrialInitialization(idmDir, null);
+                lockedCount = TrialFreezeEngine.LockAllTrialKeys(logFn);
+                if (lockedCount > 0)
+                {
+                    if (logFn != null) logFn("★ 重试锁定成功！共锁定 " + lockedCount + " 处试用策略键。");
+                    return true;
+                }
+                if (logFn != null) logFn("警告：未能锁定 CLSID 试用键，建议先手动打开一次 项目D 再执行冻结。");
+                return false;
             }
         }
 
@@ -3036,7 +4086,13 @@ namespace IDM_Toolkit_Wpf
             {
                 if (logFn != null) logFn("正在自动联动执行【模式一：底层深度解锁】以杜绝假冒序列号弹窗...");
                 int patchCount = 0;
-                NativeBinaryPatcher.ApplyPatch(target, true, logFn, out patchCount);
+                bool patched = NativeBinaryPatcher.ApplyPatch(target, true, logFn, out patchCount);
+                if (!patched && logFn != null)
+                {
+                    logFn("⚠ 底层补丁未生效（版本指纹不匹配或文件异常），已跳过二进制修改，未写入任何字节。");
+                    logFn("  注册表授权登记仍将继续写入，但启动后仍可能弹出注册提示。");
+                    logFn("  如需彻底免弹窗，请改用【模式二：永久冻结试用期】。");
+                }
             }
 
             // 2. 写入自定义登记信息并锁死联网检查，同时清理试用/黑名单干扰字段
@@ -3163,54 +4219,10 @@ namespace IDM_Toolkit_Wpf
                 }
 
                 // 2. 清理 CLSID 下包含时间戳/锁定的隐藏 GUID 项
-                int deletedGuids = 0;
-                string[] clsidRoots = { @"Software\Classes\CLSID", @"Software\Classes\WOW6432Node\CLSID" };
-                Regex guidRegex = new Regex(@"^\{[A-F0-9]{8}-[A-F0-9]{4}-[A-F0-9]{4}-[A-F0-9]{4}-[A-F0-9]{12}\}$", RegexOptions.IgnoreCase);
-
-                foreach (string rootPath in clsidRoots)
-                {
-                    try
-                    {
-                        using (RegistryKey clsidKey = Registry.CurrentUser.OpenSubKey(rootPath, true))
-                        {
-                            if (clsidKey == null) continue;
-
-                            string[] subKeyNames = clsidKey.GetSubKeyNames();
-                            foreach (string subName in subKeyNames)
-                            {
-                                if (guidRegex.IsMatch(subName))
-                                {
-                                    try
-                                    {
-                                        using (RegistryKey testKey = clsidKey.OpenSubKey(subName))
-                                        {
-                                            if (testKey != null)
-                                            {
-                                                object defVal = testKey.GetValue("");
-                                                if (defVal != null)
-                                                {
-                                                    string sVal = defVal.ToString();
-                                                    // 检查是否为纯数字或带 +/= 试用时间特征
-                                                    if (Regex.IsMatch(sVal, @"^\d+$") || sVal.Contains("+") || sVal.Contains("="))
-                                                    {
-                                                        clsidKey.DeleteSubKeyTree(subName, false);
-                                                        deletedGuids++;
-                                                        Log("已清除 CLSID 试用锁定项: " + subName);
-                                                    }
-                                                }
-                                            }
-                                        }
-                                    }
-                                    catch { }
-                                }
-                            }
-                        }
-                    }
-                    catch { }
-                }
+                int deletedGuids = TrialFreezeEngine.CleanAllTrialKeys(Log);
 
                 Log("✓ 第一阶段：已抹除 DownloadManager 配置关联项 " + deletedProps + " 处");
-                Log("✓ 第二阶段：已清理 CLSID 试用与锁定特征项 " + deletedGuids + " 处");
+                Log("✓ 第二阶段：已解除锁定并清理 CLSID 试用策略项 " + deletedGuids + " 处");
                 Log("✓ 模式四执行完毕：项目D 授权与黑名单数据已彻底消除，成功恢复出厂纯净状态！");
 
                 RefreshAllStatus();
