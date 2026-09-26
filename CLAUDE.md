@@ -6,7 +6,7 @@
 
 ## 一、 项目背景与定位
 
-本工程为面向 AI Agent 的**多平台客户端逆向工程与授权流安全审计（CWE-602）工作台**。深度覆盖 Windows PE/DLL、Android APK/DEX/SO、Linux ELF。包含 9 大逆向 Skill、4 大核心 MCP 服务、289 篇实战知识库与 9 个脱敏工业架构范式。
+本工程为面向 AI Agent 的**多平台客户端逆向工程与授权流安全审计（CWE-602）工作台**。深度覆盖 Windows PE/DLL、Android APK/DEX/SO、Linux ELF。包含 9 大逆向 Skill、4 大核心 MCP 服务、289 篇实战知识库与 10 个脱敏工业架构范式。
 
 ---
 
@@ -66,7 +66,7 @@ Seep\
 │   ├── mcp\           seep MCP（22 工具）+ Tool\ 运行时依赖
 │   │   └── Tool\safe\ 内置 Jadx、Radare2、Apktool、Hook 引擎等
 │   ├── prompts\       SYSTEM.md、AGENTS.md 与安全扩展
-│   ├── cases\         9 个脱敏项目工程（项目 A ~ 项目 I）
+│   ├── cases\         10 个脱敏项目工程（项目 A ~ 项目 J）
 │   ├── upstream\      apk-reverse 上游测试与验证集
 │   ├── docs\          MCP-SETUP、DOWNLOADS、PROVENANCE 等
 │   └── scripts\       任务沙盒初始化与签名工作流

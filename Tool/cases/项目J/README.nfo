@@ -1,0 +1,109 @@
+__________________________________________________________________________
+|                                                                          |
+|                     ██╗███╗   ██╗████████╗  ██████╗                      |
+|                     ██║████╗  ██║╚══██╔══╝ ██╔═████╗                     |
+|                     ██║██╔██╗ ██║   ██║    ██║██╔██║                     |
+|                     ██║██║╚██╗██║   ██║    ████╔╝██║                     |
+|                     ██║██║ ╚████║   ██║    ╚██████╔╝                     |
+|                     ╚═╝╚═╝  ╚═══╝   ╚═╝     ╚═════╝                      |
+|                                                                          |
+|                   [ INT0 RESEARCH GROUP // SCENE NFO ]                   |
+|__________________________________________________________________________|
+
+ - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+   RELEASE INFORMATION
+ - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+   Application  : 项目J (Windows 商标文书制作工具 / 在线卡密授权)
+   Version      : <目标版本>
+   Target EXE   : <目标>.exe  (PE32 i386, GUI, requireAdministrator)
+   Companion    : node.dll (miniblink Chromium 内核)
+   Release Date : 2026-09-26
+   Release Name : 项目J.<目标版本>.Activator-INT0
+   Release Type : Packed Runtime Memory Patch / CWE-602 Auth Bypass
+   Platform     : Windows 10 / 11 (x86)
+   Protection   : Whole-File Encrypted Packer (random 4-char sections,
+                  EP inside ciphertext, imports relocated to .rsrc)
+                  DllCharacteristics = 0x0000  ->  NO ASLR / NO NX
+                  .ev3n section = RWX (0xE0000080)
+   SHA256       : <实测哈希>
+   Subsite URL  : https://int0.cc
+
+ - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+   REVERSE ENGINEERING NOTES
+ - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+   项目J is a Chinese desktop document generator built with E-language (EPL)
+   statically compiled, rendering its UI through miniblink (Chromium), with
+   MS ScriptControl + JScript9Legacy for template scripting.
+
+   License enforcement is ONLINE (card key), but the FINAL DECISION is made
+   LOCALLY by the client:
+
+     1. Authorization channel (observed)
+        Plain TCP to <AUTH-SRV>:4001, custom binary protocol:
+          REQ : E8 03 00 00 | CB 02 00 00 | <715 bytes ciphertext>
+                (cmd = 1000, payload length = 715)
+          RESP: 01 02 04 02 05 04 | 1C 00 00 00 | <18 bytes ciphertext>
+                (magic 6B, total length 28)
+        No TLS, no transport integrity. The error string shown to the user
+        ("卡号不存在") does NOT exist anywhere in the local image (verified by
+        GBK + UTF-16LE full-image search) -> it is delivered by the server.
+
+     2. Why static patching is impossible
+        The .ev3n section has rawsize = 0 on disk; the code only exists after
+        the packer decrypts it at runtime. Whole-file entropy ~= 7.997/64KB.
+        Therefore NO file-level patch exists - only runtime memory patching.
+
+     3. Why runtime patching IS possible (key insight)
+        DllCharacteristics = 0x0000  -> no ASLR, ImageBase fixed at 0x400000
+        .ev3n section    = RWX      -> writable and executable at runtime
+        No anti-tamper, no self-check, no VM virtualization.
+        => An external process can simply WriteProcessMemory the auth branch.
+
+     4. The local decision point (CWE-602)
+        0x00401290  83 7D FC 00        cmp  dword ptr [ebp-4], 0
+        0x00401294  0F 84 4D 02 00 00  je   0x004014E7      ; ==0 -> DENIED
+        A single 6-byte conditional jump decides the whole license outcome.
+
+     5. Heartbeat re-check (must also be neutralized)
+        Function 0x0041AB86 re-queries the server and, on failure, makes the
+        CLIENT terminate itself (not a server-side revocation):
+          0x0041AC81  0F 8D 34 01 00 00   jge 0x0041ADBB
+          0x0041AE05  0F 8D 34 01 00 00   jge 0x0041AF3F
+
+ - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+   ATOMIC PATCH SET  (3 sites / 22 bytes)
+ - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+     P1  0x00401290  83 7D FC 00 0F 84 4D 02 00 00
+                  -> C7 45 FC 01 00 00 00 90 90 90     (force auth = 1)
+
+     P2  0x0041AC81  0F 8D 34 01 00 00  -> E9 35 01 00 00 90   (jge -> jmp)
+
+     P3  0x0041AE05  0F 8D 34 01 00 00  -> E9 35 01 00 00 90   (jge -> jmp)
+
+   Timing: the packer must finish first. Detection anchor:
+     read 3 bytes @ 0x0041AB86 == 55 8B EC   (function prologue)
+
+   Control experiments (why all three are required):
+     only P1              -> main window never created, process self-kills in 5s
+     P1 + ret heartbeat fn-> main window opens, access violation after ~17s
+     P1 + forge return val-> exits in 5s (function returns a byte-array, type
+                             conversion at 0x448360 fails)
+     P1 + P2 + P3  [OK]   -> stable for 320+ seconds, full functionality
+
+ - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+   VERIFICATION RESULT
+ - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+   Arbitrary card keys (123456 / 666888 / random) all pass the login gate and
+   open the full main window (948x727). Clicking "生成图片" renders a complete
+   certificate preview (national emblem / official seal / QR code / signature
+   / registration number). Continuous runtime >= 320s with no exit and no
+   secondary validation dialog. Original files on disk are NEVER modified.
+
+ - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+   GREETINGS
+ - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+   LINUX DO community  /  newliver666 (apk-reverse)  /  all reverse engineers
+
+__________________________________________________________________________
+  Educational & security-audit research only. Support the original vendor.
+__________________________________________________________________________

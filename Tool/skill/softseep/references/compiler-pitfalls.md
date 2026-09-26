@@ -66,4 +66,57 @@ LogToFile("[HOOK] -> REWRITE (%d chars) BYTES: %s\n", n, hexDump);
 **现象**：`Permission denied`。
 **规避**：沙盒目录内完成全部验证，最终由用户以管理员权限落地。
 
+### 陷阱 6：中文 `.bat` 写成 UTF-8 → 满屏「不是内部或外部命令」（高危）
+
+**现象**：批处理里只要含中文 `echo`，双击运行就报一堆：
+```
+'锛屾垨鍏堝仛娓呭崟闄嶆潈' 不是内部或外部命令，也不是可运行的程序
+'o.' 不是内部或外部命令，也不是可运行的程序
+```
+即中文变成**GBK 解码 UTF-8 字节**的典型乱码（`锛`/`垨` 等），且行尾引号/括号被吃掉，导致后半段被当成命令执行。
+
+**根因**：`cmd.exe` 按**当前控制台代码页**（中文系统 = 936/GBK）解码批处理文件字节；
+用 UTF-8（无论有无 BOM）保存即必然乱码。中途 `chcp 65001` **不可靠**（cmd 是边读边执行）。
+
+**铁律**：
+1. **中文 `.bat` 一律用 GBK(cp936) 保存，且不加 BOM**；
+2. 关键命令行（`python xxx.py` / `powershell -File xxx.ps1`）**只写 ASCII**，中文仅出现在 `echo` 里；
+3. 能用 `.ps1`（UTF-8 **with BOM**）或 `.py`（UTF-8）就**不要**用 `.bat`；
+4. 自检脚本里加一条断言：`run_repro.bat` **不得含 UTF-8 BOM**。
+
+```powershell
+$bytes = [System.IO.File]::ReadAllBytes($bat)
+$hasBom = ($bytes.Length -ge 3 -and $bytes[0] -eq 0xEF -and $bytes[1] -eq 0xBB -and $bytes[2] -eq 0xBF)
+if ($hasBom) { throw 'must be GBK (cp936), not UTF-8 with BOM' }
+```
+
+### 陷阱 7：GUI 子进程继承控制台 → 控制台关闭时被连带杀掉（高危）
+
+**现象**：补丁器/启动器（尤其 `.bat`）跑完、控制台窗口关闭后，**刚被拉起的 GUI 目标进程一起消失**；
+表现为“目标窗口一闪就没了”、“bat 里明明启动成功了但进程不在”。
+
+**根因**：`CreateProcess` 默认让子进程**继承父进程的控制台**。控制台关闭时，
+所有附着该控制台的进程会收到 **`CTRL_CLOSE_EVENT`**，未注册控制台处理器的进程默认被终止。
+（GUI 子系统程序不自己分配控制台，但**仍会继承**调用方的。）
+
+**规避**：创建目标时加上 `CREATE_DETACHED_PROCESS`（`0x00000008`）使其彻底脱离控制台：
+
+```python
+CREATE_DETACHED_PROCESS = 0x00000008
+k32.CreateProcessW(target, None, None, None, False,
+                   CREATE_DETACHED_PROCESS, None, workdir,
+                   ctypes.byref(si), ctypes.byref(pi))
+```
+```powershell
+$CREATE_DETACHED_PROCESS = 0x00000008
+[SBZPatcher]::CreateProcessW($Target, $null, [IntPtr]::Zero, [IntPtr]::Zero, $false,
+    $CREATE_DETACHED_PROCESS, [IntPtr]::Zero, $cwd, [ref]$si, [ref]$pi)
+```
+
+**验证方法**：`.bat` 跑完后单独查一次进程存活：
+```powershell
+powershell -NoProfile -Command "(Get-Process -Name <name> -ErrorAction SilentlyContinue).Count"
+# 期望 1；若为 0 则说明子进程被控制台关闭连带杀死
+```
+
 ---

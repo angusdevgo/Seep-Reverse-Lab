@@ -58,7 +58,7 @@ Users provide plain-language technical goals; the agent autonomously performs pl
 | 🔧 **Toolchain Fragmentation** | 23 MCP tools wrapping Radare2, JADX, Apktool, Frida — unified API, zero manual switching |
 | 🧠 **Agent Decision Drift** | `softseep` orchestrator: two-stage auto-classification (Platform × 9 Task Types) + 7-gate decision tree |
 | 🛡️ **Model Refusal in Security Audits** | Three-tier mitigation: `BLOCK_NONE` injection + transparent terminology mapping + cognitive redirection |
-| 📚 **Ephemeral Knowledge** | 289 technical field journals + 9 desensitized paradigms + "search KB before executing" enforced discipline |
+| 📚 **Ephemeral Knowledge** | 289 technical field journals + 10 desensitized paradigms + "search KB before executing" enforced discipline |
 | 📦 **Setup Friction** | One-click `install.ps1` → supports Pi Agent, Claude Code, DeepSeek Harness (DSH), Codex / OpenCode |
 
 ---
@@ -188,7 +188,7 @@ Seep\ (251 MB)
 │   │   ├── AGENTS.md              ← Cross-agent portable instructions
 │   │   └── extensions\            ← BLOCK_NONE injection + terminology mapping
 │   │
-│   ├── cases\                     ← 9 desensitized industrial paradigm projects (A ~ I)
+│   ├── cases\                     ← 10 desensitized industrial paradigm projects (A ~ J)
 │   ├── upstream\                  ← apk-reverse offline verification test suite (MIT)
 │   ├── docs\                      ← Engineering reference docs
 │   └── scripts\                   ← Workspace automation scripts
