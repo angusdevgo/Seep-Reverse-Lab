@@ -1,11 +1,11 @@
 // ============================================================================
-//  <项目A> 授权状态本地伪造 PoC —— version.dll (DLL 搜索顺序劫持载体)
+//  XYplorer 授权状态本地伪造 PoC —— version.dll (DLL 搜索顺序劫持载体)
 //  ---------------------------------------------------------------------------
-//  用途：白盒审计复现件。放入 <项目A>.exe 同目录后，进程启动即加载本 DLL，
+//  用途：白盒审计复现件。放入 XYplorer.exe 同目录后，进程启动即加载本 DLL，
 //        在后台线程把授权状态全局变量改写为 Lifetime License(5)，
 //        并用宿主自身的 SysAllocString 写入伪造许可证名/码。
 //
-//  依据：<项目A> 授权判定完全依赖进程内可写全局变量（CWE-602），
+//  依据：XYplorer 授权判定完全依赖进程内可写全局变量（CWE-602），
 //        无服务端校验、无签名回执、无一致性自校验。
 //
 //  构建： rustc --edition 2021 --crate-type cdylib -O -C strip=symbols \
@@ -47,18 +47,18 @@ struct Map {
 }
 
 static MAPS: [Map; 2] = [
-    // <项目A> 28.40.0100
+    // XYplorer 28.40.0100
     Map { size_of_image: 0x0285_0000, lic: 0x22FD724, flag: 0x230170C,
           name: 0x2235A88, code1: 0x2281C70, code2: 0x21FDDE0,
           sysalloc: 0x2675408 },
-    // <项目A> 28.30.2600
+    // XYplorer 28.30.2600
     Map { size_of_image: 0x0283_B000, lic: 0x22E4D5C, flag: 0x22E8D44,
           name: 0x221CEF8, code1: 0x22694A0, code2: 0x21E52F0,
           sysalloc: 0x265E408 },
 ];
 
 const FAKE_NAME: &str = "seep";
-const FAKE_CODE: &str = "xy05-Lifetime-License-Pro-pocuser";
+const FAKE_CODE: &str = "xy05-Lifetime-License-Pro-seep-poc";
 
 // ---------------------------------------------------------------------------
 // 工具
@@ -112,7 +112,7 @@ unsafe fn pick_map(base: usize) -> Option<&'static Map> {
 }
 
 unsafe fn patch() -> bool {
-    let base = GetModuleHandleW(core::ptr::null()) as usize;   // 宿主主模块 = <项目A>.exe
+    let base = GetModuleHandleW(core::ptr::null()) as usize;   // 宿主主模块 = XYplorer.exe
     if base == 0 { return false; }
     let m = match pick_map(base) { Some(m) => m, None => return false };
 
@@ -129,7 +129,14 @@ unsafe fn patch() -> bool {
         changed = true;
     }
 
-    // 3) 借用宿主自带的 SysAllocString 写入伪造许可证名/码
+    // 3) [可选] 借用宿主自带的 SysAllocString 写入伪造许可证名/码
+    //    默认关闭: 宿主按自有字符串管理器释放该 BSTR 会导致堆损坏 (0xC0000374)
+    //    启用方式: 在 DLL 同目录创建空文件 version_poc_strings.enable
+    let enable_strings = std::path::Path::new("version_poc_strings.enable").exists()
+        || log_path().map(|p| p.with_file_name("version_poc_strings.enable").exists()).unwrap_or(false);
+    if !enable_strings {
+        return changed;
+    }
     let sysalloc = read_u64(base + m.sysalloc) as usize;
     if sysalloc > 0x10000 && sysalloc < 0x0000_7FFF_FFFF_FFFF {
         let f: unsafe extern "system" fn(*const u16) -> *mut c_void =
@@ -153,9 +160,8 @@ unsafe fn patch() -> bool {
 // 后台线程：等待宿主初始化后持续维持授权状态（仅在值不一致时写入）
 // ---------------------------------------------------------------------------
 unsafe extern "system" fn worker(_param: *mut c_void) -> u32 {
-    thread::sleep(Duration::from_millis(1500));
     let mut reported = false;
-    for _ in 0..2400 {                      // ~20 分钟
+    for i in 0..2400 {                      // ~20 分钟
         if patch() && !reported {
             reported = true;
             let base = GetModuleHandleW(core::ptr::null()) as usize;
@@ -163,7 +169,9 @@ unsafe extern "system" fn worker(_param: *mut c_void) -> u32 {
             log(&format!("[+] license state forged: license_type={} name='{}' code='{}'",
                          lic, FAKE_NAME, FAKE_CODE));
         }
-        thread::sleep(Duration::from_millis(500));
+        // 启动前 8 秒高频抢占 (每 50ms), 赶在宿主计算标题/授权标签之前落地
+        let d = if i < 160 { 50 } else { 500 };
+        thread::sleep(Duration::from_millis(d));
     }
     0
 }
