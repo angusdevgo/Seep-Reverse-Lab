@@ -1,0 +1,53 @@
+﻿host_exe,proxy_dll,id,section,file_off,rva,va,orig_len,patch_len,orig_bytes,patch_bytes,semantic,verify
+项目BNxMain.exe,sentry.dll,nxmain_ad_gate_member_remove_ad_ok_bypass,,1224099,1227171,5369936291,6,6,0f 84 b9 01 00 00,90 90 90 90 90 90,广告剥离闸门：VIP 标志为 0 时跳过 member_remove_ad_ok 信号发射，NOP 后强制始终发射（抑制启动图广告/侧边推荐）,OK
+项目BNxMain.exe,sentry.dll,nxmain_skip_trial_banner_flow,,13563359,13566431,5382275551,6,6,0f 8e ed 00 00 00,e9 ee 00 00 00 90,试用/营销 Banner 流程分支：jle +0xed 改为无条件 jmp，跳过试用引导与购买弹窗创建,OK
+项目BNxMain.exe,sentry.dll,nxmain_resp_expiry_2099_12_31,,13734010,13737082,5382446202,5,5,e8 28 42 31 ff,b8 7f e6 85 f4,网络响应：到期时间固定为 2099-12-31 (0xF485E67F),OK
+项目BNxMain.exe,sentry.dll,nxmain_resp_member_status_enabled,,13734158,13737230,5382446350,5,5,e8 8e 9f 2e ff,b8 01 00 00 00,网络响应：会员状态置为 1,OK
+项目BNxMain.exe,sentry.dll,nxmain_resp_member_type_vip,,13734298,13737370,5382446490,5,5,e8 02 9f 2e ff,b8 01 00 00 00,网络响应：会员类型置为 VIP(1),OK
+项目BNxMain.exe,sentry.dll,nxmain_resp_device_count_5,,13734437,13737509,5382446629,5,5,e8 77 9e 2e ff,b8 05 00 00 00,网络响应：可用设备数置为 5,OK
+项目BNxMain.exe,sentry.dll,nxmain_resp_trial_status_used,,13734868,13737940,5382447060,5,5,e8 c8 9c 2e ff,b8 02 00 00 00,网络响应：试用状态置为 2（已使用/非活动，抑制试用提示）,OK
+项目BNxMain.exe,sentry.dll,nxmain_resp_privilege_enable,,13735622,13738694,5382447814,5,5,e8 d6 99 2e ff,b8 01 00 00 00,网络响应：当前设备特权使能置为 1,OK
+项目BNxMain.exe,sentry.dll,nxmain_parse_a_device_member_enabled,,17326014,17329086,5386038206,5,5,e8 de d0 f7 fe,b8 01 00 00 00,缓存解析 A：当前设备会员权益置为 1,OK
+项目BNxMain.exe,sentry.dll,nxmain_parse_a_expiry_2099_12_31,,17326360,17329432,5386038552,5,5,e8 8a 71 fa fe,b8 7f e6 85 f4,缓存解析 A：到期时间固定为 2099-12-31,OK
+项目BNxMain.exe,sentry.dll,nxmain_parse_a_member_status_enabled,,17326459,17329531,5386038651,5,5,e8 21 cf f7 fe,b8 01 00 00 00,缓存解析 A：会员状态置为 1,OK
+项目BNxMain.exe,sentry.dll,nxmain_parse_a_trial_status_used,,17326653,17329725,5386038845,5,5,e8 5f ce f7 fe,b8 02 00 00 00,缓存解析 A：试用状态置为 2,OK
+项目BNxMain.exe,sentry.dll,nxmain_parse_a_member_type_vip,,17326772,17329844,5386038964,5,5,e8 e8 cd f7 fe,b8 01 00 00 00,缓存解析 A：会员类型置为 VIP(1),OK
+项目BNxMain.exe,sentry.dll,nxmain_parse_b_expiry_2099_12_31,,17339493,17342565,5386051685,5,5,e8 3d 3e fa fe,b8 7f e6 85 f4,缓存解析 B：到期时间固定为 2099-12-31,OK
+项目BNxMain.exe,sentry.dll,nxmain_parse_b_member_status_enabled,,17339629,17342701,5386051821,5,5,e8 af 9b f7 fe,b8 01 00 00 00,缓存解析 B：会员状态置为 1,OK
+项目BNxMain.exe,sentry.dll,nxmain_parse_b_device_member_enabled,,17339712,17342784,5386051904,5,5,e8 5c 9b f7 fe,b8 01 00 00 00,缓存解析 B：当前设备会员权益置为 1,OK
+项目BNxMain.exe,sentry.dll,nxmain_parse_b_trial_status_used,,17340129,17343201,5386052321,5,5,e8 bb 99 f7 fe,b8 02 00 00 00,缓存解析 B：试用状态置为 2,OK
+项目BNxMain.exe,sentry.dll,nxmain_parse_b_member_type_vip,,17340360,17343432,5386052552,5,5,e8 d4 98 f7 fe,b8 01 00 00 00,缓存解析 B：会员类型置为 VIP(1),OK
+项目BNxMain.exe,sentry.dll,nxmain_serialize_a_expiry_2099_12_31,,17301134,17304206,5386013326,7,7,48 8b 85 c8 02 00 00,b8 7f e6 85 f4 90 90,序列化 A：写出到期时间固定为 2099-12-31,OK
+项目BNxMain.exe,sentry.dll,nxmain_serialize_a_member_status_enabled,,17301391,17304463,5386013583,6,6,8b 85 d4 02 00 00,b8 01 00 00 00 90,序列化 A：写出会员状态置为 1,OK
+项目BNxMain.exe,sentry.dll,nxmain_serialize_a_member_type_vip,,17301632,17304704,5386013824,6,6,8b 85 d8 02 00 00,b8 01 00 00 00 90,序列化 A：写出会员类型置为 VIP(1),OK
+项目BNxMain.exe,sentry.dll,nxmain_serialize_a_device_member_enabled,,17302128,17305200,5386014320,6,6,8b 85 08 03 00 00,b8 01 00 00 00 90,序列化 A：写出当前设备权益置为 1,OK
+项目BNxMain.exe,sentry.dll,nxmain_serialize_a_trial_status_used,,17302338,17305410,5386014530,6,6,8b 85 00 03 00 00,b8 02 00 00 00 90,序列化 A：写出试用状态置为 2,OK
+项目BNxMain.exe,sentry.dll,nxmain_serialize_b_expiry_2099_12_31,,17346928,17350000,5386059120,7,7,48 8b 8d 78 03 00 00,b9 7f e6 85 f4 90 90,序列化 B：写出到期时间固定为 2099-12-31,OK
+项目BNxMain.exe,sentry.dll,nxmain_serialize_b_member_status_enabled,,17347186,17350258,5386059378,6,6,8b 8d 84 03 00 00,b9 01 00 00 00 90,序列化 B：写出会员状态置为 1,OK
+项目BNxMain.exe,sentry.dll,nxmain_serialize_b_device_member_enabled,,17347645,17350717,5386059837,6,6,8b 8d 88 03 00 00,b9 01 00 00 00 90,序列化 B：写出当前设备权益置为 1,OK
+项目BNxMain.exe,sentry.dll,nxmain_serialize_b_member_type_vip,,17348078,17351150,5386060270,6,6,8b 8d b0 03 00 00,b9 01 00 00 00 90,序列化 B：写出会员类型置为 VIP(1),OK
+项目BNxMain.exe,sentry.dll,nxmain_serialize_b_trial_status_used,,17348301,17351373,5386060493,6,6,8b 8d b4 03 00 00,b9 02 00 00 00 90,序列化 B：写出试用状态置为 2,OK
+项目BNxMain.exe,sentry.dll,nxmain_ui_member_check_direct,,11862400,11865472,5380574592,22,3,48 8b 89 48 01 00 00 48 85 c9 74 07 48 8b 01 48 ff 60 18 32 c0 c3,b0 01 c3,UI 会员判定直返 1：对象+0x148 委托端点，强制返回 true（VIP 徽标/皮肤/权益即时生效）,OK
+项目BNxMain.exe,sentry.dll,nxmain_ui_member_check_direct_b,,11869200,11872272,5380581392,25,3,48 8b 89 c8 01 00 00 48 85 c9 74 0a 48 8b 01 48 ff a0 b8 00 00 00 32 c0 c3,b0 01 c3,UI 会员判定直返 1（第二端点）：对象+0x1c8 委托端点，强制返回 true,OK
+项目BNxService.exe,sentry.dll,nxservice_parse_a_device_member_enabled,.text,10486862,10489934,5379199054,5,5,e8 d0 22 60 ff,b8 01 00 00 00,Service 缓存解析 A：当前设备会员权益置 1,OK
+项目BNxService.exe,sentry.dll,nxservice_parse_a_expiry_2099_12_31,.text,10487208,10490280,5379199400,5,5,e8 8a 2e 62 ff,b8 7f e6 85 f4,Service 缓存解析 A：到期时间固定 2099-12-31,OK
+项目BNxService.exe,sentry.dll,nxservice_parse_a_member_status_enabled,.text,10487307,10490379,5379199499,5,5,e8 13 21 60 ff,b8 01 00 00 00,Service 缓存解析 A：会员状态置 1,OK
+项目BNxService.exe,sentry.dll,nxservice_parse_a_trial_status_used,.text,10487501,10490573,5379199693,5,5,e8 51 20 60 ff,b8 02 00 00 00,Service 缓存解析 A：试用状态置 2,OK
+项目BNxService.exe,sentry.dll,nxservice_parse_a_member_type_vip,.text,10487620,10490692,5379199812,5,5,e8 da 1f 60 ff,b8 01 00 00 00,Service 缓存解析 A：会员类型置 VIP(1),OK
+项目BNxService.exe,sentry.dll,nxservice_parse_a_is_valid_infos_true,.text,10488036,10491108,5379200228,5,5,e8 00 ad 60 ff,b0 01 90 90 90,Service 缓存解析 A：账号信息有效标志置真（⑤ 兜底门控）,OK
+项目BNxService.exe,sentry.dll,nxservice_parse_b_expiry_2099_12_31,.text,10500341,10503413,5379212533,5,5,e8 3d fb 61 ff,b8 7f e6 85 f4,Service 缓存解析 B：到期时间固定 2099-12-31,OK
+项目BNxService.exe,sentry.dll,nxservice_parse_b_member_status_enabled,.text,10500477,10503549,5379212669,5,5,e8 a1 ed 5f ff,b8 01 00 00 00,Service 缓存解析 B：会员状态置 1,OK
+项目BNxService.exe,sentry.dll,nxservice_parse_b_device_member_enabled,.text,10500560,10503632,5379212752,5,5,e8 4e ed 5f ff,b8 01 00 00 00,Service 缓存解析 B：当前设备会员权益置 1,OK
+项目BNxService.exe,sentry.dll,nxservice_parse_b_trial_status_used,.text,10500977,10504049,5379213169,5,5,e8 ad eb 5f ff,b8 02 00 00 00,Service 缓存解析 B：试用状态置 2,OK
+项目BNxService.exe,sentry.dll,nxservice_parse_b_member_type_vip,.text,10501208,10504280,5379213400,5,5,e8 c6 ea 5f ff,b8 01 00 00 00,Service 缓存解析 B：会员类型置 VIP(1),OK
+项目BNxService.exe,sentry.dll,nxservice_serialize_expiry_2099_12_31,.text,10508304,10511376,5379220496,7,7,48 8b 8d 78 03 00 00,b9 7f e6 85 f4 90 90,Service 缓存序列化：写出到期时间固定 2099-12-31,OK
+项目BNxService.exe,sentry.dll,nxservice_serialize_member_status_enabled,.text,10508562,10511634,5379220754,6,6,8b 8d 84 03 00 00,b9 01 00 00 00 90,Service 缓存序列化：写出会员状态置 1,OK
+项目BNxService.exe,sentry.dll,nxservice_serialize_device_member_enabled,.text,10509021,10512093,5379221213,6,6,8b 8d 88 03 00 00,b9 01 00 00 00 90,Service 缓存序列化：写出当前设备权益置 1,OK
+项目BNxService.exe,sentry.dll,nxservice_serialize_member_type_vip,.text,10509454,10512526,5379221646,6,6,8b 8d b0 03 00 00,b9 01 00 00 00 90,Service 缓存序列化：写出会员类型置 VIP(1),OK
+项目BNxService.exe,sentry.dll,nxservice_serialize_trial_status_used,.text,10509677,10512749,5379221869,6,6,8b 8d b4 03 00 00,b9 02 00 00 00 90,Service 缓存序列化：写出试用状态置 2,OK
+项目BNxService.exe,sentry.dll,nxservice_serialize_is_valid_infos_true,.text,10510955,10514027,5379223147,7,7,0f b6 8d 32 04 00 00,b1 01 90 90 90 90 90,Service 缓存序列化：账号信息有效标志置真（⑤ 兜底门控）,OK
+项目BNxService.exe,sentry.dll,nxservice_disable_cloud_member_trial_endpoint,.rdata,17525560,17530168,5386239288,15,15,76 31 2f 6d 65 6d 62 65 72 2f 74 72 69 61 6c,76 31 2f 6d 65 6d 62 65 72 2f 6c 6f 63 61 6c,请求端点本地化：v1/member/trial → v1/member/local（切断云端试用下发通道）,OK
+项目BRemoteService.exe,version.dll,nxremote_force_remote_enable_flag_false,.text,1765703,1768775,5370477895,4,4,41 0f 95 c7,45 31 ff 90,"远程云控启用标志：setne r15b → xor r15d,r15d（状态恒为 2，不再进入启用分支）",OK
+项目BRemoteService.exe,version.dll,nxremote_is_current_session_remote_session_false,.text,1563056,1566128,5370275248,4,4,48 83 ec 58,33 c0 c3 90,platform::isCurrentSessionRemoteSession() 入口直返 false（GetSystemMetrics(SM_REMOTESESSION) 判定被短路，永不走远程会话分支）,OK
+项目BRemoteService.exe,version.dll,nxremote_skip_healthd_launch,.text,858848,861920,5369571040,5,5,48 89 5c 24 10,c3 90 90 90 90,阻断 项目BRemoteHealthd.exe 启动链：函数入口直接 ret（进程拉起/守护逻辑整体短路）,OK
+项目BRemoteService.exe,version.dll,nxremote_skip_backend_launch,.text,862016,865088,5369574208,5,5,48 89 5c 24 10,c3 90 90 90 90,阻断 项目BRemoteBackend.exe 启动链：函数入口直接 ret（远程后端不再被拉起）,OK

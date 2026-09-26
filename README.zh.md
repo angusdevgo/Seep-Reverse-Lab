@@ -313,7 +313,7 @@ powershell -ExecutionPolicy Bypass -File .\install.ps1
 | 项目 | 架构类型 | 核心技法 |
 |---|---|---|
 | **A** | 单进程纯离线 PE | 标量返回值强制（`mov eax,1; ret`）|
-| **B** | 多进程复杂拓扑 | 代理 DLL 分流 + 三层状态持久化 |
+| **B** | 多进程复杂拓扑 | 代理 DLL 分流 + 三层状态持久化 (v12.0 → v6.8.1 演进: winhttp 单文件裸桩劫持 + 截断更新) |
 | **C** | 资源模板 + UI 层 | 双射掩码解码 + `SetDlgItemTextW` IAT Hook |
 | **D** | 重编译非均匀位移 | **AOB 双态特征码迁移**（3 版本）+ PE 结构门禁 + ACL 冻结 |
 | **E** | EXECryptor VM 仲裁 | 2 点 Call 指令重定向至内存 Stub |

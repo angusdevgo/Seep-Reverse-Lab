@@ -23,7 +23,7 @@
 
 ### 2.2 云端恶意/动态注入通道审计
 - **CEF / JSBridge 桥接**：通过 `CallBridge.invoke` 动态执行云端脚本（包括 `getCloudPhoneConfig`, `openCloudPhoneWebView` 等云手机推广页面）。
-- **外部更新进程**：`项目BNxUpdater.exe` 会在后台静默请求网易 CDN 接口并下发补丁模块与热更新包。
+- **外部更新进程**：`项目BNxUpdater.exe` 会在后台静默请求<厂商> CDN 接口并下发补丁模块与热更新包。
 - **崩溃与行为上报**：`项目BNxCrashReporter.exe` 与 `sentry.dll` 定期收集设备信息并向远程地址推送日志。
 
 ---

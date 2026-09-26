@@ -318,7 +318,7 @@ Deactivate: exit lab
 | Project | Architecture | Key Technique |
 |---|---|---|
 | **A** | Monolithic offline PE | Scalar return override (`mov eax,1; ret`) |
-| **B** | Multi-process hybrid | Proxy DLL name-based dispatch + 3-tier state persistence |
+| **B** | Multi-process hybrid | Proxy DLL dispatch + 3-tier state persistence (v12.0 → v6.8.1 evolution: single winhttp naked thunk hijack + auto-update blocker) |
 | **C** | Resource template + UI | Bijective bit-permutation decoding + IAT hook on `SetDlgItemTextW` |
 | **D** | Recompile-induced non-uniform shift | **AOB dual-state signature migration** (3 versions) + PE gating + ACL locking |
 | **E** | EXECryptor VM arbitration | 2-point Call redirection to memory stubs |

@@ -1,0 +1,233 @@
+# 项目B 6.8.1 (项目B6.0) nx_main 手动修复与逆向切入点总结
+
+> 适用对象：`项目B 6.8.1.0 (项目B6.0) / nx_main` 目录下三大核心组件：`项目BNxMain.exe`、`项目BNxService.exe`、`项目BRemoteService.exe`。
+> 本文点位包含 **文件偏移 (File Offset)** 与 **内存相对虚拟地址 (RVA)**，便于十六进制工具修改及动态逆向分析。
+
+---
+
+## 目录
+1. [重要说明与方案选型](#一重要说明与方案选型)
+2. [适用版本哈希指纹](#二适用版本哈希指纹)
+3. [手动十六进制修复流程](#三手动十六进制修复流程)
+4. [核心逆向切入点深度剖析 (12.0 与 6.8.1 演进对比)](#四核心逆向切入点深度剖析)
+5. [全量点位摘要](#五全量点位摘要)
+6. [项目BNxMain.exe 点位详表 (30处)](#六项目Bnxmainexe-点位详表-30处)
+7. [项目BNxService.exe 点位详表 (18处)](#七项目Bnxserviceexe-点位详表-18处)
+8. [项目BRemoteService.exe 点位详表 (4处)](#八项目Bremoteserviceexe-点位详表-4处)
+9. [验证要点与排错指南](#九验证要点与排错指南)
+
+---
+
+## 一、重要说明与方案选型
+
+本手册总结了针对 项目B 模拟器 6.8.1 版本的全套逆向切入点与微创修复点位。针对不同使用场景，支持两种主流落地形态：
+
+1. **静态十六进制修补 (Binary Hex Patching)**：
+   - 使用 HxD / 010 Editor 等工具直接修改 EXE 磁盘文件。
+   - 特点：脱离外部依赖，零额外 DLL 加载开销；但会改变文件哈希并破坏官方 Authenticode 数字签名。
+2. **DLL 代理运行时内存热补丁 (Proxy DLL Memory Hotpatching)**：
+   - 基于系统劫持与导出转发技术（`nx_main\sentry.dll` 覆盖 Main/Service，`nx_main\version.dll` 覆盖 RemoteService）。
+   - 特点：**EXE 磁盘文件 100% 保持官方原版，数字签名完全有效 (Valid)**；在进程初始化时由看门狗线程向内存写入同等补丁。
+
+无论采用哪种方案，本手册记录的 **原始字节 (Original Bytes)**、**修补字节 (Patch Bytes)** 与 **语义切入点** 均具备 100% 严格对应关系。
+
+---
+
+## 二、适用版本哈希指纹
+
+在进行任何修改前，请务必在终端执行哈希比对，确保样本与基准完全一致：
+
+| 文件 | 原始大小 | 原始 SHA256 指纹 | 全量手动修补后 SHA256 | 点位数 |
+|---|---:|---|---|---:|
+| `项目BNxMain.exe` | 30,637,560 | `f1f507b9fa2a43f47369904a08ff65fd18b9d61282a9e1b91eed3e976464510b` | `4f5046b0003c6f37a85d7056ebfeb219af6e3e2f0748d9fa9b22c11e25c367b3` | 30 |
+| `项目BNxService.exe` | 22,508,024 | `0db8d342c983b597098b7d56c05a4f3631184197f6b0114b49c66d2a514e5fdd` | `1a722cf091636f089d72c6165d382e08cdcec5abaedd742607784446434d4b43` | 18 |
+| `项目BRemoteService.exe` | 7,790,584 | `37b8bd6da12a8b08adadd0d7145453e2b7e92d17087717bb64343b98c3454d6d` | `a2fe1eccfc8e6dbde7c15a7ef1f4b35c637122ff88838c0034715f611b68ef0d` | 4 |
+
+```bat
+certutil -hashfile 项目BNxMain.exe SHA256
+certutil -hashfile 项目BNxService.exe SHA256
+certutil -hashfile 项目BRemoteService.exe SHA256
+```
+
+---
+
+## 三、手动十六进制修复流程
+
+1. **完全退出所有 项目B 进程与后台服务**：
+   ```bat
+   taskkill /f /im 项目BNxMain.exe /im 项目BNxService.exe /im 项目BNxLauncher.exe /im 项目BManager.exe
+   sc queryex 项目BRemoteService
+   sc stop 项目BRemoteService
+   taskkill /f /im 项目BRemoteBackend.exe /im 项目BRemoteHealthd.exe
+   ```
+2. **安全备份**：
+   ```bat
+   copy 项目BNxMain.exe 项目BNxMain.exe.bak
+   copy 项目BNxService.exe 项目BNxService.exe.bak
+   copy 项目BRemoteService.exe 项目BRemoteService.exe.bak
+   ```
+3. **定位与修改**：
+   - 打开十六进制编辑器，跳转到本文的 **文件偏移 (File Offset)**；
+   - **核心纪律**：先核对当前地址的字节是否与下表的「原始字节」完全一致。若一致则覆盖写入「修补字节」；若当前字节短于修补区域，剩余字节必须以 `90` (NOP) 补齐；若不匹配，严禁盲写，说明版本不匹配！
+4. **保存并测试启动**。
+
+---
+
+## 四、核心逆向切入点深度剖析
+
+对比旧版 12.0 (`2ead96f7...`) 与 6.8.1 (`f1f507b9...`)，<厂商>底层代码发生了模块级重排与安全机制重构，以下为 7 大关键切入点及其底层逻辑演化：
+
+### 1. 广告决策分支切入点升级 (Ad-Gate Bypass)
+- **12.0 早期方案缺陷**：旧版在 `sub_14012A640` 函数入口直接写入 `mov eax, 1; ret`，虽实现了粗暴返回，但导致 Qt 信号系统无法发送 `member_remove_ad_ok`，启动图与侧边广告抑制链路存在偶发未触发缺陷。
+- **6.8.1 精度升级**：通过定位 `.rdata` 唯一字符串 `"member_remove_ad_ok"`（文件偏移 `0x162a9e0`），精准逆向出其信号发射函数 `sub_14012B960`（RVA `0x12b960`）。函数在 `0x14012b99f` 处检测 `cmp byte ptr [rdx + 4], 0`（非会员判定），随后执行条件跳转 `0x14012b9a3: je 0x14012bb62`（跳过信号发射）。
+- **切入方案**：将 `0x12ada3` 处的 6 字节 `je` (`0f 84 b9 01 00 00`) 精准替换为 6 个 `NOP` (`90 90 90 90 90 90`)，强制流程直接 fall-through 执行 `member_remove_ad_ok` 信号发射管线，从根源上 100% 抑制开屏推荐广告与侧边横幅。
+
+### 2. 试用与营销 Banner 控制流阻断 (Trial & Promo Flow Bypass)
+- **业务逻辑**：程序检测到当前账号未充值或处于免费试用期时，会进入营销导流分支，动态创建推广弹窗与购买引导条。
+- **切入方案**：位于 `0xcef5df` (RVA `0xcf01df`)。前置指令为 `cmp qword ptr [r14], 0`，紧随其后的条件跳转 `0f 8e ed 00 00 00` (`jle +0xed`) 用于判断是否进入营销流。直接将其改写为无条件跳转 `e9 ee 00 00 00 90` (`jmp +0xee; nop`)，彻底绕开弹窗逻辑。
+
+### 3. 网络登录回包反序列化特权覆盖 (Network Response Deserialization)
+- **业务逻辑**：用户执行登录、Token 刷新或拉取云端配置时，服务端会下发 JSON 载荷，客户端在 `0xd1907a`–`0xd196c6` 区间解析到寄存器/栈帧中。
+- **切入方案**：该区间由 6 个连续的 `E8 rel32` (call) 构成。直接将 call 指令替换为 `mov eax, imm32`：
+  - 到期时间固定为 `0xF485E67F`（即 2099-12-31，Unix 戳 4102416511）；
+  - 会员状态强制置 `1`（VIP）；
+  - 会员类型强制置 `1`（VIP 特权）；
+  - 设备上限强制置 `5`；
+  - 试用状态强制置 `2`（已使用/非活动，不再提示试用体验）；
+  - 特权使能标志强制置 `1`。
+
+### 4. 账号缓存解析与持久化双通道 (Account Cache Parse & Serialize A/B)
+- **底层架构**：项目B 设计了双解析通道 (`parse_a` / `parse_b`) 与双序列化写出通道 (`serialize_a` / `serialize_b`)，用于在内存与 `configs\main\nx_main.json` 本地配置间双向同步。
+- **结构体字段偏移**：6.8.1 版本中，结构体内存布局保持高度稳定：
+  - 序列化通道 A 结构体偏移：`+0x2c8`(expiry), `+0x2d4`(status), `+0x2d8`(type), `+0x308`(device), `+0x300`(trial)。
+  - 序列化通道 B 结构体偏移：`+0x378`(expiry), `+0x384`(status), `+0x388`(device), `+0x3b0`(type), `+0x3b4`(trial)。
+- **切入方案**：对读取字段的汇编指令（如 `mov rax, [rbp+0x2c8]`）直接就地截胡，重写为立即数赋值（`mov eax/ecx, imm32` + `NOP` 填充完整原长），杜绝本地缓存产生脏数据。
+
+### 5. 前台 UI 判定虚表委托直返 (UI Member Check Direct)
+- **业务逻辑**：UI 徽标（金色 VIP 图标、专属会员皮肤）是由 UI 渲染线程定时查询管理器对象获取。
+- **切入方案**：位于 `0xb50180` (RVA `0xb50d80`) 与 `0xb51c10` (RVA `0xb52810`)，该函数原本负责通过 `[rcx+0x148]` 寻址子对象并跳转其虚表执行布尔判定。直接在函数入口写入 `b0 01 c3` (`mov al, 1; ret`)，实现零栈干扰的即时纯寄存器直返，彻底消除切换界面或刷新时的 VIP 徽标回退闪烁。
+
+### 6. Service 守护服务防回写收敛机制 (NxService Synchronization)
+- **逆向死穴（为什么必须改 Service）**：`项目BNxService.exe` 是常驻后台守护，具有最高权限定期将云端或本地账号数据回写到磁盘 `configs\main\nx_main.json`。**若只修改 Main，每次刷新或启动时，Service 就会将旧的非会员状态覆写回磁盘，导致 Main 下次读取又闪回未激活**！
+- **切入方案**：同步修补 Service 的 `parse_a` (5点)、`parse_b` (5点)、`serialize` (5点)，同时将账号有效性标志 `is_valid_infos` 两处写死为 `1` (`b0 01 90 90 90` 与 `b1 01 90 90 90 90 90`)，并将云端请求端点 `v1/member/trial` 原地等长替换为 `v1/member/local`，实现本地闭环。
+
+### 7. 远程云控与健康/后端进程阻断 (Remote Control & Healthd Blocking)
+- **架构异动**：6.8.1 中 `项目BRemoteService.exe` 体积由旧版的 2.1MB 暴增至 7.79MB（增加了大量跨网映射、云手机及推流支持）。
+- **切入方案**：
+  - 阻断两处进程启动入口：在 `项目BRemoteBackend.exe` 启动函数（`0xd2740`）与 `项目BRemoteHealthd.exe` 启动函数（`0xd1ae0`）入口处直接写入 `c3 90 90 90 90` (`ret`)，阻断后台私开推流守护；
+  - 阻断远程会话判定：定位 RTTI 符号 `platform::isCurrentSessionRemoteSession()`（`0x17d9b0`），在入口写入 `33 c0 c3 90` (`xor eax, eax; ret; nop`)，阻断 `GetSystemMetrics(SM_REMOTESESSION)` 带来的远程状态误判。
+
+---
+
+## 五、全量点位摘要
+
+| 组件 | 点位数 | 覆盖范围 | 核心修补逻辑 |
+|---|---:|---|---|
+| `项目BNxMain.exe` | 30 | 广告决策闸门、营销Banner跳过、网络响应反序列化、本地缓存读写通道A/B、UI会员直返 | NOP 旁路跳转 + 覆盖 call 返回值 + 固化到期时间 2099 与 VIP 标识 |
+| `项目BNxService.exe` | 18 | 缓存解析双通道A/B、缓存序列化、账号信息有效标志置真、云端试用接口降级本地 | 彻底切断 Service 覆写旧配置通道，使本地特权数据持久化 |
+| `项目BRemoteService.exe` | 4 | 阻断后端/健康监控进程启动、远程会话检测短路、远程启用标志置假 | 函数入口 ret 短路启动链 + 禁用远程会话服务 |
+| **合计** | **52** | **全链路客户端特权闭环 + 彻底免广告 + 阻断云控** | **零盲写，52处点位全部经真实二进制逐字节严格校验** |
+
+---
+
+## 六、项目BNxMain.exe 点位详表 (30处)
+
+> 基准节区换算律：`.text` 段 `RVA = FileOffset + 0xC00`，`VA = 0x140000000 + RVA`。
+
+| # | 文件偏移 | RVA | 功能 | 原始字节 | 修补字节 | 点位 ID |
+|---:|---:|---:|---|---|---|---|
+| 1 | `0x12ada3` | `0x12b9a3` | 广告剥离闸门放行（强制发射 member_remove_ad_ok） | `0f 84 b9 01 00 00` | `90 90 90 90 90 90` | `nxmain_ad_gate_member_remove_ad_ok_bypass` |
+| 2 | `0xcef5df` | `0xcf01df` | 跳过试用与营销 Banner 分支流程 | `0f 8e ed 00 00 00` | `e9 ee 00 00 00 90` | `nxmain_skip_trial_banner_flow` |
+| 3 | `0xd1907a` | `0xd19c7a` | 网络响应反序列化：到期时间固定为 2099-12-31 | `e8 28 42 31 ff` | `b8 7f e6 85 f4` | `nxmain_resp_expiry_2099_12_31` |
+| 4 | `0xd1910e` | `0xd19d0e` | 网络响应反序列化：会员状态置为启用 (1) | `e8 8e 9f 2e ff` | `b8 01 00 00 00` | `nxmain_resp_member_status_enabled` |
+| 5 | `0xd1919a` | `0xd19d9a` | 网络响应反序列化：会员类型置为 VIP (1) | `e8 02 9f 2e ff` | `b8 01 00 00 00` | `nxmain_resp_member_type_vip` |
+| 6 | `0xd19225` | `0xd19e25` | 网络响应反序列化：可用设备数置为 5 | `e8 77 9e 2e ff` | `b8 05 00 00 00` | `nxmain_resp_device_count_5` |
+| 7 | `0xd193d4` | `0xd19fd4` | 网络响应反序列化：试用状态置为已使用/非活动 (2) | `e8 c8 9c 2e ff` | `b8 02 00 00 00` | `nxmain_resp_trial_status_used` |
+| 8 | `0xd196c6` | `0xd1a2c6` | 网络响应反序列化：当前设备特权使能置为启用 (1) | `e8 d6 99 2e ff` | `b8 01 00 00 00` | `nxmain_resp_privilege_enable` |
+| 9 | `0x1085fbe` | `0x1086bbe` | 缓存解析通道 A：当前设备会员权益置为启用 (1) | `e8 de d0 f7 fe` | `b8 01 00 00 00` | `nxmain_parse_a_device_member_enabled` |
+| 10 | `0x1086118` | `0x1086d18` | 缓存解析通道 A：到期时间固定为 2099-12-31 | `e8 8a 71 fa fe` | `b8 7f e6 85 f4` | `nxmain_parse_a_expiry_2099_12_31` |
+| 11 | `0x108617b` | `0x1086d7b` | 缓存解析通道 A：会员状态置为启用 (1) | `e8 21 cf f7 fe` | `b8 01 00 00 00` | `nxmain_parse_a_member_status_enabled` |
+| 12 | `0x108623d` | `0x1086e3d` | 缓存解析通道 A：试用状态置为已使用/非活动 (2) | `e8 5f ce f7 fe` | `b8 02 00 00 00` | `nxmain_parse_a_trial_status_used` |
+| 13 | `0x10862b4` | `0x1086eb4` | 缓存解析通道 A：会员类型置为 VIP (1) | `e8 e8 cd f7 fe` | `b8 01 00 00 00` | `nxmain_parse_a_member_type_vip` |
+| 14 | `0x1089465` | `0x108a065` | 缓存解析通道 B：到期时间固定为 2099-12-31 | `e8 3d 3e fa fe` | `b8 7f e6 85 f4` | `nxmain_parse_b_expiry_2099_12_31` |
+| 15 | `0x10894ed` | `0x108a0ed` | 缓存解析通道 B：会员状态置为启用 (1) | `e8 af 9b f7 fe` | `b8 01 00 00 00` | `nxmain_parse_b_member_status_enabled` |
+| 16 | `0x1089540` | `0x108a140` | 缓存解析通道 B：当前设备会员权益置为启用 (1) | `e8 5c 9b f7 fe` | `b8 01 00 00 00` | `nxmain_parse_b_device_member_enabled` |
+| 17 | `0x10896e1` | `0x108a2e1` | 缓存解析通道 B：试用状态置为已使用/非活动 (2) | `e8 bb 99 f7 fe` | `b8 02 00 00 00` | `nxmain_parse_b_trial_status_used` |
+| 18 | `0x10897c8` | `0x108a3c8` | 缓存解析通道 B：会员类型置为 VIP (1) | `e8 d4 98 f7 fe` | `b8 01 00 00 00` | `nxmain_parse_b_member_type_vip` |
+| 19 | `0x107fe8e` | `0x1080a8e` | 缓存序列化通道 A：写出到期时间 2099-12-31 | `48 8b 85 c8 02 00 00` | `b8 7f e6 85 f4 90 90` | `nxmain_serialize_a_expiry_2099_12_31` |
+| 20 | `0x107ff8f` | `0x1080b8f` | 缓存序列化通道 A：写出会员状态置为启用 (1) | `8b 85 d4 02 00 00` | `b8 01 00 00 00 90` | `nxmain_serialize_a_member_status_enabled` |
+| 21 | `0x1080080` | `0x1080c80` | 缓存序列化通道 A：写出会员类型置为 VIP (1) | `8b 85 d8 02 00 00` | `b8 01 00 00 00 90` | `nxmain_serialize_a_member_type_vip` |
+| 22 | `0x1080270` | `0x1080e70` | 缓存序列化通道 A：写出当前设备权益置为启用 (1) | `8b 85 08 03 00 00` | `b8 01 00 00 00 90` | `nxmain_serialize_a_device_member_enabled` |
+| 23 | `0x1080342` | `0x1080f42` | 缓存序列化通道 A：写出试用状态置为已使用 (2) | `8b 85 00 03 00 00` | `b8 02 00 00 00 90` | `nxmain_serialize_a_trial_status_used` |
+| 24 | `0x108b170` | `0x108bd70` | 缓存序列化通道 B：写出到期时间 2099-12-31 | `48 8b 8d 78 03 00 00` | `b9 7f e6 85 f4 90 90` | `nxmain_serialize_b_expiry_2099_12_31` |
+| 25 | `0x108b272` | `0x108be72` | 缓存序列化通道 B：写出会员状态置为启用 (1) | `8b 8d 84 03 00 00` | `b9 01 00 00 00 90` | `nxmain_serialize_b_member_status_enabled` |
+| 26 | `0x108b43d` | `0x108c03d` | 缓存序列化通道 B：写出当前设备权益置为启用 (1) | `8b 8d 88 03 00 00` | `b9 01 00 00 00 90` | `nxmain_serialize_b_device_member_enabled` |
+| 27 | `0x108b5ee` | `0x108c1ee` | 缓存序列化通道 B：写出会员类型置为 VIP (1) | `8b 8d b0 03 00 00` | `b9 01 00 00 00 90` | `nxmain_serialize_b_member_type_vip` |
+| 28 | `0x108b6cd` | `0x108c2cd` | 缓存序列化通道 B：写出试用状态置为已使用 (2) | `8b 8d b4 03 00 00` | `b9 02 00 00 00 90` | `nxmain_serialize_b_trial_status_used` |
+| 29 | `0x0b50180` | `0x0b50d80` | 前台 UI 会员判定端点 A：直接返回真 (1) | `48 8b 89 48 01 00 00 48 85 c9 74 07 48 8b 01 48 ff 60 18 32 c0 c3` | `b0 01 c3` (后补NOP) | `nxmain_ui_member_check_direct` |
+| 30 | `0x0b51c10` | `0x0b52810` | 前台 UI 会员判定端点 B：直接返回真 (1) | `48 8b 89 c8 01 00 00 48 85 c9 74 0a 48 8b 01 48 ff a0 b8 00 00 00 32 c0 c3` | `b0 01 c3` (后补NOP) | `nxmain_ui_member_check_direct_b` |
+
+---
+
+## 七、项目BNxService.exe 点位详表 (18处)
+
+> 节区换算律：`.text` 段 `RVA = FileOffset + 0xC00`；`.rdata` 段（第18点）`RVA = FileOffset + 0x1200`。
+
+| # | 文件偏移 | RVA | 功能 | 原始字节 | 修补字节 | 点位 ID |
+|---:|---:|---:|---|---|---|---|
+| 1 | `0x0a0044e` | `0x0a0104e` | Service 缓存解析 A：当前设备会员权益置 1 | `e8 d0 22 60 ff` | `b8 01 00 00 00` | `nxservice_parse_a_device_member_enabled` |
+| 2 | `0x0a005a8` | `0x0a011a8` | Service 缓存解析 A：到期时间固定 2099-12-31 | `e8 8a 2e 62 ff` | `b8 7f e6 85 f4` | `nxservice_parse_a_expiry_2099_12_31` |
+| 3 | `0x0a0060b` | `0x0a0120b` | Service 缓存解析 A：会员状态置 1 | `e8 13 21 60 ff` | `b8 01 00 00 00` | `nxservice_parse_a_member_status_enabled` |
+| 4 | `0x0a006cd` | `0x0a012cd` | Service 缓存解析 A：试用状态置 2 | `e8 51 20 60 ff` | `b8 02 00 00 00` | `nxservice_parse_a_trial_status_used` |
+| 5 | `0x0a00744` | `0x0a01344` | Service 缓存解析 A：会员类型置 VIP (1) | `e8 da 1f 60 ff` | `b8 01 00 00 00` | `nxservice_parse_a_member_type_vip` |
+| 6 | `0x0a008e4` | `0x0a014e4` | Service 缓存解析 A：账号信息有效标志置真 (1) | `e8 00 ad 60 ff` | `b0 01 90 90 90` | `nxservice_parse_a_is_valid_infos_true` |
+| 7 | `0x0a038f5` | `0x0a044f5` | Service 缓存解析 B：到期时间固定 2099-12-31 | `e8 3d fb 61 ff` | `b8 7f e6 85 f4` | `nxservice_parse_b_expiry_2099_12_31` |
+| 8 | `0x0a0397d` | `0x0a0457d` | Service 缓存解析 B：会员状态置 1 | `e8 a1 ed 5f ff` | `b8 01 00 00 00` | `nxservice_parse_b_member_status_enabled` |
+| 9 | `0x0a039d0` | `0x0a045d0` | Service 缓存解析 B：当前设备会员权益置 1 | `e8 4e ed 5f ff` | `b8 01 00 00 00` | `nxservice_parse_b_device_member_enabled` |
+| 10 | `0x0a03b71` | `0x0a04771` | Service 缓存解析 B：试用状态置 2 | `e8 ad eb 5f ff` | `b8 02 00 00 00` | `nxservice_parse_b_trial_status_used` |
+| 11 | `0x0a03c58` | `0x0a04858` | Service 缓存解析 B：会员类型置 VIP (1) | `e8 c6 ea 5f ff` | `b8 01 00 00 00` | `nxservice_parse_b_member_type_vip` |
+| 12 | `0x0a05810` | `0x0a06410` | Service 缓存序列化：写出到期时间 2099-12-31 | `48 8b 8d 78 03 00 00` | `b9 7f e6 85 f4 90 90` | `nxservice_serialize_expiry_2099_12_31` |
+| 13 | `0x0a05912` | `0x0a06512` | Service 缓存序列化：写出会员状态置 1 | `8b 8d 84 03 00 00` | `b9 01 00 00 00 90` | `nxservice_serialize_member_status_enabled` |
+| 14 | `0x0a05add` | `0x0a066dd` | Service 缓存序列化：写出当前设备权益置 1 | `8b 8d 88 03 00 00` | `b9 01 00 00 00 90` | `nxservice_serialize_device_member_enabled` |
+| 15 | `0x0a05c8e` | `0x0a0688e` | Service 缓存序列化：写出会员类型置 VIP (1) | `8b 8d b0 03 00 00` | `b9 01 00 00 00 90` | `nxservice_serialize_member_type_vip` |
+| 16 | `0x0a05d6d` | `0x0a0696d` | Service 缓存序列化：写出试用状态置 2 | `8b 8d b4 03 00 00` | `b9 02 00 00 00 90` | `nxservice_serialize_trial_status_used` |
+| 17 | `0x0a0626b` | `0x0a06e6b` | Service 缓存序列化：账号信息有效标志置真 (1) | `0f b6 8d 32 04 00 00` | `b1 01 90 90 90 90 90` | `nxservice_serialize_is_valid_infos_true` |
+| 18 | `0x10b6b38` | `0x10b7d38` | 云端试用端点降级为本地端点（原地替换） | `76 31 2f 6d 65 6d 62 65 72 2f 74 72 69 61 6c` | `76 31 2f 6d 65 6d 62 65 72 2f 6c 6f 63 61 6c` | `nxservice_disable_cloud_member_trial_endpoint` |
+
+---
+
+## 八、项目BRemoteService.exe 点位详表 (4处)
+
+> 节区换算律：`.text` 段 `RVA = FileOffset + 0xC00`，`VA = 0x140000000 + RVA`。
+
+| # | 文件偏移 | RVA | 功能 | 原始字节 | 修补字节 | 点位 ID |
+|---:|---:|---:|---|---|---|---|
+| 1 | `0x01af147` | `0x01afd47` | 远程云控启用标志强制为关闭（状态强制归 2） | `41 0f 95 c7` | `45 31 ff 90` | `nxremote_force_remote_enable_flag_false` |
+| 2 | `0x017d9b0` | `0x017e5b0` | 远程会话判定短路：isCurrentSessionRemoteSession() 直返假 (0) | `48 83 ec 58` | `33 c0 c3 90` | `nxremote_is_current_session_remote_session_false` |
+| 3 | `0x00d1ae0` | `0x00d26e0` | 阻断健康进程 项目BRemoteHealthd.exe 启动（入口直接 ret） | `48 89 5c 24 10` | `c3 90 90 90 90` | `nxremote_skip_healthd_launch` |
+| 4 | `0x00d2740` | `0x00d3340` | 阻断后端进程 项目BRemoteBackend.exe 启动（入口直接 ret） | `48 89 5c 24 10` | `c3 90 90 90 90` | `nxremote_skip_backend_launch` |
+
+---
+
+## 九、验证要点与排错指南
+
+### 1. 成功现象标准
+- **无感秒进**：冷启动或重启时，完全不展示开屏宣传广告与侧边栏推荐应用。
+- **特权固化**：主界面头像、多开器列表均展示永久 VIP 徽标，会员有效期固定显示为 **2099-12-31**。
+- **免试用打扰**：界面不再出现"剩余试用X天"标签，不弹出购买/充值提醒弹窗。
+- **多开与高刷**：支持 5 台以上设备多开与高帧率极致画质模式。
+- **后台干净**：任务管理器中不再常驻 `项目BRemoteBackend.exe` 与 `项目BRemoteHealthd.exe` 进程。
+
+### 2. 常见失败原因与排查
+- **VIP 状态闪退/一闪而过**：仅修补了 `项目BNxMain.exe`，未同步修补 `项目BNxService.exe`。Service 进程会在后台将真实的非会员信息写入 `configs\main\nx_main.json`，覆盖 Main 的内存状态。
+- **修改后程序无法启动 (0xc000007b / 校验报错)**：十六进制修改时填错偏移或漏写了 `90` (NOP)，破坏了后续指令的相对位移；或混淆了 File Offset 与 RVA。
+- **文件保存被拒绝**：`项目BRemoteService.exe` 作为 Windows 服务正在运行并持有了句柄，必须以管理员身份先执行 `sc stop 项目BRemoteService` 后方可覆写。
+
+---
+
+## 十、来源与溯源归档
+
+- **分析基线**：<厂商> Authenticode 官方签名有效版（`项目B6.0 / 6.8.1.0`）。
+- **工具链支持**：Python + Capstone + Radare2 符号交叉流追踪。
+- **工程归档位置**：`<工作区>\`。
+- **机器可读点位库**：`out\项目B_guard_points_all.csv` (全量 52 点元数据)。
