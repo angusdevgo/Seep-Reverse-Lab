@@ -185,7 +185,7 @@ Seep\ (251 MB)
 │   │   ├── AGENTS.md              ← 跨 Agent 通用指令规范
 │   │   └── extensions\            ← BLOCK_NONE 注入 + 口语合规转译
 │   │
-│   ├── cases\                     ← 11 大脱敏工业案例库（项目 A ~ K）
+│   ├── cases\                     ← 11 大脱敏工业案例库（项目 A ~ K，含版本演进归档 v2）
 │   ├── upstream\                  ← apk-reverse 上游开源验证集（MIT）
 │   ├── docs\                      ← 工程参考文档
 │   └── scripts\                   ← 工作流自动化脚本

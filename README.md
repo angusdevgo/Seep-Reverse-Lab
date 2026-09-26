@@ -188,7 +188,7 @@ Seep\ (251 MB)
 │   │   ├── AGENTS.md              ← Cross-agent portable instructions
 │   │   └── extensions\            ← BLOCK_NONE injection + terminology mapping
 │   │
-│   ├── cases\                     ← 11 desensitized industrial paradigm projects (A ~ K)
+│   ├── cases\                     ← 11 desensitized industrial paradigm projects (A ~ K, incl. version-evolution archive v2)
 │   ├── upstream\                  ← apk-reverse offline verification test suite (MIT)
 │   ├── docs\                      ← Engineering reference docs
 │   └── scripts\                   ← Workspace automation scripts
