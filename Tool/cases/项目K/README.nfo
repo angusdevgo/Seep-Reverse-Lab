@@ -1,0 +1,118 @@
+__________________________________________________________________________
+|                                                                          |
+|                     ██╗███╗   ██╗████████╗  ██████╗                      |
+|                     ██║████╗  ██║╚══██╔══╝ ██╔═████╗                     |
+|                     ██║██╔██╗ ██║   ██║    ██║██╔██║                     |
+|                     ██║██║╚██╗██║   ██║    ████╔╝██║                     |
+|                     ██║██║ ╚████║   ██║    ╚██████╔╝                     |
+|                     ╚═╝╚═╝  ╚═══╝   ╚═╝     ╚═════╝                      |
+|                                                                          |
+|                   [ INT0 RESEARCH GROUP // SCENE NFO ]                   |
+|__________________________________________________________________________|
+
+ - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+   RELEASE INFORMATION
+ - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+        Release .......: 项目K.v7.19.AuthBypass-INT0
+        Target ........: 项目K v7.19  (Windows 桌面文件管理器)
+        Runtime .......: .NET Framework 4.7.2 / WPF / x64
+        Protection ....: Themida-WinLicense + Method-Body Virtualization
+                         + String Encryption + Runtime Assembly.Load
+        Category ......: Client-Side Authorization Audit / CWE-602
+        Language ......: C# / PowerShell / Python
+        Date ..........: 2026-09
+
+ - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+   ABSTRACT
+ - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+        A four-layer hardened .NET desktop application was fully unpacked
+        and its client-side licensing scheme reconstructed from scratch.
+
+        Layer 1  Themida/WinLicense native packer
+                 -> in-memory .NET PE reconstruction (COR20 @ RVA 0x2000)
+
+        Layer 2  Method-body virtualization
+                 7860 of 13983 MethodDefs replaced by 4-byte stubs
+                 -> custom hook installed ABOVE the packer's own
+                    ICorJitCompiler::compileMethod vtable hook
+                 -> 9632 real method bodies recovered
+
+        Layer 3  String encryption + delegate trampolines
+                 -> 858 delegate fields resolved at runtime by reflection
+
+        Layer 4  Authorization core loaded via Assembly.Load(byte[])
+                 -> dumped in-process and fully decompiled (728 lines C#)
+
+ - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+   VULNERABILITY
+ - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+        CWE-602  client-side enforcement of server-side security
+        CWE-321  hard-coded / locally-derivable cryptographic key material
+        CWE-327  risky algorithm choice (AES key derived from machine code)
+        CWE-345  no authenticity verification (no signature, no MAC)
+        CWE-472  plaintext expiry field parsed without validation
+
+        License payload ..: <MachineCode> \t <ExpireDate> [\t <Email>]
+        Cipher ...........: AES-128-CBC / PKCS7 / UTF8
+        Key derivation ...: Key = f+g+h+e ,  IV = a+c+d+b
+                            (8 fixed slices of the 32-char machine code)
+        Machine code .....: MD5_HEX(motherboard serial + SALT + CPU id)
+        Storage ..........: HKCU\SOFTWARE\Microsoft\<3 letters>\Configuration
+                            %APPDATA%\Microsoft\Crypto\Keys\<machine code>
+        Decision point ...: a single 'public static int Days' field
+        Permanent flag ...: Days >= 29200  (80 years)
+
+        Forging the payload into BOTH storage locations yields a permanent
+        license. The "dual-store consistency check" is a formality: writing
+        both copies defeats it.
+
+ - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+   CLOUD CONTROL REMOVAL
+ - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+        The vendor re-validates online ~15s after startup. On rejection the
+        client rewrites the local license to '<JQM> \t Invalid \t <Email>'
+        and calls Environment.Exit(0). A plain forgery survives only ~1-2 min.
+
+        The bundled DLL uses three redundant layers:
+
+          [1] License forgery
+              WMI machine-code recompute + AES derivation + dual-store write
+
+          [2] Cloud-control removal
+              selective IWebProxy: only the vendor domain is routed to a dead
+              port (127.0.0.1:9); all other traffic stays direct
+
+          [3] Memory lock
+              watchdog pins App.Days to the permanent threshold every second
+              and restores the on-disk license within 5s if rewritten
+
+        Measured: 8+ minutes stable, zero outbound connections,
+                  zero license rollback events.
+
+ - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+   REDACTION NOTICE
+ - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+        The 19-character salt constant used by the target to derive the
+        machine code is redacted as <REDACTED_SALT>. The vendor domain is
+        shown as <vendor-domain>. Full values are retained only in the local
+        private report. Substitute the real salt to make the PoC runnable.
+
+ - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+   DISCLAIMER
+ - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+        Educational and security-research use only. Commercial exploitation
+        is strictly prohibited. If this software is valuable to your
+        workflow, please purchase a genuine license from the vendor.
+
+ - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+        INT0 RESEARCH GROUP / Seep Reverse Lab
+        Agent-Native Multi-Platform Reverse Engineering Workbench
+
+__________________________________________________________________________
