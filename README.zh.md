@@ -160,11 +160,12 @@ Seep\ (251 MB)
 ├── check.ps1                      ← PowerShell 体检入口
 │
 ├── Tool\
-│   ├── skill\                     ← 9 大逆向专业技能
+│   ├── skill\                     ← 10 大逆向与发布专业技能
 │   │   ├── softseep\              ← ⭐ 总控调度器（路由 + 8 专题按需库）
 │   │   ├── apkseep\               ← Android 全链路逆向（115 个工程文件）
 │   │   ├── ida-reverse\           ← IDA Pro 自动化联动
 │   │   ├── client-license-validation-bypass\ ← 跨运行时卡密/授权攻防手册
+│   │   ├── update\                ← 🔄 显式目标增量发布与 GitHub 同步总控
 │   │   └── safe-skills\           ← 5 个独立战术工具包
 │   │
 │   ├── mcp\                       ← MCP 服务引擎
