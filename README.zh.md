@@ -380,9 +380,12 @@ chmod +x setup/install.sh
 
 ---
 
-## 🤝 致谢与社区
+## 🤝 致谢与开源许可 (Acknowledgements & License)
 
-- 特别致谢 [**newliver666/apk-reverse**](https://github.com/newliver666/apk-reverse) 提供的 Android 逆向门控范式与验证体系。
+- **开源协议**：本项目基于 **GNU General Public License v3.0 (GPL-3.0)** 协议全面开源。
+- 特别致谢开源项目 [**newliver666/apk-reverse**](https://github.com/newliver666/apk-reverse)（MIT License）提供的 Android 逆向门控范式与验证体系。
+- 特别致谢开源项目 [**GeniusHu-tgty/Open-tgtylab**](https://github.com/GeniusHu-tgty/Open-tgtylab)（GPL-3.0 License）提供的安全实验室架构与 Zero-Waste Recon 攻防提效体系。
+- 特别致谢开源项目 [**LING71671/open-reverselab**](https://github.com/LING71671/open-reverselab)（GPL-3.0 License）提供的实战攻防知识库、攻击网拓扑与 MCP 自动化工具生态。
 - 感谢 [**LINUX DO**](https://linux.do/) 社区提供的高质量技术交流氛围。
 
 ---

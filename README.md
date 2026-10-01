@@ -389,9 +389,12 @@ All client-side vulnerability assessments follow a consulting-grade 3-part struc
 
 ---
 
-## 🤝 Acknowledgements & Community
+## 🤝 Acknowledgements & License
 
-- Special thanks to [**newliver666/apk-reverse**](https://github.com/newliver666/apk-reverse) for the foundational Android reverse engineering paradigm and verification methodology.
+- **License**: This project is licensed under the **GNU General Public License v3.0 (GPL-3.0)**.
+- Special thanks to [**newliver666/apk-reverse**](https://github.com/newliver666/apk-reverse) (MIT License) for the foundational Android reverse engineering paradigm and verification methodology.
+- Special thanks to [**GeniusHu-tgty/Open-tgtylab**](https://github.com/GeniusHu-tgty/Open-tgtylab) (GPL-3.0 License) for the security research lab framework and Zero-Waste Recon routing architecture.
+- Special thanks to [**LING71671/open-reverselab**](https://github.com/LING71671/open-reverselab) (GPL-3.0 License) for the comprehensive reverse engineering knowledge base, attack boards, and MCP automation ecosystem.
 - Gratitude to the [**LINUX DO**](https://linux.do/) community for technical exchange, insight, and research collaboration.
 
 ---
