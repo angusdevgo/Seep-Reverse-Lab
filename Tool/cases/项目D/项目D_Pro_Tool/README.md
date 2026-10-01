@@ -11,7 +11,7 @@
 <p align="center">
   <a href="https://github.com/angusdevgo/IDM_Pro_Tool/stargazers"><img src="https://img.shields.io/github/stars/angusdevgo/IDM_Pro_Tool?style=for-the-badge&logo=github&color=blue" alt="GitHub Stars"></a>
   <a href="https://github.com/angusdevgo/IDM_Pro_Tool/releases"><img src="https://img.shields.io/github/v/release/angusdevgo/IDM_Pro_Tool?style=for-the-badge&logo=github&color=brightgreen" alt="Latest Release"></a>
-  <a href="https://github.com/angusdevgo/IDM_Pro_Tool/blob/main/LICENSE"><img src="https://img.shields.io/badge/License-MIT-green.svg?style=for-the-badge" alt="License"></a>
+  <a href="https://github.com/angusdevgo/IDM_Pro_Tool/blob/main/LICENSE"><img src="https://img.shields.io/badge/License-GPLv3-blue.svg?style=for-the-badge" alt="License"></a>
   <img src="https://img.shields.io/badge/Platform-Windows-0078D6?style=for-the-badge&logo=windows" alt="Windows Platform">
   <img src="https://img.shields.io/badge/.NET%20Framework-4.x%20(Native)-purple?style=for-the-badge&logo=dotnet" alt=".NET Framework 4.x">
   <img src="https://img.shields.io/badge/Architecture-x64-orange?style=for-the-badge" alt="Architecture x64">
@@ -51,7 +51,7 @@
 
 | 模式 | 运行机制 | 适用场景 |
 | :--- | :--- | :--- |
-| 🔥 **模式一：极速深度解锁** | AOB 特征码扫描定位 `项目D.exe` 底层 14 处 / 30 字节指令并修补，剥离数字签名，重算 PE 校验和，并写入终身授权登记信息。 | 追求彻底离线激活、解除所有限制的用户。 |
+| 🔥 **模式一：极速深度解锁** | AOB 特征码扫描定位 `项目D.exe` 底层 15 处 / 31 字节指令并修补（含 1 处版本专属可选位点），剥离数字签名，重算 PE 校验和，并写入终身授权登记信息。 | 追求彻底离线激活、解除所有限制的用户。 |
 | ❄️ **模式二：永久冻结试用期** | 通过 Windows ACL 精确锁定注册表 CLSID 键与时间戳，固定锁定 30 天试用；不修改任何二进制。 | 需要保持原版哈希、支持官方在线静默升级的用户。 |
 | 💎 **模式三：个性化授权登记** | 自定义登记姓名与邮箱（支持一键生成随机身份），自动写入系统注册表并联动底层解锁。 | 需要自定义个人专属软件授权展示界面的用户。 |
 | 🔄 **模式四：全量清理出厂重置** | 清理系统内 CLSID 试用标记、黑名单特征项及注册表残留，重置为刚安装时的纯净状态。 | 解决弹窗异常、状态混乱或准备重装测试。 |
@@ -75,7 +75,7 @@
 ```
 [原始 项目D.exe] ──> [PE 结构完整性校验] ──> [AOB 特征码全表扫描]
                              │
-                             ├──> 1. AOB 特征码定位并修补 14 处 / 30 字节机器指令
+                             ├──> 1. AOB 特征码定位并修补 15 处 / 31 字节机器指令
                              ├──> 2. 剥离 PE 证书目录 + 截断尾部 10,608 字节签名
                              ├──> 3. 重算并修复 PE Checksum 校验和（微软标准算法）
                              ├──> 4. 落盘前/后双重 PE 复验，失败自动回滚
@@ -94,7 +94,9 @@
 4. **任一**位点未命中 → 立即中止，**零字节写入**；
 5. 特征码取自多个 项目D 版本的**共同稳定区**，天然免疫代码位移。
 
-> 当前特征码表经 **项目D 6.43 build 10**、**6.43 build 11 (6.43.11.2)** 与 **6.43 build 11 (6.43.11.3)** 三版本逐字节交叉验证，全部 14 个位点在三个版本的「原始态 / 已补丁态」中均为唯一命中。
+> 当前特征码表经 **项目D 6.43 build 10**、**6.43 build 11 (6.43.11.2)** 与 **6.43 build 11 (6.43.11.3)** 三版本逐字节交叉验证。
+> 其中 **14 个为通用必需位点**，三版本全部唯一命中；
+> **第 15 个为 build 11.3 专属的可选位点**（详见 §0.2），在 b10 / 11.2 上特征码零命中，由可选机制自动跳过。
 
 ### 0.1 版本感知备份（防止升级后回滚点错版）
 
@@ -113,12 +115,45 @@
 
 同时「一键还原官方原版」加入**版本一致性守卫**：备份与当前安装版本不一致时**拒绝还原**。
 
-### 1. 拒绝假序列号弹窗的科学逻辑
-项目D 会对注册表中的 `Serial` 键值执行严苛的非对称公钥校验，伪造任何假序列号都会触发弹窗提示「项目D 是使用假冒序列号注册的」。  
-**正确的激活解法**：
-1. **删除** `Serial` 键值；
+### 0.2 可选位点机制（Optional · 版本自适应）
+
+当某个补丁位点**只在部分版本存在**时（如官方在新版本中新增的对抗逻辑），
+若强行要求全部位点命中，引擎会在旧版本上误判为「特征码不匹配」而拒绝打补丁。
+
+v1.4.0 引入 `AobPoint.Optional` 标志：
+
+| 位点类型 | 命中 | 未命中 |
+| :--- | :--- | :--- |
+| **必需位点** | 正常打补丁 | **中止写入，零字节落盘** |
+| **可选位点** | 正常打补丁 | 打印「跳过可选位点（本版本无此逻辑）」，**不阻断** |
+
+门禁判定改为 `必需位点全中 == 必需位点总数`。
+
+**实战收益**：一套引擎同时适配 b10 / 11.2 / 11.3 三个版本，**无需任何版本分支判断**：
+
+| 版本 | 生效位点 | 产物哈希 |
+| :--- | :--- | :--- |
+| build 10 | 14 / 15（可选跳过） | 与 v1.3.0 **完全一致**（零回归） |
+| build 11.2 | 14 / 15（可选跳过） | 与 v1.3.0 **完全一致**（零回归） |
+| build 11.3 | **15 / 15** | 新增 1 字节补丁，抑制注册弹窗 |
+
+---
+
+### 1. 注册表策略 + 二进制分支的双保险设计
+
+项目D 会对注册表中的 `Serial` 键值执行严苛的非对称公钥校验，伪造任何假序列号都会触发弹窗提示「项目D 是使用假冒序列号注册的」。
+
+**注册表侧**（策略面）：
+1. **删除** `Serial` 键值（避免触发公钥校验）；
 2. 清理 `scansk`、`tvfrdt`、`radxcnt`、`ptrk_scdt`、`LastCheckQU`、`scTime`、`NextCheck`、`BList`、`md5pks` 等特征遥测键；
 3. 仅写入 `FName` / `LName` / `Email`。
+
+> ⚠️ **重要修正（v1.4.0）**：**删除 `Serial` 这一策略在 build 11.3 上已失效**。
+> 官方在 11.3 中新增了一条对抗逻辑：**启动时若注册表不存在 `Serial` 值，直接弹出注册对话框**（对话框资源 ID 138）。
+> 因此 v1.4.0 在**二进制判定面**新增了第 15 个补丁位点（`je` → `jmp`，永远走「Serial 已存在」路径），
+> 与注册表策略形成**双保险**。
+>
+> **教训**：注册表是**策略面**（官方可随时针对性封堵），二进制分支才是**判定面**（稳定）。
 
 ### 2. PE 签名剥离与校验和校正
 修改二进制指令后，官方的 Authenticode 数字签名自然失效，会导致 Windows 驱动或杀毒软件报警签名损坏。  
@@ -190,10 +225,15 @@ IDM_Pro_Tool/
 │   ├── app.ico             # 包含多尺寸编码（16~256px）的应用程序原生图标
 │   ├── app_icon.png        # 256x256 高清运行时矢量展示图
 │   └── app.manifest        # Windows UAC 管理员提权与 DPI 感知清单
+├── tests/
+│   ├── PatchEngineTests.cs # 回归测试套件（61 项断言，覆盖三版本端到端）
+│   ├── QuickPatch.cs       # 最小引擎驱动（产物验证用）
+│   ├── build_tests.bat     # 测试构建脚本
+│   └── build_quick.bat     # 驱动构建脚本
 ├── build.bat               # 原生批处理快速构建脚本（自动完成编译与资源归档）
 ├── IDM_Pro_Tool.exe        # 编译生成的目标 x64 GUI 可执行程序
 ├── app_icon.png            # 运行时窗口读取图标
-├── LICENSE                 # MIT 开源许可证
+├── LICENSE                 # GPL-3.0 开源许可证
 └── README.md               # 详尽的项目说明文档
 ```
 
@@ -210,12 +250,16 @@ IDM_Pro_Tool/
 | **原版 SHA-256** | `03CC62E9…D16D607C` | `E8B0459D…9AB9DD4E69` | `D0993EC0…7CDB194C6A` |
 | **原版 PE 校验和** | `0x005ECD00` | `0x005EF1D7` | `0x005E9C44` |
 | **修补后体积** | 6,189,056 字节 | 6,189,568 字节 | 6,189,568 字节 |
-| **修补后 SHA-256** | `712BD0D9…36FCC79CC6` | `3470B5B8…DEA6CD601D8` | `F4CF6939…20F920A5F4` |
-| **修补后 PE 校验和** | `0x005EBDA3` | `0x005E84FA` | `0x005F4B5D` |
+| **修补后 SHA-256**（v1.3.0） | `712BD0D9…36FCC79CC6` | `3470B5B8…DEA6CD601D8` | `F4CF6939…20F920A5F4` |
+| **修补后 PE 校验和**（v1.3.0） | `0x005EBDA3` | `0x005E84FA` | `0x005F4B5D` |
+| **修补后 SHA-256**（v1.4.0） | 同上（未变） | 同上（未变） | `641A6D97…B6CC404763E` |
+| **修补后 PE 校验和**（v1.4.0） | `0x005EBDA3` | `0x005E84FA` | `0x005EC25E` |
 
 > 上述「修补后 SHA-256」为本工具 v3 引擎产物。注意其与原版 Crack v20.7 产物**仅差 PE 校验和字段** —— 原版 Crack 写入的 `0x005F0BEA` 经算法穷举验证不属于任何标准 PE 校验和算法，是无效值；本工具改为写入**标准算法计算的正确值**。
 
-> **特征码稳定性**：AOB 特征码取自三个版本的**共同稳定区**，已天然排除重定位指针。六个守护线程、授权分支、试用期常量等 14 个位点在三个版本中全部唯一命中。
+> **特征码稳定性**：AOB 特征码取自三个版本的**共同稳定区**，已天然排除重定位指针。
+> 六个守护线程、授权分支、试用期常量等 **14 个通用位点**在三个版本中全部唯一命中；
+> 第 15 个「注册对话框抑制」位点为 **11.3 专属**，通过 `Optional` 机制实现版本自适应。
 
 ---
 
@@ -230,7 +274,42 @@ IDM_Pro_Tool/
 
 ## 📄 开源许可证
 
-本项目基于 [MIT License](LICENSE) 协议开源。欢迎提交 Issue 或 Pull Request 完善支持！
+本项目基于 **[GNU General Public License v3.0](LICENSE)**（GPL-3.0）协议开源。
+
+### 你可以自由地
+
+- ✅ **使用** —— 任何目的（含商业用途）
+- ✅ **研究** —— 阅读、学习、修改源码
+- ✅ **分发** —— 复制、再发布
+- ✅ **改进** —— 修改后发布自己的版本
+
+### 你需要遵守
+
+- 📌 **开源传染** —— 基于本项目修改/衍生的作品，**必须同样以 GPL-3.0 开源**并附完整源码
+- 📌 **保留声明** —— 必须保留原始版权声明与许可证文本
+- 📌 **标注修改** —— 修改过的文件需显著标明「已修改」及修改日期
+- 📌 **无附加限制** —— 不得对下游用户施加 GPL 之外的额外限制
+
+### 特别说明
+
+- ⚠️ **无担保** —— 本软件按「原样」提供，作者不承担任何担保责任
+- ⚠️ **仅供学习研究** —— 详见下方免责声明，请勿用于商业侵权用途
+
+完整条款请见 [LICENSE](LICENSE) 文件，或访问 <https://www.gnu.org/licenses/gpl-3.0.html>。
+
+欢迎提交 Issue 或 Pull Request 完善支持！
  
 ## 🤝 社区与支持
 - **LINUX DO 社区**: [https://linux.do](https://linux.do)
+
+---
+
+## ⭐ Star History
+
+<a href="https://star-history.com/#angusdevgo/IDM_Pro_Tool&Date">
+ <picture>
+   <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=angusdevgo/IDM_Pro_Tool&type=Date&theme=dark" />
+   <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/svg?repos=angusdevgo/IDM_Pro_Tool&type=Date" />
+   <img alt="Star History Chart" src="https://api.star-history.com/svg?repos=angusdevgo/IDM_Pro_Tool&type=Date" />
+ </picture>
+</a>

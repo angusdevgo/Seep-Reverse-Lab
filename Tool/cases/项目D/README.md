@@ -227,6 +227,36 @@ build.bat               构建脚本
 
 ---
 
+## 许可证
+
+### 本案例文档
+
+本案例（`Tool/cases/项目D/`）随 **Seep-Reverse-Lab** 仓库整体以
+**[GNU General Public License v3.0](https://github.com/angusdevgo/Seep-Reverse-Lab/blob/main/LICENSE)** 开源。
+
+### 配套工具
+
+案例中的 `项目D_Pro_Tool`（AOB 特征码引擎）独立发布于
+**[angusdevgo/IDM_Pro_Tool](https://github.com/angusdevgo/IDM_Pro_Tool)**，
+自 **v1.4.0** 起同样采用 **GPL-3.0**（此前为 MIT）。
+
+| 组件 | 许可证 |
+| :--- | :--- |
+| 本案例文档 | GPL-3.0 |
+| `项目D_Pro_Tool` 工具源码与二进制 | GPL-3.0 |
+| 版本扩展流水线（`tools/`） | GPL-3.0 |
+
+> **GPL-3.0 要点**：基于本案例或工具修改/衍生的作品，
+> **必须同样以 GPL-3.0 开源并附完整源码**；不得施加 GPL 之外的额外限制。
+
+### 上游软件
+
+本案例分析的**目标软件**为其权利人独立发布，**不在本许可证覆盖范围内**。
+案例中的哈希、偏移、反汇编片段等属**技术事实**，不构成对目标软件的分发。
+若该软件对您有帮助，**请购买官方正版授权**。
+
+---
+
 ## 免责声明
 
 本案例仅用于**逆向工程、PE 文件结构、软件授权机制**的技术学习与安全研究。
