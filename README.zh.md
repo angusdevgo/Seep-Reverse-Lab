@@ -41,6 +41,8 @@
 
 > 🔗 **致敬与开源参考源**：
 > - 移动端逆向工程与门禁验证套件源自：[**newliver666/apk-reverse**](https://github.com/newliver666/apk-reverse)（MIT License）。
+> - 安全实验室架构与 Zero-Waste Recon 攻防提效体系： [**GeniusHu-tgty/Open-tgtylab**](https://github.com/GeniusHu-tgty/Open-tgtylab)（GPL-3.0 License）
+> - 攻击网拓扑与 MCP 自动化工具生态：[**LING71671/open-reverselab**](https://github.com/LING71671/open-reverselab)（GPL-3.0 License）
 > - 社区支持与技术讨论：[**LINUX DO**](https://linux.do/)。
 
 ---
