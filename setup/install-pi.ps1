@@ -1,21 +1,22 @@
 ﻿#Requires -Version 5.1
 <#
-  Seep 工作台 —— pi 环境配置
-  1. 备份现有配置
-  2. 复制 Skill / 提示词 / 扩展
-  3. 生成 mcp.json（替换占位符）
-  4. 写 settings.json（packages 列表）
-  5. 安装 pi 扩展包
+  Seep 工作台 —— 一键配置 Pi Agent 运行环境 (加强版)
+  包含：
+    1. 备份原 ~/.pi/agent 配置
+    2. 同步 9 个 Skill
+    3. 同步提示词与安全放行扩展
+    4. 增量合并 mcp.json（保护已有用户配置，UTF-8 No BOM，反斜杠安全转义）
+    5. 配置 settings.json
 #>
 [CmdletBinding()]
 param(
-    [switch]$NoBackup,
     [switch]$SkipPackages
 )
 
 $ErrorActionPreference = 'Continue'
 $ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 $Root      = Split-Path -Parent $ScriptDir
+$NormalizedRoot = $Root.Replace('\', '/')
 $ToolDir   = Join-Path $Root 'Tool'
 $AgentDir  = Join-Path $env:USERPROFILE '.pi\agent'
 $SkillsDir = Join-Path $AgentDir 'skills'
@@ -25,28 +26,30 @@ function Write-Ok($m)   { Write-Host "    [OK] $m" -ForegroundColor Green }
 function Write-Warn($m) { Write-Host "    [!!] $m" -ForegroundColor Yellow }
 function Write-Info($m) { Write-Host "    [..] $m" -ForegroundColor Gray }
 
-New-Item -ItemType Directory -Force -Path $AgentDir, $SkillsDir, $ExtDir | Out-Null
+Write-Host "`n  === Pi Agent 环境配置 ===" -ForegroundColor Cyan
 
-# ---------------------------------------------------------------- 1. 备份
-if (-not $NoBackup) {
-    $stamp  = Get-Date -Format 'yyyyMMdd-HHmmss'
-    $backup = Join-Path $AgentDir "_backup_$stamp"
-    New-Item -ItemType Directory -Force -Path $backup | Out-Null
-    $n = 0
-    foreach ($f in @('SYSTEM.md', 'AGENTS.md', 'mcp.json', 'settings.json')) {
-        $src = Join-Path $AgentDir $f
-        if (Test-Path $src) { Copy-Item $src (Join-Path $backup $f) -Force; $n++ }
-    }
-    if (Test-Path $ExtDir) {
-        $eb = Join-Path $backup 'extensions'
-        New-Item -ItemType Directory -Force -Path $eb | Out-Null
-        Get-ChildItem $ExtDir -Filter '*.ts' -ErrorAction SilentlyContinue |
-            ForEach-Object { Copy-Item $_.FullName $eb -Force; $n++ }
-    }
-    Write-Ok "已备份 $n 个文件 -> $backup"
+# ---------------------------------------------------------------- 1. 目录与备份
+foreach ($d in @($AgentDir, $SkillsDir, $ExtDir)) {
+    if (-not (Test-Path $d)) { New-Item -ItemType Directory -Path $d -Force | Out-Null }
 }
 
-# ---------------------------------------------------------------- 2. Skill
+$backup = Join-Path $AgentDir ("backup-" + (Get-Date -Format 'yyyyMMdd-HHmmss'))
+$needBackup = @('SYSTEM.md', 'AGENTS.md', 'mcp.json', 'settings.json')
+$hasOld = $false
+foreach ($f in $needBackup) {
+    if (Test-Path (Join-Path $AgentDir $f)) { $hasOld = $true; break }
+}
+if ($hasOld) {
+    New-Item -ItemType Directory -Path $backup -Force | Out-Null
+    $n = 0
+    foreach ($f in $needBackup) {
+        $p = Join-Path $AgentDir $f
+        if (Test-Path $p) { Copy-Item $p $backup -Force; $n++ }
+    }
+    Write-Ok "已安全备份原有配置 ($n 个文件) -> $backup"
+}
+
+# ---------------------------------------------------------------- 2. Skill 同步
 $srcSkills = Join-Path $ToolDir 'skill'
 if (Test-Path $srcSkills) {
     foreach ($s in (Get-ChildItem $srcSkills -Directory)) {
@@ -56,8 +59,8 @@ if (Test-Path $srcSkills) {
                 if (Test-Path $dst) { Remove-Item $dst -Recurse -Force }
                 Copy-Item $sub.FullName $dst -Recurse -Force
             }
-            Write-Ok 'safe-skills 5 个 -> skills/'
-        } else {
+            Write-Ok 'safe-skills 5 组 -> ~/.pi/agent/skills/'
+        } elseif ($s.Name -ne 'update') {
             $dst = Join-Path $SkillsDir $s.Name
             if (Test-Path $dst) { Remove-Item $dst -Recurse -Force }
             Copy-Item $s.FullName $dst -Recurse -Force
@@ -81,36 +84,66 @@ if (Test-Path $srcExt) {
     }
 }
 
-# ---------------------------------------------------------------- 4. mcp.json
-$tpl = Join-Path $ToolDir 'mcp\mcp.json.template'
-if (Test-Path $tpl) {
-    $content = Get-Content $tpl -Raw -Encoding UTF8
-    $content = $content.Replace('<SEEP_ROOT>', $Root)
+# ---------------------------------------------------------------- 4. 增量安全合并 mcp.json (UTF-8 No BOM, 无覆盖隐患)
+$dstMcp = Join-Path $AgentDir 'mcp.json'
+$existingConfig = [PSCustomObject]@{ mcpServers = [PSCustomObject]@{} }
 
-    # 探测 IDA
-    $idaRoot = $null
-    foreach ($cand in @('D:\Tool\IDA Pro', 'C:\Program Files\IDA Pro', 'C:\IDA Pro')) {
-        if (Test-Path (Join-Path $cand 'ida.exe')) { $idaRoot = $cand; break }
+if (Test-Path $dstMcp) {
+    try {
+        $rawMcp = [System.IO.File]::ReadAllText($dstMcp, [System.Text.Encoding]::UTF8)
+        if ($rawMcp.StartsWith([char]0xFEFF)) { $rawMcp = $rawMcp.Substring(1) }
+        $existingConfig = $rawMcp | ConvertFrom-Json
+    } catch {
+        Write-Warn "现有 mcp.json 语法异常，正在安全初始化..."
+        $existingConfig = [PSCustomObject]@{ mcpServers = [PSCustomObject]@{} }
     }
-    if ($idaRoot) {
-        $idaPy = Join-Path $idaRoot 'python311\python.exe'
-        $content = $content.Replace('<IDA_ROOT>', $idaRoot)
-        $content = $content.Replace('<IDA_PYTHON>', $idaPy)
-        Write-Ok "探测到 IDA: $idaRoot"
-    } else {
-        Write-Warn '未探测到 IDA Pro，mcp.json 中 ida 条目保留占位符（见 MANUAL\IDA-PRO.md）'
+}
+
+if (-not $existingConfig.mcpServers) {
+    $existingConfig | Add-Member -NotePropertyName 'mcpServers' -NotePropertyValue ([PSCustomObject]@{}) -Force
+}
+
+# 挂载核心 seep MCP
+$seepServerPy = "$NormalizedRoot/Tool/mcp/seep_mcp_server.py"
+$seepEntry = [PSCustomObject]@{
+    command = "python"
+    args    = @($seepServerPy)
+    env     = [PSCustomObject]@{
+        PYTHONIOENCODING = "utf-8"
     }
+    transport = "stdio"
+}
+$existingConfig.mcpServers | Add-Member -NotePropertyName 'seep' -NotePropertyValue $seepEntry -Force
 
-    $dstMcp = Join-Path $AgentDir 'mcp.json'
-    Set-Content -Path $dstMcp -Value $content -Encoding UTF8
-    Write-Ok "mcp.json 已生成 -> $dstMcp"
+# 挂载 js-reverse
+$jsReverseEntry = [PSCustomObject]@{
+    command   = "npx"
+    args      = @("-y", "js-reverse-mcp")
+    transport = "stdio"
+    lifecycle = "lazy"
+}
+$existingConfig.mcpServers | Add-Member -NotePropertyName 'js-reverse' -NotePropertyValue $jsReverseEntry -Force
 
-    if ($content -match '<YOUR_PLAYWRIGHT_TOKEN>') {
-        Write-Info 'playwright token 仍为占位符（不用浏览器自动化可忽略）'
+# 挂载 playwright (若不存在才添加模板，不冲掉用户现有 Token)
+if (-not $existingConfig.mcpServers.playwright) {
+    $playwrightEntry = [PSCustomObject]@{
+        command   = "npx"
+        args      = @("-y", "@playwright/mcp@latest", "--extension")
+        env       = [PSCustomObject]@{
+            PLAYWRIGHT_MCP_EXTENSION_TOKEN = "<YOUR_PLAYWRIGHT_TOKEN>"
+        }
+        transport = "stdio"
+        lifecycle = "eager"
     }
-} else { Write-Warn "未找到 $tpl" }
+    $existingConfig.mcpServers | Add-Member -NotePropertyName 'playwright' -NotePropertyValue $playwrightEntry -Force
+}
 
-# ---------------------------------------------------------------- 5. settings.json
+# 序列化为 UTF-8 No BOM 格式写入
+$finalMcpJson = $existingConfig | ConvertTo-Json -Depth 10
+[System.IO.File]::WriteAllText($dstMcp, $finalMcpJson, (New-Object System.Text.UTF8Encoding $false))
+Write-Ok "mcp.json 已增量合并完成（保护已有第三方配置，UTF-8 无BOM格式）"
+
+# ---------------------------------------------------------------- 5. settings.json (增量合并 packages)
 $dstSettings = Join-Path $AgentDir 'settings.json'
 $packages = @(
     'npm:pi-open-tui',
@@ -127,15 +160,25 @@ $packages = @(
     'npm:pi-goal-x'
 )
 
-$settings = $null
+$settings = [PSCustomObject]@{}
 if (Test-Path $dstSettings) {
-    try { $settings = Get-Content $dstSettings -Raw -Encoding UTF8 | ConvertFrom-Json } catch { $settings = $null }
+    try {
+        $rawSet = [System.IO.File]::ReadAllText($dstSettings, [System.Text.Encoding]::UTF8)
+        if ($rawSet.StartsWith([char]0xFEFF)) { $rawSet = $rawSet.Substring(1) }
+        $settings = $rawSet | ConvertFrom-Json
+    } catch { $settings = [PSCustomObject]@{} }
 }
-if ($null -eq $settings) { $settings = [pscustomobject]@{} }
 
-$settings | Add-Member -NotePropertyName 'packages' -NotePropertyValue $packages -Force
-$settings | ConvertTo-Json -Depth 10 | Set-Content -Path $dstSettings -Encoding UTF8
-Write-Ok "settings.json 已写入 $($packages.Count) 个 packages"
+$currentPackages = @()
+if ($settings.packages) { $currentPackages = @($settings.packages) }
+foreach ($pkg in $packages) {
+    if ($currentPackages -notcontains $pkg) { $currentPackages += $pkg }
+}
+
+$settings | Add-Member -NotePropertyName 'packages' -NotePropertyValue $currentPackages -Force
+$finalSettingsJson = $settings | ConvertTo-Json -Depth 10
+[System.IO.File]::WriteAllText($dstSettings, $finalSettingsJson, (New-Object System.Text.UTF8Encoding $false))
+Write-Ok "settings.json 已安全同步（$($currentPackages.Count) 个 packages）"
 
 # ---------------------------------------------------------------- 6. 安装扩展包
 if (-not $SkipPackages) {
@@ -146,10 +189,8 @@ if (-not $SkipPackages) {
         if ($LASTEXITCODE -eq 0) { Write-Ok 'pi 扩展包已更新' }
         else { Write-Warn 'pi update 失败，可稍后手动执行：pi update --extensions' }
     } else {
-        Write-Warn '未找到 pi 命令，跳过扩展包安装'
-        Write-Info '安装 pi 后手动执行：pi update --extensions'
+        Write-Warn '未找到 pi 命令，跳过扩展包更新'
     }
 }
 
-Write-Host "`n    提示：需重启 pi 使 Skill / 提示词 / MCP 生效" -ForegroundColor Yellow
 exit 0
