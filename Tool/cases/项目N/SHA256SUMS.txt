@@ -1,0 +1,10 @@
+﻿1b906b189bd3cbe51fdcef9e7be493a4ddd06bdefd19b0c6e0d4f2e8c4e98fcf  .agents/notes/implemented/architecture/2026-10-02-vm-three-layer-recovery.md
+e223b38eee08e0484deabe7b75d87eabc0423b15b8478221ab60026bbb39412e  .agents/notes/implemented/feature/2026-10-02-minimal-binary-patch-strategy.md
+a549b2107442b0b7e311e6d8f222af372893e99bfbeeaaf5060c8041545d17d9  .agents/notes/rejected/process/2026-10-02-global-helper-method-patch.md
+5f9ee2a3b996354ff5f78cab01d339cfb688cffb92ba978b967476e4ab83bc99  .agents/notes/rejected/process/2026-10-02-static-string-decryptor-recovery.md
+e43e7c86f568f01b0934ee13f33f0507dd03a8761656006c380e1174ce63744c  .agents/notes/rejected/testing/2026-10-02-same-process-variant-verification.md
+697cba7aba7b3af6811d5a869e6bb78ec5bc06e0ae45ff6185f2644b57be8e24  docs/protection-layers.md
+d6e32d69f0d47274b320885f817484d2e8f2fd966947b70a9888935119a183bf  docs/reverse-engineering.md
+84daabaaeb392877a5e486d56dd04678a1e2919a9fb31ad3878042eb987f1303  README.nfo
+afccfcd62c407a91b41255c449bc42c1bb7cde36bec3a4962b69924e40ed94b3  README.txt
+3d8d48149eaf2cafaa263b28d4de386699b057081f76870401d1305d6d3664f1  tools/bx_patch.py
