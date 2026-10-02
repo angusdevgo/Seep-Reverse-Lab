@@ -82,7 +82,7 @@ check_item "架构" "工作台主目录完整 (Tool/)" test -d "$TOOL_DIR"
 check_item "架构" "技能包目录完整 (Tool/skill/)" test -d "$TOOL_DIR/skill"
 check_item "架构" "MCP服务引擎目录 (Tool/mcp/)" test -d "$TOOL_DIR/mcp"
 check_item "架构" "系统提示词层 (Tool/prompts/)" test -d "$TOOL_DIR/prompts"
-check_item "架构" "十三大脱敏案例工程 (Tool/cases/)" test -d "$TOOL_DIR/cases"
+check_item "架构" "十四大脱敏案例工程 (Tool/cases/)" test -d "$TOOL_DIR/cases"
 check_item "架构" "上游开源验证集 (Tool/upstream/ 3大开源项目)" test -d "$TOOL_DIR/upstream/apk-reverse" -a -d "$TOOL_DIR/upstream/open-tgtylab" -a -d "$TOOL_DIR/upstream/open-reverselab"
 check_item "架构" "MCP专用运行时强约定 (Tool/mcp/Tool/)" test -d "$TOOL_DIR/mcp/Tool"
 

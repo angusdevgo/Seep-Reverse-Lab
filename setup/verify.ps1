@@ -150,10 +150,10 @@ Test-CheckItem "架构" "工作台主目录完整 (Tool/)" { Test-Path $ToolDir 
 Test-CheckItem "架构" "技能包目录完整 (Tool/skill/)" { Test-Path (Join-Path $ToolDir 'skill') } "检查 Tool/skill 是否存在" "Tool/skill 存在" "$ToolDir\skill"
 Test-CheckItem "架构" "MCP服务引擎目录 (Tool/mcp/)" { Test-Path (Join-Path $ToolDir 'mcp') } "检查 Tool/mcp 是否存在" "Tool/mcp 存在" "$ToolDir\mcp"
 Test-CheckItem "架构" "系统提示词层 (Tool/prompts/)" { Test-Path (Join-Path $ToolDir 'prompts') } "检查 Tool/prompts 是否存在" "Tool/prompts 存在" "$ToolDir\prompts"
-Test-CheckItem "架构" "十三大脱敏案例工程 (Tool/cases/)" { 
+Test-CheckItem "架构" "十四大脱敏案例工程 (Tool/cases/)" { 
     $cases = Join-Path $ToolDir 'cases'
-    (Test-Path $cases) -and ((Get-ChildItem $cases -Directory).Count -ge 10)
-} "检查 10+ 个项目案例目录是否存在" "≥10 个项目工程" "$ToolDir\cases"
+    (Test-Path $cases) -and ((Get-ChildItem $cases -Directory).Count -ge 14)
+} "检查 14 个项目案例目录是否存在" "≥14 个项目工程" "$ToolDir\cases"
 Test-CheckItem "架构" "上游开源验证集 (Tool/upstream/ 3大开源项目)" { 
     (Test-Path (Join-Path $ToolDir 'upstream\apk-reverse')) -and
     (Test-Path (Join-Path $ToolDir 'upstream\open-tgtylab')) -and

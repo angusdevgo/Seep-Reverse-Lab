@@ -60,7 +60,7 @@ Users provide plain-language technical goals; the agent autonomously performs pl
 | 🔧 **Toolchain Fragmentation** | 23 MCP tools wrapping Radare2, JADX, Apktool, Frida — unified API, zero manual switching |
 | 🧠 **Agent Decision Drift** | `softseep` orchestrator: two-stage auto-classification (Platform × 9 Task Types) + 7-gate decision tree |
 | 🛡️ **Model Refusal in Security Audits** | Three-tier mitigation: `BLOCK_NONE` injection + transparent terminology mapping + cognitive redirection |
-| 📚 **Ephemeral Knowledge** | 289 technical field journals + 10 desensitized paradigms + "search KB before executing" enforced discipline |
+| 📚 **Ephemeral Knowledge** | 289 technical field journals + 14 desensitized paradigms + "search KB before executing" enforced discipline |
 | 📦 **Setup Friction** | One-click `install.ps1` → supports Pi Agent, Claude Code, DeepSeek Harness (DSH), Codex / OpenCode |
 
 ---
@@ -143,7 +143,7 @@ The agent autonomously:
 - 🔍 **CWE-602 Authorization Audit**: Minutes to determine if a feature gate is local-boolean or server-authoritative
 - 🛡️ **Authenticode Signature Preservation**: DLL search-order hijacking (`version.dll` / `sentry.dll`) keeps host binary signature intact
 - 🔄 **PoC Self-Healing Loop**: Frida error → root-cause mapping → auto-fix → re-execute (up to 3 attempts, then structured handoff)
-- 💎 **9 Industrial Architecture Paradigms**: Monolithic offline PE → multi-process IPC → VM arbitration → .NET keygen → weak RSA bypass *(fully desensitized)*
+- 💎 **14 Industrial Architecture Paradigms**: Monolithic offline PE → multi-process IPC → VM arbitration → .NET keygen → weak RSA bypass → Java agent → .NET VM bypass *(fully desensitized)*
 - 🔌 **Offline-Ready**: All toolchains pre-bundled (251 MB), zero network dependencies after setup
 
 ---
@@ -328,7 +328,7 @@ Deactivate: exit lab
 
 **Authority Attribution**: Airplane mode + loopback hijacking + timestamp offset testing to classify gates as server-authoritative vs. local-boolean within minutes.
 
-**Thirteen Industrial Paradigms** — all fully desensitized:
+**Fourteen Industrial Paradigms** — all fully desensitized:
 
 | Project | Architecture | Key Technique |
 |---|---|---|
@@ -345,6 +345,7 @@ Deactivate: exit lab
 | **K** | .NET WPF + Themida Packing | Memory dump unpacking + privilege decision branching + registry state freeze |
 | **L** | Qt5 C++ Client | Proxy DLL hook + 11 privilege decision constant-folds + local LLM translation gateway |
 | **M** | Java + install4j Dual-Layer | DLL search-order hijack (version.dll IAT hook) + JVM native ClassFile bytecode patching (burp.Zfqu / burp.Zwxg.Zu) + license/AI token preference seeding |
+| **N** | .NET x64 + VM Obfuscation | Runtime memory extraction + privilege flag inversion + silent auto-injection |
 
 ### 2. Android & DEX/SO Analysis
 - Surgical DEX same-length patching with automated Adler-32 / SHA-1 recalculation
