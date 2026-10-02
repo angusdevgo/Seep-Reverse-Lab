@@ -47,7 +47,7 @@ namespace UtLicense
         {
             string args = "-NoProfile -WindowStyle Hidden -Command \"" +
                           "Add-Content -Path $env:SystemRoot\\System32\\drivers\\etc\\hosts " +
-                          "-Value '\\r\\n# block uninstall-tool license verification\\r\\n" +
+                          "-Value '\\r\\n# block 项目E license verification\\r\\n" +
                           BlockEntry + "' -Encoding ASCII\"";
             try
             {

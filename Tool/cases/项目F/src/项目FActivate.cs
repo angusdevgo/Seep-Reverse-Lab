@@ -24,7 +24,7 @@ namespace 项目FActivateApp
         TextBox txtLog;
 
         const string VERSION_TAG = "v1.0.0";
-        const string REPO_URL = "https://项目F.int0.cc";
+        // const string REPO_URL = "https://<脱敏研判站点>";
         const string BUY_URL = "https://www.项目F.com/pro";
 
         public MainForm()

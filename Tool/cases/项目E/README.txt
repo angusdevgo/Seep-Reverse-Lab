@@ -1,6 +1,6 @@
 ===============================================================================
   INT0 REVERSE ENGINEERING RESEARCH SUITE
-  Release: Geek.Uninstaller.PRO.<目标版本>.Activation.Tool-INT0
+  Release: 项目E.PRO.<目标版本>.Activation.Tool-INT0
   Target : 项目E PRO / 项目E <目标版本>
 ===============================================================================
 
@@ -17,7 +17,7 @@ valuable to your workflow, please support the original authors by purchasing
 a genuine commercial license.
 
 PACKAGE CONTENTS:
-  - Geek.Uninstaller.PRO.<目标版本>.Activation.Tool-INT0.nfo
+  - 项目E.PRO.<目标版本>.Activation.Tool-INT0.nfo
   - 项目EActivate.exe
   - auto_activate.ps1
   - build.ps1
@@ -55,7 +55,7 @@ USAGE:
 严禁用于任何商业牟利。若该软件对您的日常工作和学习带来帮助，请支持原厂并购买官方正版授权。
 
 套件内容：
-  - Geek.Uninstaller.PRO.<目标版本>.Activation.Tool-INT0.nfo
+  - 项目E.PRO.<目标版本>.Activation.Tool-INT0.nfo
   - 项目EActivate.exe
   - auto_activate.ps1
   - build.ps1
@@ -83,5 +83,5 @@ USAGE:
      详细算法分析与逆向全过程记录存放在 'docs/' 目录中。
 
 ===============================================================================
-  INT0 COLLECTIVE // RELEASES.INT0.CC // T.ME/INT0_OFFICIAL
+  INT0 COLLECTIVE // ACADEMIC RESEARCH ONLY
 ===============================================================================

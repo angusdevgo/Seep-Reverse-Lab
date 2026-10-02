@@ -157,7 +157,7 @@ New-Item -Path $RegRoot -Force | Out-Null
 $oldR = (Get-ItemProperty -Path $RegRoot -Name RN -ErrorAction SilentlyContinue).RN
 $oldC = (Get-ItemProperty -Path $RegRoot -Name RC -ErrorAction SilentlyContinue).RC
 if ($BackupPath -eq '') {
-    $BackupPath = Join-Path $env:TEMP 'uninstall-tool-keygen\registry-backup.txt'
+    $BackupPath = Join-Path $env:TEMP '项目E-keygen\registry-backup.txt'
 }
 $bakDir = Split-Path -Parent $BackupPath
 if (-not (Test-Path -LiteralPath $bakDir)) {

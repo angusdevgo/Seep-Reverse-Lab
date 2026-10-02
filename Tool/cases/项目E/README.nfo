@@ -17,13 +17,12 @@ __________________________________________________________________________
    Version      : 1.1.0
    Target DLL   : 项目E.exe / 项目EHelper.exe
    Release Date : 2026-09-04
-   Release Name : Geek.Uninstaller.PRO.<目标版本>.Activation.Tool-INT0
+   Release Name : 项目E.PRO.<目标版本>.Activation.Tool-INT0
    Release Type : EXECryptor Runtime & IsRegistered Bytecode Reversing Suite
    Platform     : Windows 10 / 11 (x86_64)
    Protection   : EXECryptor VM / Online Verification API / Shared Memory IPC
    SHA256       : <实测哈希>
-   Subsite URL  : https://geek.int0.cc (also https://uninstall-tool.int0.cc)
-   Main Portal  : https://int0.cc
+   Portal       : <脱敏内部研判库>
 
  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
    REVERSE ENGINEERING & CRYPTOGRAPHIC NOTES

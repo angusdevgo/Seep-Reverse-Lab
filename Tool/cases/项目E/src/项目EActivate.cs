@@ -121,7 +121,7 @@ namespace UtActivateApp
 
             // Footer Disclaimer
             Label lblWarn = new Label();
-            lblWarn.Text = "仅供授权范围内的逆向学习与学术研究。Support original creators at 项目E.com // int0.cc";
+            lblWarn.Text = "仅供授权范围内的逆向学习与学术研究。Support original creators at 项目E.com";
             lblWarn.ForeColor = Int0Theme.TextFaint;
             lblWarn.Font = Int0Theme.GetMonoFont(7.5F);
             lblWarn.SetBounds(16, y, 688, 20);

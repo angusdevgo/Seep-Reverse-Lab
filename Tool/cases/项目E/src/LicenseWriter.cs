@@ -27,10 +27,10 @@ namespace UtLicense
             return @"HKCU\" + ROOT_KEY;
         }
 
-        // 备份文件路径：%TEMP%\uninstall-tool-keygen\registry-backup.txt
+        // 备份文件路径：%TEMP%\项目E-keygen\registry-backup.txt
         public static string DefaultBackupPath()
         {
-            string dir = Path.Combine(Path.GetTempPath(), "uninstall-tool-keygen");
+            string dir = Path.Combine(Path.GetTempPath(), "项目E-keygen");
             return Path.Combine(dir, "registry-backup.txt");
         }
 
