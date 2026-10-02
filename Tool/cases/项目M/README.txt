@@ -27,7 +27,6 @@ authors by purchasing a genuine commercial license.
 
 PACKAGE CONTENTS:
   - README.txt                       (bilingual documentation)
-  - README.nfo                       (scene-style release info)
   - build.ps1                        (packaging + SHA256SUMS generator)
   - docs/reverse-engineering.md      (full RE walkthrough, protection layers,
                                       licensing architecture, CWE-602 analysis,

@@ -12,7 +12,6 @@ Write-Host ''
 Write-Host '  Required files' -ForegroundColor Cyan
 $required = @(
     'README.txt',
-    'README.nfo',
     'docs\reverse-engineering.md',
     'docs\protection-layers.md',
     'tools\bx_patch.py'

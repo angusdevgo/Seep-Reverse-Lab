@@ -17,7 +17,6 @@ valuable to your workflow, please support the original authors by purchasing
 a genuine commercial license.
 
 PACKAGE CONTENTS:
-  - 项目F.Pro.v5.v6.Activation.Tool-INT0.nfo
   - 项目FActivate.exe
   - build.ps1
   - docs/algorithm.md
@@ -52,7 +51,6 @@ USAGE:
 严禁用于任何商业牟利。若该软件对您的日常工作和学习带来帮助，请支持原厂并购买官方正版授权。
 
 套件内容：
-  - 项目F.Pro.v5.v6.Activation.Tool-INT0.nfo
   - 项目FActivate.exe
   - build.ps1
   - docs/algorithm.md

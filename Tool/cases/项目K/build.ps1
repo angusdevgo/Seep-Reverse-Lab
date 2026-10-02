@@ -52,7 +52,6 @@ $patterns = @{
     'real salt'     = '-Allen-317-Explorer-'
     'user profile'  = 'C:\\Users\\Angus'
 }
-$files = Get-ChildItem -Path $root -Recurse -File -Include *.cs, *.ps1, *.py, *.md, *.txt, *.nfo |
          Where-Object { $_.Name -ne 'build.ps1' }
 $leak = 0
 foreach ($k in $patterns.Keys) {

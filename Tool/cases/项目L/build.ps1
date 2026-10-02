@@ -11,7 +11,6 @@ Write-Host "====================================================================
 # ---- 1. 归档文件清单自检 ----
 $required = @(
     'README.txt',
-    'README.nfo',
     'build.ps1',
     'docs\reverse-engineering.md',
     'src\项目L_hook.c',

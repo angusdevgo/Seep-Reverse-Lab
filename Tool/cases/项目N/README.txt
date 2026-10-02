@@ -62,7 +62,6 @@ authors by purchasing a genuine commercial license.
 
 PACKAGE CONTENTS:
   - README.txt                      (bilingual documentation, this file)
-  - README.nfo                      (scene-style release info)
   - build.ps1                       (packaging + redaction scan + SHA256SUMS)
   - docs/reverse-engineering.md     (full RE walkthrough: protection layers,
                                      licensing architecture, CWE-602/287/863
@@ -134,7 +133,6 @@ VERIFICATION GATE (R1-R5):
 
 包内文件：
   - README.txt                      双语文档（本文件）
-  - README.nfo                      Scene 风格发布信息
   - build.ps1                       打包 + 脱敏扫描 + SHA256SUMS 生成
   - docs/reverse-engineering.md     完整逆向走查（保护层 / 授权架构 /
                                     CWE-602/287/863 分析 / R1-R5 验证 / 加固建议）

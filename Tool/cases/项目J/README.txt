@@ -17,7 +17,6 @@ If this software is valuable to your workflow, please support the original
 authors by purchasing a genuine commercial license.
 
 PACKAGE CONTENTS:
-  - 项目J.<目标版本>.Activator-INT0.nfo
   - README.txt                     (Bilingual documentation)
   - build.ps1                      (packaging + SHA256SUMS generator)
   - docs/reverse-engineering.md    (full RE walkthrough & methodology)
@@ -60,7 +59,6 @@ NOTE:
 请支持原厂并购买官方正版授权。
 
 套件内容：
-  - 项目J.<目标版本>.Activator-INT0.nfo
   - README.txt                     （中英双语文档）
   - build.ps1                      （打包与 SHA256SUMS 生成）
   - docs/reverse-engineering.md    （完整逆向复盘与方法论）

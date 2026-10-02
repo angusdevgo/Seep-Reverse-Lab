@@ -43,7 +43,6 @@ Write-Host '  Redaction scan' -ForegroundColor Cyan
 $patterns = @{
     'user profile path' = 'C:\\Users\\Angus'
 }
-$files = Get-ChildItem -Path $root -Recurse -File -Include *.java, *.rs, *.bat, *.md, *.txt, *.nfo |
          Where-Object { $_.Name -ne 'build.ps1' }
 $leak = 0
 foreach ($k in $patterns.Keys) {

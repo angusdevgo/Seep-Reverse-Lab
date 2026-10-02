@@ -56,7 +56,6 @@ authors by purchasing a genuine commercial license.
 
 PACKAGE CONTENTS:
   - README.txt                       (bilingual documentation)
-  - README.nfo                       (scene-style release info)
   - build.ps1                        (packaging + SHA256SUMS generator)
   - docs/reverse-engineering.md      (full RE walkthrough: proxy-DLL design,
                                       privilege decision chain, translation
@@ -118,7 +117,6 @@ TECHNICAL HIGHLIGHTS:
 
 包内容：
   - README.txt                       双语说明文档
-  - README.nfo                       场景风格发布信息
   - build.ps1                        打包 + SHA256SUMS 生成器
   - docs/reverse-engineering.md      完整逆向走查报告（代理 DLL 设计、特权判定
                                      链路、翻译端点改写、云控剥离、四大坑点、
