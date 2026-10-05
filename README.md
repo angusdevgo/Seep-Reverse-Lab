@@ -413,10 +413,10 @@ All client-side vulnerability assessments follow a consulting-grade 3-part struc
 
 ## ⭐ Star History
 
-<a href="https://star-history.com/#angusdevgo/Seep-Reverse-Lab&Date">
+<a href="https://www.star-history.com/?repos=angusdevgo%2FSeep-Reverse-Lab&type=timeline&logscale=&releases=&legend=bottom-right">
  <picture>
-   <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=angusdevgo/Seep-Reverse-Lab&type=Date&theme=dark" />
-   <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/svg?repos=angusdevgo/Seep-Reverse-Lab&type=Date" />
-   <img alt="Star History Chart" src="https://api.star-history.com/svg?repos=angusdevgo/Seep-Reverse-Lab&type=Date" />
+   <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/chart?repos=angusdevgo/Seep-Reverse-Lab&type=timeline&theme=dark&logscale&legend=top-left" />
+   <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/chart?repos=angusdevgo/Seep-Reverse-Lab&type=timeline&logscale&legend=top-left" />
+   <img alt="Star History Chart" src="https://api.star-history.com/chart?repos=angusdevgo/Seep-Reverse-Lab&type=timeline&logscale&legend=top-left" />
  </picture>
 </a>
