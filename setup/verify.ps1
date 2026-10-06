@@ -162,6 +162,17 @@ Test-CheckItem "架构" "上游开源验证集 (Tool/upstream/ 3大开源项目)
 Test-CheckItem "架构" "MCP专用运行时强约定 (Tool/mcp/Tool/)" { Test-Path (Join-Path $ToolDir 'mcp\Tool') } "严禁重命名或搬移 Tool/mcp/Tool 目录" "运行时目录存在" "$ToolDir\mcp\Tool"
 
 # -----------------------------------------------------------------------------
+# 1b. 版本与更新链路
+# -----------------------------------------------------------------------------
+Test-CheckItem "版本" "版本标识与变更日志 (VERSION + CHANGELOG.md)" {
+    (Test-Path (Join-Path $Root 'VERSION')) -and (Test-Path (Join-Path $Root 'CHANGELOG.md'))
+} "缺失 VERSION 或 CHANGELOG.md，重新拉取仓库" "两者在位" "$Root\VERSION"
+
+Test-CheckItem "版本" "已有用户一键更新脚本 (update.ps1 + update.sh)" {
+    (Test-Path (Join-Path $Root 'setup\update.ps1')) -and (Test-Path (Join-Path $Root 'setup\update.sh'))
+} "更新脚本缺失，重新拉取仓库" "两个脚本在位" "$Root\setup"
+
+# -----------------------------------------------------------------------------
 # 2. 知识库与战术资产
 # -----------------------------------------------------------------------------
 Write-Host "`n[2/9] 📚 攻防实战知识库与战术模板 (KB)" -ForegroundColor White
@@ -390,7 +401,24 @@ $PrivacyExcludeRegex = '\\node_modules\\|\\__pycache__\\|\\Tool\\upstream\\|\\To
 $PrivacyExcludeNames = @('verify.ps1', 'verify.sh')
 $BinaryExt = @('.exe','.dll','.so','.dylib','.jar','.zip','.7z','.png','.jpg','.jpeg','.gif','.ico','.pdf','.bin','.dmp','.pyc','.idb','.i64','.ttf','.woff','.woff2')
 
-Test-CheckItem "脱敏" "个人隐私零残留 (全深度递归扫描)" {
+Test-CheckItem "脱敏" "个人隐私零残留 (已跟踪文件全深度扫描)" {
+    $PrivacyPathExclude = '^(setup/verify\.(ps1|sh))$|^Tool/(upstream|mcp/Tool)/'
+    $PrivacyExtExclude = '\.(exe|dll|so|dylib|jar|zip|7z|png|jpg|jpeg|gif|ico|pdf|bin|dmp|pyc|idb|i64|ttf|woff|woff2)$'
+
+    if (Test-Path (Join-Path $Root '.git')) {
+        # 只扫描将被发布的 git 跟踪文件（本地生成物已 gitignore，不属发布范围）
+        $tracked = & git -C $Root ls-files 2>$null
+        if (-not $tracked) { return $true }
+        $files = @($tracked |
+            Where-Object { $_ -notmatch $PrivacyPathExclude -and $_ -notmatch $PrivacyExtExclude } |
+            ForEach-Object { Join-Path $Root ($_ -replace '/', '\') } |
+            Where-Object { Test-Path -LiteralPath $_ })
+        if ($files.Count -eq 0) { return $true }
+        $hits = Select-String -Path $files -Pattern $PrivacyPattern -CaseSensitive -ErrorAction SilentlyContinue
+        return (-not $hits)
+    }
+
+    # 非 git 环境：回退到文件系统扫描（排除依赖与构建产物）
     $hits = Get-ChildItem -Path $Root -Recurse -File -ErrorAction SilentlyContinue |
             Where-Object {
                 $_.FullName -notmatch $PrivacyExcludeRegex -and
@@ -399,7 +427,7 @@ Test-CheckItem "脱敏" "个人隐私零残留 (全深度递归扫描)" {
             } |
             Select-String -Pattern $PrivacyPattern -CaseSensitive -ErrorAction SilentlyContinue
     -not $hits
-} "发现个人隐私残留，请立即脱敏后重新提交" "零残留" "整个工作台（排除第三方依赖与上游镜像）"
+} "发现个人隐私残留，请立即脱敏后重新提交" "零残留" "git 已跟踪文件（排除第三方依赖与上游镜像）"
 
 Test-CheckItem "脱敏" "含本机路径的生成物未被 git 追踪" {
     if (-not (Test-Path (Join-Path $Root '.git'))) { return $true }

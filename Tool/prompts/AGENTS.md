@@ -43,6 +43,18 @@ cd setup
 powershell -ExecutionPolicy Bypass -File .\install.ps1
 ```
 
+### 1b. 已有用户更新（重要）
+当用户说 **“更新工作台”**、**“拉取最新版本”**、**“新版怎么升”** 时，**不要**让用户重新克隆或手动拷贝，直接执行：
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\setup\update.ps1
+```
+（Linux / macOS 用 `./setup/update.sh`）
+
+更新脚本幂等且无损：自动 `git stash` 保护本地改动 → 自动备份配置 → 增量合并 `mcp.json`（**绝不删除用户自行添加的 MCP 条目**）→ 更新后自动跑基准自检。
+完成后必须提醒用户：**完全重启 Agent 会话**，再发 `lab：` 继续开工。
+变更内容见仓库根 `CHANGELOG.md`。
+
 ### 2. 主动校验与结构化汇报输出（★ 强制执行官方基准校对）
 - **部署完成后，Agent 必须主动执行一次详细校对**，严禁在未做验证前直接声称部署成功；
 - **当用户在任何时候要求校验**（例如发送 `check`、`doctor`、`检查环境`、`帮我校验一下安装是否完整`）时，Agent 必须直接执行校验脚本：

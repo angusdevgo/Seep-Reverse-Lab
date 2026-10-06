@@ -190,7 +190,9 @@ if (Test-Path $McpJson) {
     try {
         $rawText = [System.IO.File]::ReadAllText($McpJson, [System.Text.Encoding]::UTF8)
         # 去除可能存在的 BOM
-        if ($rawText.StartsWith([char]0xFEFF)) { $rawText = $rawText.Substring(1) }
+        # 必须用序数/字符比较：.NET 默认 StartsWith 的文化敏感比较会把 U+FEFF（BOM）
+        # 当作可忽略字符，导致无 BOM 文件也被误判为“以 BOM 开头”。
+        if ($rawText.Length -gt 0 -and [int]$rawText[0] -eq 0xFEFF) { $rawText = $rawText.Substring(1) }
         $jsonObj = $rawText | ConvertFrom-Json
     } catch {
         Write-Warn "解析现有 mcp.json 出错，正在重新初始化..."

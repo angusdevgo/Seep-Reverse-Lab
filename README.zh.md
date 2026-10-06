@@ -161,6 +161,8 @@ Seep\ (251 MB)
 ├── DSH-PROFILE.md                 ← DeepSeek Harness Cordis 插件配置模板
 ├── check.bat                      ← ⭐ 双击一键体检入口（Windows）
 ├── check.ps1                      ← PowerShell 体检入口
+├── VERSION                        ← 当前版本标识
+├── CHANGELOG.md                   ← 面向用户的版本变更日志
 │
 ├── Tool\
 │   ├── skill\                     ← 9 大逆向专业技能
@@ -277,7 +279,30 @@ chmod +x setup/install.sh
 
 > 📖 **咨询级部署与全套排障手册**：关于四大 Agent 的具体配置细则、常见报错（`No module named mcp`、执行策略受限、Java环境缺省等）的解决方案，请详阅 [**MANUAL/DEPLOYMENT.md**](MANUAL/DEPLOYMENT.md)。
 
-### 4. 部署完备性校验（7 大维度 · 37 项检查）
+### 4. 已有用户如何更新
+
+已经部署过？**不需要重新克隆或手动拷贝文件**。更新脚本是**幂等且无损**的 —— 你的模型凭据与自行添加的 MCP 条目永不会被覆盖。
+
+```powershell
+# Windows
+powershell -ExecutionPolicy Bypass -File .\setup\update.ps1
+```
+```bash
+# Linux / macOS
+./setup/update.sh
+```
+
+它会：自动 stash 本地改动 → `git pull` → 打印变更日志 → 备份配置 → 增量同步 Skill/提示词/MCP → 校验用户数据零丢失 → 跑全量健康体检。
+
+| 参数 | 作用 |
+|---|---|
+| `-DryRun` / `--dry-run` | 只显示将要做什么，不修改任何文件 |
+| `-NoPull` / `--no-pull` | 跳过 `git pull`（适用于压缩包部署） |
+
+> ⚠️ **更新后务必完全重启 Agent 会话**，新 Skill 与扩展才会加载。
+> 各版本变更内容见 [CHANGELOG.md](CHANGELOG.md)。
+
+### 5. 部署完备性校验（8 大维度）
 
 | 方式 | 操作 |
 |---|---|

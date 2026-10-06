@@ -163,6 +163,8 @@ Seep\ (251 MB)
 ├── DSH-PROFILE.md                 ← DeepSeek Harness Cordis plugin config template
 ├── check.bat                      ← ⭐ Double-click one-shot health verifier (Windows)
 ├── check.ps1                      ← PowerShell health verifier entry point
+├── VERSION                        ← Current version marker
+├── CHANGELOG.md                   ← User-facing release notes
 │
 ├── Tool\
 │   ├── skill\                     ← 9 specialized reverse engineering skills
@@ -280,7 +282,30 @@ chmod +x setup/install.sh
 
 > 📖 **Comprehensive Multi-Agent Guide**: For detailed step-by-step setup, cross-platform caveats, and exhaustive troubleshooting FAQ, see [**MANUAL/DEPLOYMENT.md**](MANUAL/DEPLOYMENT.md).
 
-### 4. Verify Your Deployment
+### 4. Updating an Existing Installation
+
+Already deployed? No need to re-clone or copy files by hand. The updater is **idempotent and lossless** — your model credentials and any custom MCP servers you added are never overwritten.
+
+```powershell
+# Windows
+powershell -ExecutionPolicy Bypass -File .\setup\update.ps1
+```
+```bash
+# Linux / macOS
+./setup/update.sh
+```
+
+It will: stash local changes → `git pull` → print the changelog → back up your config → incrementally sync skills/prompts/MCP entries → verify user data was preserved → run the full health check.
+
+| Flag | Effect |
+|---|---|
+| `-DryRun` / `--dry-run` | Show what would happen, modify nothing |
+| `-NoPull` / `--no-pull` | Skip `git pull` (for ZIP-based installs) |
+
+> ⚠️ **Always fully restart your Agent session** after updating so the new skills and extensions load.
+> See [CHANGELOG.md](CHANGELOG.md) for what changed in each version.
+
+### 5. Verify Your Deployment
 
 Run the 7-section health verifier (37 checks) using any of these methods:
 

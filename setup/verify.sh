@@ -86,6 +86,10 @@ check_item "架构" "十四大脱敏案例工程 (Tool/cases/)" test -d "$TOOL_D
 check_item "架构" "上游开源验证集 (Tool/upstream/ 3大开源项目)" test -d "$TOOL_DIR/upstream/apk-reverse" -a -d "$TOOL_DIR/upstream/open-tgtylab" -a -d "$TOOL_DIR/upstream/open-reverselab"
 check_item "架构" "MCP专用运行时强约定 (Tool/mcp/Tool/)" test -d "$TOOL_DIR/mcp/Tool"
 
+# 1b. 版本与更新链路
+check_item "版本" "版本标识与变更日志 (VERSION + CHANGELOG.md)" test -f "$ROOT/VERSION" -a -f "$ROOT/CHANGELOG.md"
+check_item "版本" "已有用户一键更新脚本 (update.ps1 + update.sh)" test -f "$ROOT/setup/update.ps1" -a -f "$ROOT/setup/update.sh"
+
 # 2. 知识库
 echo -e "\n${WHITE}[2/9] 📚 攻防实战知识库与战术模板 (KB)${RESET}"
 check_item "知识库" "战术实战笔记 (289篇完整检索库)" test -d "$KB_DIR"
@@ -162,15 +166,26 @@ echo -e "\n${WHITE}[9/9] 🔒 脱敏与个人隐私走查 (递归全深度扫描
 PRIVACY_RX='C:[\\/]{1,2}Users[\\/]{1,2}Angus|AngusDevLab|angusdevlab|angus\.vip@|angusdev\.top|\bAngus\b'
 
 test_privacy_clean() {
-    local hits
-    hits=$(grep -rInE "$PRIVACY_RX" "$ROOT" \
-        --exclude-dir=.git --exclude-dir=node_modules --exclude-dir=__pycache__ \
-        --exclude-dir=upstream --exclude-dir=dist \
-        --exclude=verify.sh --exclude=verify.ps1 2>/dev/null \
-        | grep -v "/Tool/mcp/Tool/" | head -3)
+    local hits files
+    if [ -d "$ROOT/.git" ]; then
+        # 只扫描将被发布的 git 跟踪文件（本地生成物已 gitignore，不属发布范围）
+        files=$(git -C "$ROOT" ls-files 2>/dev/null \
+            | grep -vE '^(setup/verify\.(ps1|sh))$' \
+            | grep -vE '^Tool/(upstream|mcp/Tool)/' \
+            | grep -vE '\.(exe|dll|so|dylib|jar|zip|7z|png|jpg|jpeg|gif|ico|pdf|bin|dmp|pyc|idb|i64|ttf|woff|woff2)$')
+        [ -z "$files" ] && return 0
+        hits=$(cd "$ROOT" && printf '%s\n' "$files" | tr '\n' '\0' | xargs -0 grep -InE "$PRIVACY_RX" 2>/dev/null | head -3)
+    else
+        # 非 git 环境：回退到文件系统扫描
+        hits=$(grep -rInE "$PRIVACY_RX" "$ROOT" \
+            --exclude-dir=.git --exclude-dir=node_modules --exclude-dir=__pycache__ \
+            --exclude-dir=upstream --exclude-dir=dist \
+            --exclude=verify.sh --exclude=verify.ps1 2>/dev/null \
+            | grep -v "/Tool/mcp/Tool/" | head -3)
+    fi
     [ -z "$hits" ]
 }
-check_item "脱敏" "个人隐私零残留 (全深度递归扫描)" test_privacy_clean
+check_item "脱敏" "个人隐私零残留 (已跟踪文件全深度扫描)" test_privacy_clean
 
 test_generated_untracked() {
     [ -d "$ROOT/.git" ] || return 0

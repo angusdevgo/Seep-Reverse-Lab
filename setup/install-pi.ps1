@@ -91,7 +91,10 @@ $existingConfig = [PSCustomObject]@{ mcpServers = [PSCustomObject]@{} }
 if (Test-Path $dstMcp) {
     try {
         $rawMcp = [System.IO.File]::ReadAllText($dstMcp, [System.Text.Encoding]::UTF8)
-        if ($rawMcp.StartsWith([char]0xFEFF)) { $rawMcp = $rawMcp.Substring(1) }
+        # 注意：不能用 $rawMcp.StartsWith([char]0xFEFF)。
+        # .NET 默认 StartsWith 使用文化敏感比较，而 U+FEFF（BOM）是可忽略字符，
+        # 等价于空字符串，会导致任何字符串都“以 BOM 开头”，从而误删首字符并破坏 JSON。
+        if ($rawMcp.Length -gt 0 -and [int]$rawMcp[0] -eq 0xFEFF) { $rawMcp = $rawMcp.Substring(1) }
         $existingConfig = $rawMcp | ConvertFrom-Json
     } catch {
         Write-Warn "现有 mcp.json 语法异常，正在安全初始化..."
@@ -164,7 +167,8 @@ $settings = [PSCustomObject]@{}
 if (Test-Path $dstSettings) {
     try {
         $rawSet = [System.IO.File]::ReadAllText($dstSettings, [System.Text.Encoding]::UTF8)
-        if ($rawSet.StartsWith([char]0xFEFF)) { $rawSet = $rawSet.Substring(1) }
+        # 同上：必须用序数/字符比较，避免文化敏感比较误判 BOM
+        if ($rawSet.Length -gt 0 -and [int]$rawSet[0] -eq 0xFEFF) { $rawSet = $rawSet.Substring(1) }
         $settings = $rawSet | ConvertFrom-Json
     } catch { $settings = [PSCustomObject]@{} }
 }

@@ -177,7 +177,87 @@ OpenCode 原生支持项目级与全局级 MCP 工具，其配置标准为 `open
 
 ---
 
-## 四、 常见部署故障与排障速查表 (FAQ)
+## 四、 已有用户更新指南 (How to Update)
+
+> 如果你**已经部署过**本工作台，不需要重新克隆或手动拷贝任何文件。
+> 工作台的更新是**幂等且无损的**：你的模型凭据、自定义 MCP 配置永不会被覆盖。
+
+### 1. 一键更新（推荐）
+
+**Windows**：
+```powershell
+cd <你的工作台目录>
+powershell -ExecutionPolicy Bypass -File .\setup\update.ps1
+```
+
+**Linux / macOS**：
+```bash
+cd <你的工作台目录>
+./setup/update.sh
+```
+
+### 2. 更新脚本做了什么
+
+| 步骤 | 动作 | 安全保障 |
+|---|---|---|
+| 1 | 记录当前版本与用户自有数据指纹 | — |
+| 2 | 自动探测代理并 `git pull` 拉取最新代码 | 有本地改动时先 `git stash` 保存 |
+| 3 | 打印 `CHANGELOG.md` 本次变更说明 | 更新前先预览 |
+| 4 | 调用 `install.ps1` 幂等增量同步 | **自动备份**到 `~/.pi/agent/backup-<时间戳>/` |
+| 5 | 校验用户自有数据零丢失 | 对比更新前后的 MCP 条目 |
+| 6 | 跑官方基准自检并输出报告 | 47/46 项门禁 |
+
+### 3. 永不被覆盖的用户数据
+
+| 文件 | 说明 |
+|---|---|
+| `~/.pi/agent/models.json` | 你的模型凭据与自定义 provider |
+| `~/.pi/agent/auth.json` | 登录凭证 |
+| `~/.pi/agent/mcp.json` 中**你自行添加**的 MCP 条目 | 仅**增量合并**，不会删除已有项 |
+| `~/.pi/agent/lab-mode.flag` | 实验环境状态 |
+| `~/.codex/config.toml`、`.mcp.json`（项目根） | 脚本**从不**自动改写 |
+
+> 脚本只会**新增**工作台自带的标准 MCP 条目（`seep` / `js-reverse` / `playwright`），
+> 以及**更新**它自己管理的 Skill 与提示词。
+
+### 4. 常用更新参数
+
+| 参数 | 作用 |
+|---|---|
+| `-DryRun`（Windows）/ `--dry-run` | 只显示将要做什么，**不修改任何文件** |
+| `-NoPull` / `--no-pull` | 跳过 `git pull`（适用于手动下载压缩包覆盖的场景） |
+| `-SkipVerify` / `--skip-verify` | 跳过最终自检（不建议） |
+| `-IdaRoot "<路径>"`（Windows） | 更新时顺带绑定 IDA Pro 路径 |
+
+### 5. 压缩包部署的用户（非 Git）
+
+如果你当初是下载 ZIP 解压的，没有 `.git` 目录：
+
+1. 下载最新 ZIP 并解压到**临时目录**；
+2. 用新目录**覆盖**旧目录中的 `Tool/`、`setup/`、`MANUAL/`、`README*.md`、`CHANGELOG.md`、`VERSION`；
+   > **切勿**覆盖你自己的 `work/`、`project/`、`logs/` 等数据目录；
+3. 进入新目录运行 `setup/update.ps1 -NoPull`（或 `setup/update.sh --no-pull`）完成配置同步。
+
+### 6. 更新后必做的一步
+
+> ⚠️ **必须完全关闭并重新打开 Agent 会话**（Pi / Claude Code / DSH / OpenCode）。
+> 新同步的 Skill 与扩展需要重新加载才会生效。
+
+### 7. 如何回滚
+
+| 回滚对象 | 操作 |
+|---|---|
+| **配置** | 从 `~/.pi/agent/backup-<时间戳>/` 拷回 `mcp.json` / `settings.json` 等 |
+| **代码** | `git -C <工作台目录> log --oneline -10` 找到目标提交后 `git reset --hard <commit>` |
+
+### 8. 更新前先看变更
+
+每次更新的内容都记录在 **[CHANGELOG.md](../CHANGELOG.md)**，包含新增 / 变更 / 修复 / 安全四类，
+并标注哪些需要手工干预。建议更新前扫一眼。
+
+---
+
+## 五、 常见部署故障与排障速查表 (FAQ)
 
 ### Q1: 运行 `check.ps1` 报错 `Running scripts is disabled on this system`？
 - **根因**：Windows PowerShell 默认的执行策略（ExecutionPolicy）为 `Restricted`。
