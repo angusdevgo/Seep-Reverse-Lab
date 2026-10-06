@@ -43,14 +43,17 @@ if ((Get-Command python -ErrorAction SilentlyContinue) -and (Test-Path $py)) {
     Write-Host '  [SKIP] python not found, skipping syntax check' -ForegroundColor Yellow
 }
 
-# ---- 4. 脱敏走查：不得出现真实产品名 / 厂商域名 / 真实盐值 ----
+# ---- 4. 脱敏走查：通用敏感形态检测 ----
+# 说明：真实产品名 / 厂商域名 / 真实盐值属于敏感信息，一律不写入本仓库；
+#       本扫描改为检测通用敏感形态（绝对路径 / 凭据 / 邮箱），
+#       具体产品名与盐值请仅在本地私有笔记中维护。
 Write-Host ''
 Write-Host '  脱敏走查 (redaction scan)' -ForegroundColor Cyan
 $patterns = @{
-    'product name'  = 'Allen\s*Explorer'
-    'vendor domain' = 'allenxiang'
-    'real salt'     = '-Allen-317-Explorer-'
-    'user profile'  = 'C:\\Users\\Angus'
+    'absolute user path' = '[A-Za-z]:\\{1,2}Users\\{1,2}'
+    'github token'       = 'ghp_'
+    'private key block'  = 'BEGIN PRIVATE KEY'
+    'email address'      = '[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}'
 }
          Where-Object { $_.Name -ne 'build.ps1' }
 $leak = 0

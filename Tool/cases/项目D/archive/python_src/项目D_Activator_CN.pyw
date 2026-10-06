@@ -489,9 +489,9 @@ Write-Output "试用期倒计时成功锁定。"
 $key = -join ((Get-Random -Count 20 -InputObject ([char[]]('ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'))))
 $serial = ($key.Substring(0, 5) + '-' + $key.Substring(5, 5) + '-' + $key.Substring(10, 5) + '-' + $key.Substring(15, 5))
 
-Set-ItemProperty -Path "HKCU:\Software\DownloadManager" -Name "FName" -Value "Angus" -Type String -Force
+Set-ItemProperty -Path "HKCU:\Software\DownloadManager" -Name "FName" -Value "Developer" -Type String -Force
 Set-ItemProperty -Path "HKCU:\Software\DownloadManager" -Name "LName" -Value "VIP" -Type String -Force
-Set-ItemProperty -Path "HKCU:\Software\DownloadManager" -Name "Email" -Value "angus.vip@tonec.com" -Type String -Force
+Set-ItemProperty -Path "HKCU:\Software\DownloadManager" -Name "Email" -Value "user@example.local" -Type String -Force
 Set-ItemProperty -Path "HKCU:\Software\DownloadManager" -Name "Serial" -Value $serial -Type String -Force
 Set-ItemProperty -Path "HKCU:\Software\DownloadManager" -Name "CheckUpdtVM" -Value 0 -Type DWord -Force
 

@@ -2,7 +2,7 @@
 #include <stdio.h>
 #include <stdbool.h>
 
-#define LOG_FILE "C:\\Users\\Angus\\Desktop\\pi\\seep\\项目B\\localize\\logs\\项目B_version_guard.log"
+#define LOG_FILE "C:\\Users\\Developer\\Desktop\\pi\\seep\\项目B\\localize\\logs\\项目B_version_guard.log"
 
 static void WriteLog(const char* fmt, ...) {
     FILE* fp = fopen(LOG_FILE, "a+");

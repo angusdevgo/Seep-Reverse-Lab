@@ -39,14 +39,14 @@
 ## 客户端配置指南
 
 ### 1. Pi Agent（已自动配置）
-已写入 `C:\Users\Angus\.pi\agent\mcp.json`：
+已写入 `C:\Users\Developer\.pi\agent\mcp.json`：
 ```json
 {
   "mcpServers": {
     "seep": {
       "command": "python",
       "args": [
-        "C:\\Users\\Angus\\Desktop\\pi\\seep\\seep_mcp_server.py"
+        "C:\\Users\\Developer\\Desktop\\pi\\seep\\seep_mcp_server.py"
       ],
       "env": {
         "PYTHONIOENCODING": "utf-8"
@@ -64,14 +64,14 @@
   "mcpServers": {
     "seep": {
       "command": "python",
-      "args": ["C:/Users/Angus/Desktop/pi/seep/seep_mcp_server.py"]
+      "args": ["C:/Users/Developer/Desktop/pi/seep/seep_mcp_server.py"]
     }
   }
 }
 ```
 
 ### 3. Cursor / OpenCode / VS Code
-在 MCP 客户端配置中直接指定可执行程序 `python`，参数为 `C:\Users\Angus\Desktop\pi\seep\seep_mcp_server.py`，传输方式选 `stdio`。
+在 MCP 客户端配置中直接指定可执行程序 `python`，参数为 `C:\Users\Developer\Desktop\pi\seep\seep_mcp_server.py`，传输方式选 `stdio`。
 
 ---
 

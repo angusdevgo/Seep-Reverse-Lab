@@ -285,7 +285,7 @@ ipconfig /flushdns
 写入 `HKCU\Environment` 并广播 `WM_SETTINGCHANGE`，企图实现「只需一个 DLL」的零配置注入。
 
 **后果（严重）**：`APPDOMAIN_MANAGER_*` 是 **CLR 级引导变量**。一旦持久化，
-之后启动的**每一个 .NET 程序**（PowerShell / 资源管理器 / Listary / XYplorer / pythonw …）
+之后启动的**每一个 .NET 程序**（PowerShell / 资源管理器 / 第三方文件管理器 / pythonw …）
 都会被强制加载本 DLL；而那些进程目录里没有该 DLL，于是 CLR 启动阶段：
 
 ```

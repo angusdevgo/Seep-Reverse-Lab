@@ -58,7 +58,7 @@ static void LogMessage(const char* format, ...) {
 
     OutputDebugStringA(buf);
 
-    FILE* fp = fopen("C:\\Users\\Angus\\Desktop\\pi\\seep\\项目B\\localize\\logs\\项目B_local_guard.log", "a");
+    FILE* fp = fopen("C:\\Users\\Developer\\Desktop\\pi\\seep\\项目B\\localize\\logs\\项目B_local_guard.log", "a");
     if (fp) {
         SYSTEMTIME st;
         GetLocalTime(&st);

@@ -345,8 +345,8 @@ class TestProtocolDetection(unittest.TestCase):
 class TestRouteParsing(unittest.TestCase):
     def test_parse_route(self):
         self.assertEqual(
-            relay._parse_route("/r/tok/pi-CPAMP/v1/chat/completions"),
-            ("tok", "pi-CPAMP", "/v1/chat/completions"),
+            relay._parse_route("/r/tok/pi-MyProvider/v1/chat/completions"),
+            ("tok", "pi-MyProvider", "/v1/chat/completions"),
         )
 
     def test_parse_route_with_query(self):

@@ -109,15 +109,15 @@ python relay.py
 ```json
 {
   "providers": {
-    "CPAMP": {
-      "baseUrl": "https://angusdev.top/v1",
+    "MyProvider": {
+      "baseUrl": "https://api.example-relay.com/v1",
       "api": "openai-completions",
       "apiKey": "……原有配置保持不动……",
       "models": [ { "id": "claude-sonnet-4-6" } ]
     },
 
-    "CPAMP-relay": {
-      "baseUrl": "http://127.0.0.1:17890/r/<TOKEN>/pi-CPAMP",
+    "MyProvider-relay": {
+      "baseUrl": "http://127.0.0.1:17890/r/<TOKEN>/pi-MyProvider",
       "api": "openai-completions",
       "apiKey": "……与原 provider 相同……",
       "models": [ { "id": "claude-sonnet-4-6" } ]
@@ -128,7 +128,7 @@ python relay.py
 
 - `<TOKEN>` 替换为中继启动时打印的访问令牌；
 - `apiKey` 可直接复用原值，或用 `$ENV_NAME` 环境变量插值；
-- 之后在 Pi 中用 `/model` 即可在 `CPAMP` ↔ `CPAMP-relay` 之间切换，
+- 之后在 Pi 中用 `/model` 即可在 `MyProvider` ↔ `MyProvider-relay` 之间切换，
   **直观对比有/无中继时的拒绝率**；
 - 想停用中继：切回原 provider，或直接关掉中继进程（请求会失败，需切回）。
 

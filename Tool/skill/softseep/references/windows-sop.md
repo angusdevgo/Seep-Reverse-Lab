@@ -214,7 +214,7 @@ if (cls[0] == 0 || _wcsicmp(cls, L"Static") == 0 ||
 ```ini
 [license]
 ctrl_id=1319
-text="授权于：AngusDevLab\n邮箱：angusdevlab@vipuser.com\n密钥：内部授权"
+text="授权于：SeepResearchLab\n邮箱：research@example.local\n密钥：内部授权"
 ```
 
 实现要求：UTF-8（含 BOM）读取、`\n`/`\r`/`\t` 转义展开、首尾引号剥离、`;` `#` 注释支持、**读不到时回退内置默认值**（不因配置缺失而失效）。

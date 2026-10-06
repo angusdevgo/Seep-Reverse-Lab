@@ -145,7 +145,7 @@ Write-Host @"
 # -----------------------------------------------------------------------------
 # 1. 核心目录与包结构
 # -----------------------------------------------------------------------------
-Write-Host "`n[1/8] 📁 核心架构与工程目录树" -ForegroundColor White
+Write-Host "`n[1/9] 📁 核心架构与工程目录树" -ForegroundColor White
 Test-CheckItem "架构" "工作台主目录完整 (Tool/)" { Test-Path $ToolDir } "请检查是否完整解压或下载了 Seep 完整仓库" "Tool/ 存在" "$Root\Tool"
 Test-CheckItem "架构" "技能包目录完整 (Tool/skill/)" { Test-Path (Join-Path $ToolDir 'skill') } "检查 Tool/skill 是否存在" "Tool/skill 存在" "$ToolDir\skill"
 Test-CheckItem "架构" "MCP服务引擎目录 (Tool/mcp/)" { Test-Path (Join-Path $ToolDir 'mcp') } "检查 Tool/mcp 是否存在" "Tool/mcp 存在" "$ToolDir\mcp"
@@ -164,7 +164,7 @@ Test-CheckItem "架构" "MCP专用运行时强约定 (Tool/mcp/Tool/)" { Test-Pa
 # -----------------------------------------------------------------------------
 # 2. 知识库与战术资产
 # -----------------------------------------------------------------------------
-Write-Host "`n[2/8] 📚 攻防实战知识库与战术模板 (KB)" -ForegroundColor White
+Write-Host "`n[2/9] 📚 攻防实战知识库与战术模板 (KB)" -ForegroundColor White
 Test-CheckItem "知识库" "战术实战笔记 (289篇完整检索库)" {
     (Test-Path $KbDir) -and ((Get-ChildItem $KbDir -Recurse -Filter '*.md').Count -ge 280)
 } "Tool/mcp/Tool/reverselab/kb/ 文件缺失，请确认完整拉取" "≥289 篇笔记" "$KbDir"
@@ -176,7 +176,7 @@ Test-CheckItem "知识库" "内置 MCP 源码组件 (ReverseLab/Ghidra/JSHook)" 
 # -----------------------------------------------------------------------------
 # 3. 智能体提示词与多平台适配
 # -----------------------------------------------------------------------------
-Write-Host "`n[3/8] 🧠 智能体指令系统与运行时拦截扩展 (Prompts & Extensions)" -ForegroundColor White
+Write-Host "`n[3/9] 🧠 智能体指令系统与运行时拦截扩展 (Prompts & Extensions)" -ForegroundColor White
 Test-CheckItem "提示词" "Pi Agent 系统指令 (SYSTEM.md 已就绪且去个人化)" {
     $p = Join-Path $ToolDir 'prompts\SYSTEM.md'
     (Test-Path $p) -and (-not (Select-String -Path $p -Pattern '小π|主人' -Quiet))
@@ -191,7 +191,7 @@ Test-CheckItem "扩展"   "底层安全放行与 Lab 状态机扩展 (.ts)" {
 # -----------------------------------------------------------------------------
 # 4. 技能系统完备性 (Skills System)
 # -----------------------------------------------------------------------------
-Write-Host "`n[4/8] 🛠️ 逆向工程专业技能库 (Skills - 9大组件)" -ForegroundColor White
+Write-Host "`n[4/9] 🛠️ 逆向工程专业技能库 (Skills - 9大组件)" -ForegroundColor White
 Test-CheckItem "Skill" "核心总控调度器 (softseep 包含 8 大专题库)" {
     $r = Join-Path $localSkills 'softseep\references'
     (Test-Path (Join-Path $localSkills 'softseep\SKILL.md')) -and 
@@ -227,7 +227,7 @@ if (Test-Path $AgentDir) {
 # -----------------------------------------------------------------------------
 # 5. MCP 自动化服务层与底层工具 (MCP & Native Tools)
 # -----------------------------------------------------------------------------
-Write-Host "`n[5/8] 🔌 MCP 服务引擎与物理内置工具箱 (Native Tools)" -ForegroundColor White
+Write-Host "`n[5/9] 🔌 MCP 服务引擎与物理内置工具箱 (Native Tools)" -ForegroundColor White
 
 Test-CheckItem "MCP" "核心服务端脚本 (seep_mcp_server.py 语法自洽)" {
     $sp = Join-Path $ToolDir 'mcp\seep_mcp_server.py'
@@ -276,7 +276,7 @@ Test-CheckItem "依赖" "Playwright 浏览器自动化依赖已解压 (playwrigh
 # -----------------------------------------------------------------------------
 # 6. 环境运行时与第三方依赖配置
 # -----------------------------------------------------------------------------
-Write-Host "`n[6/8] ⚙️ 外部运行时与商业授权协同 (Runtime & Commercial)" -ForegroundColor White
+Write-Host "`n[6/9] ⚙️ 外部运行时与商业授权协同 (Runtime & Commercial)" -ForegroundColor White
 Test-CheckItem "运行时" "Python 解释器 (3.11+ 且可执行)" {
     $py = Get-Command python -ErrorAction SilentlyContinue
     $py -ne $null
@@ -305,7 +305,7 @@ Test-ManualItem "配置" "Claude Code 项目级 MCP 注册 (.mcp.json 在根目�
 # -----------------------------------------------------------------------------
 # 7. MANUAL/ 战术手册完备性校验 (Tactical Manuals)
 # -----------------------------------------------------------------------------
-Write-Host "`n[7/8] 📚 MANUAL/ 战术手册完备性校验" -ForegroundColor White
+Write-Host "`n[7/9] 📚 MANUAL/ 战术手册完备性校验" -ForegroundColor White
 
 Test-CheckItem "手册" "环境预要求指南 (MANUAL/PREREQUISITES.md)" {
     Test-Path (Join-Path $ManualDir 'PREREQUISITES.md')
@@ -346,7 +346,7 @@ Test-CheckItem "手册" "合规转译中继与防拒体系 (MANUAL/COMPLIANCE-RE
 # -----------------------------------------------------------------------------
 # 8. 合规转译中继（网络层防拒）
 # -----------------------------------------------------------------------------
-Write-Host "`n[8/8] 🌐 合规转译中继与规则同步校验" -ForegroundColor White
+Write-Host "`n[8/9] 🌐 合规转译中继与规则同步校验" -ForegroundColor White
 $RelayDir = Join-Path $ToolDir 'scripts\compliance-relay'
 
 Test-CheckItem "中继" "中继主程序 (relay.py 纯标准库实现)" {
@@ -376,6 +376,49 @@ Test-CheckItem "中继" "规则表与 TS 源同步 (sensitive-rules.json)" {
 Test-CheckItem "中继" "中继单元测试套件 (tests/test_relay.py)" {
     Test-Path (Join-Path $RelayDir 'tests\test_relay.py')
 } "测试套件缺失，重新拉取仓库" "测试套件在位" "$RelayDir\tests\test_relay.py"
+
+# -----------------------------------------------------------------------------
+# 9. 脱敏与隐私走查（递归全深度）
+# -----------------------------------------------------------------------------
+Write-Host "`n[9/9] 🔒 脱敏与个人隐私走查 (递归全深度扫描)" -ForegroundColor White
+
+# 个人隐私模式：绝对路径 / 个人身份 / 私有邮箱 / 私有域名 / 裸用户名
+$PrivacyPattern = 'C:[\\/]{1,2}Users[\\/]{1,2}Angus|AngusDevLab|angusdevlab|angus\.vip@|angusdev\.top|\bAngus\b'
+
+# 排除：第三方依赖、上游镜像、构建产物，以及扫描器自身（其模式定义会自匹配）
+$PrivacyExcludeRegex = '\\node_modules\\|\\__pycache__\\|\\Tool\\upstream\\|\\Tool\\mcp\\Tool\\|\\\.git\\|\\dist\\'
+$PrivacyExcludeNames = @('verify.ps1', 'verify.sh')
+$BinaryExt = @('.exe','.dll','.so','.dylib','.jar','.zip','.7z','.png','.jpg','.jpeg','.gif','.ico','.pdf','.bin','.dmp','.pyc','.idb','.i64','.ttf','.woff','.woff2')
+
+Test-CheckItem "脱敏" "个人隐私零残留 (全深度递归扫描)" {
+    $hits = Get-ChildItem -Path $Root -Recurse -File -ErrorAction SilentlyContinue |
+            Where-Object {
+                $_.FullName -notmatch $PrivacyExcludeRegex -and
+                $PrivacyExcludeNames -notcontains $_.Name -and
+                $BinaryExt -notcontains $_.Extension.ToLower()
+            } |
+            Select-String -Pattern $PrivacyPattern -CaseSensitive -ErrorAction SilentlyContinue
+    -not $hits
+} "发现个人隐私残留，请立即脱敏后重新提交" "零残留" "整个工作台（排除第三方依赖与上游镜像）"
+
+Test-CheckItem "脱敏" "含本机路径的生成物未被 git 追踪" {
+    if (-not (Test-Path (Join-Path $Root '.git'))) { return $true }
+    $tracked = & git -C $Root ls-files 2>$null
+    $mustIgnore = @('opencode.jsonc', 'setup/cordis.generated.yml', 'Tool/scripts/compliance-relay/relay-config.json')
+    foreach ($f in $mustIgnore) {
+        if ($tracked -contains $f) { return $false }
+    }
+    $true
+} "生成物含本机绝对路径或访问令牌，不应入库；请从索引移除并确认 .gitignore" "未被追踪" "git index"
+
+Test-ManualItem "脱敏" "目标产品名残留统计 (功能性标识符可保留)" {
+    $cases = Join-Path $ToolDir 'cases'
+    if (-not (Test-Path $cases)) { return $true }
+    $names = 'xyplorer|bandizip|boosterx|1218\.io'
+    $hits = Get-ChildItem -Path $cases -Recurse -File -ErrorAction SilentlyContinue |
+            Select-String -Pattern $names -ErrorAction SilentlyContinue
+    -not $hits
+} "存在目标产品名（含 README 已声明的功能性必需标识符，如注册表路径 / API 域名 / 代码符号）；如为叙述性提及请脱敏" "零残留" "$cases"
 
 # -----------------------------------------------------------------------------
 # 详细校对模式输出 (-Detailed / -Audit)

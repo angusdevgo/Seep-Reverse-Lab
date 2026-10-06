@@ -3,7 +3,7 @@
 $ErrorActionPreference = 'Continue'
 Add-Type -AssemblyName PresentationFramework, PresentationCore, WindowsBase, System.Xaml
 
-$root = 'C:\Users\Angus\Desktop\pi\seep\project\Seep-TooL'
+$root = 'C:\Users\Developer\Desktop\pi\seep\project\Seep-TooL'
 $exe  = Join-Path $root 'SeepTool.exe'
 $dir  = 'D:\Data\<项目A>'
 $XY   = Join-Path $dir '<项目A>.exe'

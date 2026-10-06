@@ -56,8 +56,8 @@ description: 在 CLI 环境下做 Android APK 逆向时使用。适用于 APK �
 示例：
 
 ```powershell
-pwsh -File "C:\\Users\\Angus\\Desktop\\grok\\nx\\Tool\\skills\apk-reverse\scripts\decode.ps1" -ApkPath "D:\DOWNLOAD\app.apk" -Clean
-pwsh -File "C:\\Users\\Angus\\Desktop\\grok\\nx\\Tool\\skills\apk-reverse\scripts\decode.ps1" -ApkPath "D:\DOWNLOAD\app.apk" -Name demo -SkipJadx
+pwsh -File "<WORKSPACE>\\Tool\\skills\apk-reverse\scripts\decode.ps1" -ApkPath "D:\DOWNLOAD\app.apk" -Clean
+pwsh -File "<WORKSPACE>\\Tool\\skills\apk-reverse\scripts\decode.ps1" -ApkPath "D:\DOWNLOAD\app.apk" -Name demo -SkipJadx
 ```
 
 ### `scripts/frida-run.ps1`
@@ -70,9 +70,9 @@ pwsh -File "C:\\Users\\Angus\\Desktop\\grok\\nx\\Tool\\skills\apk-reverse\script
 示例：
 
 ```powershell
-pwsh -File "C:\\Users\\Angus\\Desktop\\grok\\nx\\Tool\\skills\apk-reverse\scripts\frida-run.ps1" -ListDevices
-pwsh -File "C:\\Users\\Angus\\Desktop\\grok\\nx\\Tool\\skills\apk-reverse\scripts\frida-run.ps1" -Usb -ListProcesses
-pwsh -File "C:\\Users\\Angus\\Desktop\\grok\\nx\\Tool\\skills\apk-reverse\scripts\frida-run.ps1" -Usb -Spawn -Package com.example.app -ScriptPath "D:\hooks\test.js"
+pwsh -File "<WORKSPACE>\\Tool\\skills\apk-reverse\scripts\frida-run.ps1" -ListDevices
+pwsh -File "<WORKSPACE>\\Tool\\skills\apk-reverse\scripts\frida-run.ps1" -Usb -ListProcesses
+pwsh -File "<WORKSPACE>\\Tool\\skills\apk-reverse\scripts\frida-run.ps1" -Usb -Spawn -Package com.example.app -ScriptPath "D:\hooks\test.js"
 ```
 
 ### `scripts/rebuild-sign-install.ps1`
@@ -87,8 +87,8 @@ pwsh -File "C:\\Users\\Angus\\Desktop\\grok\\nx\\Tool\\skills\apk-reverse\script
 示例：
 
 ```powershell
-pwsh -File "C:\\Users\\Angus\\Desktop\\grok\\nx\\Tool\\skills\apk-reverse\scripts\rebuild-sign-install.ps1" -ProjectDir "C:\work\apktool_out" -Clean
-pwsh -File "C:\\Users\\Angus\\Desktop\\grok\\nx\\Tool\\skills\apk-reverse\scripts\rebuild-sign-install.ps1" -ProjectDir "C:\work\apktool_out" -Install -Reinstall -DeviceSerial "127.0.0.1:7555"
+pwsh -File "<WORKSPACE>\\Tool\\skills\apk-reverse\scripts\rebuild-sign-install.ps1" -ProjectDir "C:\work\apktool_out" -Clean
+pwsh -File "<WORKSPACE>\\Tool\\skills\apk-reverse\scripts\rebuild-sign-install.ps1" -ProjectDir "C:\work\apktool_out" -Install -Reinstall -DeviceSerial "127.0.0.1:7555"
 ```
 
 说明：
@@ -108,7 +108,7 @@ pwsh -File "C:\\Users\\Angus\\Desktop\\grok\\nx\\Tool\\skills\apk-reverse\script
 示例：
 
 ```powershell
-pwsh -File "C:\\Users\\Angus\\Desktop\\grok\\nx\\Tool\\skills\apk-reverse\scripts\manifest-summary.ps1" -ManifestPath "C:\work\apktool_out\AndroidManifest.xml"
+pwsh -File "<WORKSPACE>\\Tool\\skills\apk-reverse\scripts\manifest-summary.ps1" -ManifestPath "C:\work\apktool_out\AndroidManifest.xml"
 ```
 
 如果要分析 `.so`、`lib/arm64-v8a/*.so`、`lib/armeabi-v7a/*.so`，再结合：
@@ -253,7 +253,7 @@ apktool b apktool_out -o rebuilt.apk
 或者直接用脚本闭环：
 
 ```powershell
-pwsh -File "C:\\Users\\Angus\\Desktop\\grok\\nx\\Tool\\skills\apk-reverse\scripts\rebuild-sign-install.ps1" -ProjectDir "apktool_out" -Install -Reinstall -DeviceSerial "127.0.0.1:7555"
+pwsh -File "<WORKSPACE>\\Tool\\skills\apk-reverse\scripts\rebuild-sign-install.ps1" -ProjectDir "apktool_out" -Install -Reinstall -DeviceSerial "127.0.0.1:7555"
 ```
 
 说明：

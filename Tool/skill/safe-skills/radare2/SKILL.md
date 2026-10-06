@@ -58,13 +58,13 @@ Windows 常见可执行文件：
 调用方式：
 
 ```powershell
-powershell -File "C:\\Users\\Angus\\Desktop\\grok\\nx\\Tool\\skills\radare2\scripts\recon.ps1" -TargetPath "C:\path\to\sample.exe"
+powershell -File "<WORKSPACE>\\Tool\\skills\radare2\scripts\recon.ps1" -TargetPath "C:\path\to\sample.exe"
 ```
 
 如果需要附带 `r2` 自动分析：
 
 ```powershell
-powershell -File "C:\\Users\\Angus\\Desktop\\grok\\nx\\Tool\\skills\radare2\scripts\recon.ps1" -TargetPath "C:\path\to\sample.exe" -RunAnalysis
+powershell -File "<WORKSPACE>\\Tool\\skills\radare2\scripts\recon.ps1" -TargetPath "C:\path\to\sample.exe" -RunAnalysis
 ```
 
 ### `references/cheatsheet.md`
@@ -115,7 +115,7 @@ ERROR: Cannot find ...\share\format\dll\*.sdb
 优先直接运行内置脚本：
 
 ```powershell
-powershell -File "C:\\Users\\Angus\\Desktop\\grok\\nx\\Tool\\skills\radare2\scripts\recon.ps1" -TargetPath "sample.exe"
+powershell -File "<WORKSPACE>\\Tool\\skills\radare2\scripts\recon.ps1" -TargetPath "sample.exe"
 ```
 
 如果只需要手动最小命令，则使用：

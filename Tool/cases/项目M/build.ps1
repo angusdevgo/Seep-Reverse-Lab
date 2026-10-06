@@ -41,7 +41,7 @@ foreach ($rel in @('src\setup_poc.bat', 'src\clean_poc.bat')) {
 Write-Host ''
 Write-Host '  Redaction scan' -ForegroundColor Cyan
 $patterns = @{
-    'user profile path' = 'C:\\Users\\Angus'
+    'user profile path' = 'C:\\Users\\Developer'
 }
          Where-Object { $_.Name -ne 'build.ps1' }
 $leak = 0

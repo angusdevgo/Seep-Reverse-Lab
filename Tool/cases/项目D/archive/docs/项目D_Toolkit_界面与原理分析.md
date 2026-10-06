@@ -77,9 +77,9 @@
 - **字符集**: `ABCDEFGHJKLMNPQRSTUVWXYZ23456789`（32个去除了易混淆字符 0, 1, I, O 的字符集合）
 - **格式**: `XXXXX-XXXXX-XXXXX-XXXXX`（4 组，每组 5 位字符，共 20 位）
 - **写入注册表位置**: `HKCU\Software\DownloadManager`
-  - `FName`: 登记名（如 `Angus`）
+  - `FName`: 登记名（如 `Developer`）
   - `LName`: 留空或空格
-  - `Email`: 登记邮箱（如 `angus.vip@tonec.com`）
+  - `Email`: 登记邮箱（如 `user@example.local`）
   - `Serial`: 生成的 20 位序列号
   - `CheckUpdtVM`: 设为 `0`
   - `LstCheck`: 设为 `0`

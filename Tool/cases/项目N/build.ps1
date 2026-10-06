@@ -54,7 +54,7 @@ $files = Get-ChildItem -Path $root -Recurse -File |
 
 # Patterns that MUST NOT appear (personal paths / credentials)
 $forbidden = @{
-    'user profile path' = 'C:\Users\Angus'
+    'user profile path' = 'C:\Users\Developer'
     'github token'      = 'ghp_'
     'private key block' = 'BEGIN PRIVATE KEY'
 }

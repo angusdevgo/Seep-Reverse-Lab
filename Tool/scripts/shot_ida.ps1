@@ -46,6 +46,6 @@ if ($main) {
   $bmp = New-Object System.Drawing.Bitmap $w, $hh
   $g = [System.Drawing.Graphics]::FromImage($bmp)
   $g.CopyFromScreen($r.L, $r.T, 0, 0, $bmp.Size)
-  $bmp.Save("C:\Users\Angus\Desktop\pi\seep\ida_lic.png", [System.Drawing.Imaging.ImageFormat]::Png)
+  $bmp.Save("C:\Users\Developer\Desktop\pi\seep\ida_lic.png", [System.Drawing.Imaging.ImageFormat]::Png)
   Write-Host "saved ida_lic.png"
 }

@@ -739,7 +739,7 @@ class IDMToolkitApp(ctk.CTk):
             border_color="#374151",
             corner_radius=6
         )
-        self.entry_name.insert(0, "Angus")
+        self.entry_name.insert(0, "Developer")
         self.entry_name.grid(row=0, column=1, sticky="w", padx=(8, 20), pady=4)
 
         # 邮箱
@@ -753,7 +753,7 @@ class IDMToolkitApp(ctk.CTk):
             border_color="#374151",
             corner_radius=6
         )
-        self.entry_email.insert(0, "angus.vip@tonec.com")
+        self.entry_email.insert(0, "user@example.local")
         self.entry_email.grid(row=0, column=3, sticky="w", padx=(8, 0), pady=4)
 
         # 序列号
@@ -1206,8 +1206,8 @@ Set-ItemProperty -Path "HKCU:\Software\DownloadManager" -Name "CheckUpdtVM" -Val
         messagebox.showinfo("成功", "项目D 试用期已成功永久冻结！\n\n您可以永久使用全部功能，支持官方在线更新，绝无弹窗骚扰。")
 
     def action_activate(self):
-        name = self.entry_name.get().strip() or "Angus"
-        email = self.entry_email.get().strip() or "angus.vip@tonec.com"
+        name = self.entry_name.get().strip() or "Developer"
+        email = self.entry_email.get().strip() or "user@example.local"
         sn = self.entry_sn.get().strip() or generate_serial()
 
         self.tabview.set("📝 实时操作控制台")

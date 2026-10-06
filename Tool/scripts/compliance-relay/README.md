@@ -54,11 +54,11 @@ http://127.0.0.1:<port>/r/<token>/<upstream-key>/<原始路径>
                     <upstreams[upstream-key]> + <原始路径>
 ```
 
-例：`upstreams["pi-CPAMP"] = "https://angusdev.top/v1"`
+例：`upstreams["pi-MyProvider"] = "https://api.example-relay.com/v1"`
 
 | 客户端请求 | 实际转发到 |
 |---|---|
-| `/r/<token>/pi-CPAMP/chat/completions` | `https://angusdev.top/v1/chat/completions` |
+| `/r/<token>/pi-MyProvider/chat/completions` | `https://api.example-relay.com/v1/chat/completions` |
 | `/r/<token>/anthropic/v1/messages` | `https://api.anthropic.com/v1/messages` |
 | `/r/<token>/openai/v1/responses` | `https://api.openai.com/v1/responses` |
 
@@ -76,7 +76,7 @@ http://127.0.0.1:<port>/r/<token>/<upstream-key>/<原始路径>
   "port": 17890,
   "token": "<自动生成的随机令牌>",
   "upstreams": {
-    "pi-CPAMP": "https://angusdev.top/v1",
+    "pi-MyProvider": "https://api.example-relay.com/v1",
     "anthropic": "https://api.anthropic.com",
     "openai": "https://api.openai.com"
   }

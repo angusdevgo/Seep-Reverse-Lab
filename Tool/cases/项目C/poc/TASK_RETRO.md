@@ -74,7 +74,7 @@
 ```ini
 [license]
 ctrl_id=1319
-text="授权于：AngusDevLab\n邮箱：angusdevlab@vipuser.com\n密钥：内部授权"
+text="授权于：SeepResearchLab\n邮箱：research@example.local\n密钥：内部授权"
 ```
 
 - 支持 `\n` / `\r` / `\t` 转义展开；
@@ -134,8 +134,8 @@ EM_GETLINECOUNT = 3
 
 ### 3.4 显示效果
 ```
-授权于：AngusDevLab
-邮箱：angusdevlab@vipuser.com
+授权于：SeepResearchLab
+邮箱：research@example.local
 密钥：内部授权
 ```
 
