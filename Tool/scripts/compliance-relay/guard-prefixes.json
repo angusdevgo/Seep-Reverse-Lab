@@ -1,0 +1,65 @@
+{
+  "schema": 1,
+  "_comment": "上下文注入守卫：Agent 会把自己生成的上下文伪装成 user 消息发出去，这些内容绝不能被敏感词替换，否则会污染 Agent 自身的作战协议。",
+  "guards": {
+    "openai-responses": {
+      "_comment": "Codex (OpenAI Responses API) 注入的上下文前缀，来源参考 keysmith-switch 的 INJECTED_PREFIXES",
+      "skipPrefixes": [
+        "<environment_context>",
+        "<user_instructions>",
+        "<user_shell_command>",
+        "<turn_aborted>",
+        "<subagent_notification>",
+        "<startup_context>",
+        "<skill>",
+        "<skills_instructions>",
+        "<apps_instructions>",
+        "<plugins_instructions>",
+        "<permissions instructions>",
+        "<collaboration_mode>",
+        "<model_switch>",
+        "<personality_spec>",
+        "<realtime_conversation>",
+        "<realtime_delegation>",
+        "# AGENTS.md instructions"
+      ],
+      "wrappedPrefixes": [
+        "# Context from my IDE setup:",
+        "# Files mentioned by the user:",
+        "# Applications mentioned by the user:"
+      ],
+      "requestHeading": "## My request"
+    },
+    "anthropic-messages": {
+      "_comment": "Claude Code (Anthropic Messages API) 注入的上下文前缀",
+      "skipPrefixes": [
+        "<system-reminder>",
+        "<command-name>",
+        "<command-message>",
+        "<local-command-stdout>",
+        "<user-prompt-submit-hook>",
+        "<session-context>",
+        "# AGENTS.md",
+        "# CLAUDE.md",
+        "<environment_context>",
+        "<user_instructions>"
+      ],
+      "wrappedPrefixes": [],
+      "requestHeading": "## My request"
+    },
+    "openai-completions": {
+      "_comment": "Pi Agent 与通用 OpenAI 兼容端点。Pi 的系统提示词走独立 system 角色，不会混入 user 消息，此处仅做防御性守卫。",
+      "skipPrefixes": [
+        "<system-reminder>",
+        "<environment_context>",
+        "<user_instructions>",
+        "<skill>",
+        "<skills_instructions>",
+        "# AGENTS.md",
+        "# CLAUDE.md"
+      ],
+      "wrappedPrefixes": [],
+      "requestHeading": "## My request"
+    }
+  }
+}

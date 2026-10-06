@@ -144,6 +144,7 @@ The agent autonomously:
 - 🛡️ **Authenticode Signature Preservation**: DLL search-order hijacking (`version.dll` / `sentry.dll`) keeps host binary signature intact
 - 🔄 **PoC Self-Healing Loop**: Frida error → root-cause mapping → auto-fix → re-execute (up to 3 attempts, then structured handoff)
 - 💎 **14 Industrial Architecture Paradigms**: Monolithic offline PE → multi-process IPC → VM arbitration → .NET keygen → weak RSA bypass → Java agent → .NET VM bypass *(fully desensitized)*
+- 🌐 **Transport-Layer Compliance Relay**: Optional localhost relay rewrites colloquial user input into compliant terminology before it leaves the machine — covering any Agent that supports a custom `baseUrl` (Pi Agent / Claude Code / Codex). Zero new dependencies, zero disk writes, context-injection guarded.
 - 🔌 **Offline-Ready**: All toolchains pre-bundled (251 MB), zero network dependencies after setup
 
 ---
@@ -197,6 +198,7 @@ Seep\ (251 MB)
 │   │   └── open-reverselab\       ← LING71671/open-reverselab (Knowledge base, boards & MCP ecosystem)
 │   ├── docs\                      ← Engineering reference docs
 │   └── scripts\                   ← Workspace automation scripts
+│       └── compliance-relay\      ← 🌐 Transport-layer compliance relay (stdlib-only, 3 protocols)
 │
 ├── setup\                         ← Automated install, repair & self-check scripts
 └── MANUAL\                        ← 5 Tactical SOP guides

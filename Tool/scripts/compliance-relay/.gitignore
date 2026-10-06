@@ -1,0 +1,6 @@
+# 本机运行凭据：token 与 upstream 映射，绝不入库
+relay-config.json
+
+# Python 缓存
+__pycache__/
+*.py[cod]

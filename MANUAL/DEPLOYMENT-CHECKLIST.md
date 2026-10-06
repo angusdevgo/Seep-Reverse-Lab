@@ -90,7 +90,24 @@ MCP 配置文件所在位置：
 | **K2** | **攻击网图谱 (Boards)** | `Tool/mcp/Tool/reverselab/boards/` | 多平台拓扑文件 | 信号到战术文档的拓扑路由关系 |
 | **K3** | **脱敏实战案例库** | `Tool/cases/` | **14 个项目工程** (项目A ~ 项目N) | 覆盖单进程、多进程、VM、.NET算号、RSA、Java/install4j 双层鉴权、.NET VM 混淆加固等架构 |
 | **K4** | **上游开源完整镜像** | `Tool/upstream/` | **3 大开源项目** | `apk-reverse`、`open-tgtylab`、`open-reverselab` 完整单测与镜像 |
-| **K5** | **MANUAL 专项手册** | `MANUAL/` | **7 份核心手册** | `DEPLOYMENT` (部署)、`DEPLOYMENT-CHECKLIST` (基准清单)、`CROSS-PLATFORM` (跨平台)、`ANTI-DEBUG` (反调试)、`UNPACKING` (脱壳)、`POC-VALIDATION` (PoC自愈)、`IDA-PRO` (IDA接入) |
+| **K5** | **MANUAL 专项手册** | `MANUAL/` | **8 份核心手册** | `DEPLOYMENT` (部署)、`DEPLOYMENT-CHECKLIST` (基准清单)、`CROSS-PLATFORM` (跨平台)、`COMPLIANCE-RELAY` (合规中继与防拒)、`ANTI-DEBUG` (反调试)、`UNPACKING` (脱壳)、`POC-VALIDATION` (PoC自愈)、`IDA-PRO` (IDA接入) |
+
+---
+
+### 6. 🌐 合规转译中继基准表 (Compliance Relay · 网络层防拒)
+
+| # | 组件 | 所在相对路径 | 官方期望 | 校验方式 | 状态判定 |
+|---|---|---|---|---|---|
+| **R1** | **中继主程序** | `Tool/scripts/compliance-relay/relay.py` | 纯标准库实现，支持三协议 | `python relay.py` 可正常监听 | 🟢 **可选增强**。未使用时不影响主链路。 |
+| **R2** | **规则提取器** | `Tool/scripts/compliance-relay/extract-rules.py` | 从 TS 源单向提取 | `python extract-rules.py --check` 退出码 0 | 🟢 核心。规则表与 TS 源必须同步 |
+| **R3** | **规则表** | `Tool/scripts/compliance-relay/sensitive-rules.json` | ≥30 条规则 | 与 TS 源逐字节一致 | 🟢 生成物，禁手工编辑 |
+| **R4** | **上下文守卫白名单** | `Tool/scripts/compliance-relay/guard-prefixes.json` | 三协议各自的白名单 | 文件存在且含三个协议键 | 🟢 核心。防止污染 Agent 自身上下文 |
+| **R5** | **单元测试套件** | `Tool/scripts/compliance-relay/tests/test_relay.py` | 44 项测试 | `python -m unittest discover -s tests` 全绿 | 🟢 核心 |
+| **R6** | **本机运行配置** | `Tool/scripts/compliance-relay/relay-config.json` | 首次运行自动生成 | 文件存在（**已 gitignore，不入库**） | 🟡 运行时生成，含本机 token |
+
+> **零落盘纪律**：中继绝不写入请求体 / 响应体 / 鉴权头，日志只输出命中条数。
+> **默认关闭**：不随系统启动，不做常驻服务，需用户显式运行 `python relay.py`。
+> **覆盖协议**：`openai-completions`（Pi Agent 主力）/ `anthropic-messages`（Claude Code）/ `openai-responses`（Codex）。
 
 ---
 

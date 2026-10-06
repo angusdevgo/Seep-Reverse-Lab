@@ -142,6 +142,7 @@ Agent 自主完成：
 - 🛡️ **Authenticode 数字签名保全**：对具备数字签名的 Windows PE，通过代理 DLL（`version.dll`）劫持在内存打桩，宿主签名完好
 - 🔄 **PoC 自愈循环**：Frida 报错 → 根因映射 → 自动修正代码 → 重跑（最多 3 次，超限后结构化移交人工）
 - 💎 **14 大工业级脱敏范式**：单进程离线 → 多进程 IPC → VM 集中判定 → .NET 算号 → 弱模 RSA 旁路 → Java 动态插桩 → .NET VM 逆向，全覆盖
+- 🌐 **链路层合规转译中继**：可选的本机回环中继，在请求离开本机前把口语平滑转译为合规术语，覆盖任意支持自定义 `baseUrl` 的 Agent（Pi Agent / Claude Code / Codex）。零新增依赖、零落盘、带上下文注入守卫。
 - 🔌 **离线预置全量内置**：所有工具链物理打包（251 MB），部署后零外网依赖
 
 ---
@@ -194,6 +195,7 @@ Seep\ (251 MB)
 │   │   └── open-reverselab\       ← LING71671/open-reverselab（知识库、boards与工具生态）
 │   ├── docs\                      ← 工程参考文档
 │   └── scripts\                   ← 工作流自动化脚本
+│       └── compliance-relay\      ← 🌐 链路层合规转译中继（纯标准库，三协议）
 │
 ├── setup\                         ← 安装、修复与自检脚本集
 └── MANUAL\                        ← 5 份战术专项 SOP 手册

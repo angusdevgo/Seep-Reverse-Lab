@@ -145,7 +145,7 @@ Write-Host @"
 # -----------------------------------------------------------------------------
 # 1. 核心目录与包结构
 # -----------------------------------------------------------------------------
-Write-Host "`n[1/7] 📁 核心架构与工程目录树" -ForegroundColor White
+Write-Host "`n[1/8] 📁 核心架构与工程目录树" -ForegroundColor White
 Test-CheckItem "架构" "工作台主目录完整 (Tool/)" { Test-Path $ToolDir } "请检查是否完整解压或下载了 Seep 完整仓库" "Tool/ 存在" "$Root\Tool"
 Test-CheckItem "架构" "技能包目录完整 (Tool/skill/)" { Test-Path (Join-Path $ToolDir 'skill') } "检查 Tool/skill 是否存在" "Tool/skill 存在" "$ToolDir\skill"
 Test-CheckItem "架构" "MCP服务引擎目录 (Tool/mcp/)" { Test-Path (Join-Path $ToolDir 'mcp') } "检查 Tool/mcp 是否存在" "Tool/mcp 存在" "$ToolDir\mcp"
@@ -164,7 +164,7 @@ Test-CheckItem "架构" "MCP专用运行时强约定 (Tool/mcp/Tool/)" { Test-Pa
 # -----------------------------------------------------------------------------
 # 2. 知识库与战术资产
 # -----------------------------------------------------------------------------
-Write-Host "`n[2/7] 📚 攻防实战知识库与战术模板 (KB)" -ForegroundColor White
+Write-Host "`n[2/8] 📚 攻防实战知识库与战术模板 (KB)" -ForegroundColor White
 Test-CheckItem "知识库" "战术实战笔记 (289篇完整检索库)" {
     (Test-Path $KbDir) -and ((Get-ChildItem $KbDir -Recurse -Filter '*.md').Count -ge 280)
 } "Tool/mcp/Tool/reverselab/kb/ 文件缺失，请确认完整拉取" "≥289 篇笔记" "$KbDir"
@@ -176,7 +176,7 @@ Test-CheckItem "知识库" "内置 MCP 源码组件 (ReverseLab/Ghidra/JSHook)" 
 # -----------------------------------------------------------------------------
 # 3. 智能体提示词与多平台适配
 # -----------------------------------------------------------------------------
-Write-Host "`n[3/7] 🧠 智能体指令系统与运行时拦截扩展 (Prompts & Extensions)" -ForegroundColor White
+Write-Host "`n[3/8] 🧠 智能体指令系统与运行时拦截扩展 (Prompts & Extensions)" -ForegroundColor White
 Test-CheckItem "提示词" "Pi Agent 系统指令 (SYSTEM.md 已就绪且去个人化)" {
     $p = Join-Path $ToolDir 'prompts\SYSTEM.md'
     (Test-Path $p) -and (-not (Select-String -Path $p -Pattern '小π|主人' -Quiet))
@@ -191,7 +191,7 @@ Test-CheckItem "扩展"   "底层安全放行与 Lab 状态机扩展 (.ts)" {
 # -----------------------------------------------------------------------------
 # 4. 技能系统完备性 (Skills System)
 # -----------------------------------------------------------------------------
-Write-Host "`n[4/7] 🛠️ 逆向工程专业技能库 (Skills - 9大组件)" -ForegroundColor White
+Write-Host "`n[4/8] 🛠️ 逆向工程专业技能库 (Skills - 9大组件)" -ForegroundColor White
 Test-CheckItem "Skill" "核心总控调度器 (softseep 包含 8 大专题库)" {
     $r = Join-Path $localSkills 'softseep\references'
     (Test-Path (Join-Path $localSkills 'softseep\SKILL.md')) -and 
@@ -227,7 +227,7 @@ if (Test-Path $AgentDir) {
 # -----------------------------------------------------------------------------
 # 5. MCP 自动化服务层与底层工具 (MCP & Native Tools)
 # -----------------------------------------------------------------------------
-Write-Host "`n[5/7] 🔌 MCP 服务引擎与物理内置工具箱 (Native Tools)" -ForegroundColor White
+Write-Host "`n[5/8] 🔌 MCP 服务引擎与物理内置工具箱 (Native Tools)" -ForegroundColor White
 
 Test-CheckItem "MCP" "核心服务端脚本 (seep_mcp_server.py 语法自洽)" {
     $sp = Join-Path $ToolDir 'mcp\seep_mcp_server.py'
@@ -276,7 +276,7 @@ Test-CheckItem "依赖" "Playwright 浏览器自动化依赖已解压 (playwrigh
 # -----------------------------------------------------------------------------
 # 6. 环境运行时与第三方依赖配置
 # -----------------------------------------------------------------------------
-Write-Host "`n[6/7] ⚙️ 外部运行时与商业授权协同 (Runtime & Commercial)" -ForegroundColor White
+Write-Host "`n[6/8] ⚙️ 外部运行时与商业授权协同 (Runtime & Commercial)" -ForegroundColor White
 Test-CheckItem "运行时" "Python 解释器 (3.11+ 且可执行)" {
     $py = Get-Command python -ErrorAction SilentlyContinue
     $py -ne $null
@@ -305,7 +305,7 @@ Test-ManualItem "配置" "Claude Code 项目级 MCP 注册 (.mcp.json 在根目�
 # -----------------------------------------------------------------------------
 # 7. MANUAL/ 战术手册完备性校验 (Tactical Manuals)
 # -----------------------------------------------------------------------------
-Write-Host "`n[7/7] 📚 MANUAL/ 战术手册完备性校验" -ForegroundColor White
+Write-Host "`n[7/8] 📚 MANUAL/ 战术手册完备性校验" -ForegroundColor White
 
 Test-CheckItem "手册" "环境预要求指南 (MANUAL/PREREQUISITES.md)" {
     Test-Path (Join-Path $ManualDir 'PREREQUISITES.md')
@@ -338,6 +338,44 @@ Test-CheckItem "手册" "官方部署资产核验基准清单 (MANUAL/DEPLOYMENT
 Test-CheckItem "手册" "跨平台运行与战术等价指南 (MANUAL/CROSS-PLATFORM.md)" {
     Test-Path (Join-Path $ManualDir 'CROSS-PLATFORM.md')
 } "跨平台手册缺失，重新拉取仓库" "文件在位" "$ManualDir\CROSS-PLATFORM.md"
+
+Test-CheckItem "手册" "合规转译中继与防拒体系 (MANUAL/COMPLIANCE-RELAY.md)" {
+    Test-Path (Join-Path $ManualDir 'COMPLIANCE-RELAY.md')
+} "合规中继手册缺失，重新拉取仓库" "文件在位" "$ManualDir\COMPLIANCE-RELAY.md"
+
+# -----------------------------------------------------------------------------
+# 8. 合规转译中继（网络层防拒）
+# -----------------------------------------------------------------------------
+Write-Host "`n[8/8] 🌐 合规转译中继与规则同步校验" -ForegroundColor White
+$RelayDir = Join-Path $ToolDir 'scripts\compliance-relay'
+
+Test-CheckItem "中继" "中继主程序 (relay.py 纯标准库实现)" {
+    Test-Path (Join-Path $RelayDir 'relay.py')
+} "relay.py 缺失，重新拉取仓库" "relay.py 在位" "$RelayDir\relay.py"
+
+Test-CheckItem "中继" "规则提取器 (extract-rules.py)" {
+    Test-Path (Join-Path $RelayDir 'extract-rules.py')
+} "extract-rules.py 缺失，重新拉取仓库" "提取器在位" "$RelayDir\extract-rules.py"
+
+Test-CheckItem "中继" "上下文守卫白名单 (guard-prefixes.json)" {
+    Test-Path (Join-Path $RelayDir 'guard-prefixes.json')
+} "guard-prefixes.json 缺失，重新拉取仓库" "白名单在位" "$RelayDir\guard-prefixes.json"
+
+Test-CheckItem "中继" "规则表与 TS 源同步 (sensitive-rules.json)" {
+    $rules = Join-Path $RelayDir 'sensitive-rules.json'
+    if (-not (Test-Path $rules)) { return $false }
+    $py = Get-Command python -ErrorAction SilentlyContinue
+    if (-not $py) { return (Test-Path $rules) }
+    Push-Location $RelayDir
+    try {
+        & python extract-rules.py --check 2>&1 | Out-Null
+        $LASTEXITCODE -eq 0
+    } finally { Pop-Location }
+} "规则表与 TS 源不一致，请运行 python Tool/scripts/compliance-relay/extract-rules.py" "与 TS 源同步" "$RelayDir\sensitive-rules.json"
+
+Test-CheckItem "中继" "中继单元测试套件 (tests/test_relay.py)" {
+    Test-Path (Join-Path $RelayDir 'tests\test_relay.py')
+} "测试套件缺失，重新拉取仓库" "测试套件在位" "$RelayDir\tests\test_relay.py"
 
 # -----------------------------------------------------------------------------
 # 详细校对模式输出 (-Detailed / -Audit)
