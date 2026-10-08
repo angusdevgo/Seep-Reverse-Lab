@@ -39,13 +39,29 @@ for mod in "js-reverse-mcp" "playwright-mcp"; do
     fi
 done
 
-# 3. 赋予工具执行权限
-echo -e "\n[3/5] 🔧 配置文件执行权限..."
+# 3. 赋予工具执行权限 + Radare2 运行时引擎探测
+echo -e "\n[3/5] 🔧 配置文件执行权限 / Radare2 引擎..."
 if [ -d "$SAFE_DIR/radare2/bin" ]; then
     chmod +x "$SAFE_DIR/radare2/bin/"* 2>/dev/null || true
 fi
 if [ -f "$SAFE_DIR/jadx/bin/jadx" ]; then
     chmod +x "$SAFE_DIR/jadx/bin/jadx" 2>/dev/null || true
+fi
+
+# 内置 radare2/bin 为 Windows 二进制 (*.exe/*.dll)，在 Linux/macOS 无法执行。
+# seep MCP 的 _resolve_binary() 在非 Windows 下优先走系统 PATH，故此处确保系统已装 radare2。
+if command -v radare2 &>/dev/null; then
+    echo "  [√] Radare2 引擎: $(radare2 -v 2>/dev/null | head -1)"
+elif [ "$(uname -s)" = "Darwin" ]; then
+    if command -v brew &>/dev/null; then
+        echo "  [i] 未检测到系统 radare2，正在通过 Homebrew 安装..."
+        brew install radare2 && echo "  [√] Radare2 安装完成: $(radare2 -v 2>/dev/null | head -1)" \
+            || echo "  ⚠️ brew install radare2 失败，请手动执行: brew install radare2"
+    else
+        echo "  ⚠️ 未检测到 radare2 与 Homebrew。请先安装 Homebrew，再执行: brew install radare2"
+    fi
+else
+    echo "  ⚠️ 未检测到系统 radare2。请用包管理器安装 (如 apt install radare2 / 参见 https://rada.re)。"
 fi
 echo "  [√] 二进制可执行权限设置完成"
 
