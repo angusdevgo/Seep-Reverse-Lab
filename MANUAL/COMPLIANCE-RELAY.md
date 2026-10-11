@@ -24,7 +24,7 @@
 
 | 层 | 载体 | 作用范围 | 机制 |
 |---|---|---|---|
-| **L1 底座级** | `before_provider_request` 拦截 | Gemini 系 | 注入 `safetySettings: BLOCK_NONE` |
+| **L1 底座级** | `before_provider_request` 拦截 | **仅 Gemini/Google 端点**（`google-generative-ai` / `google-vertex`） | 注入 `safetySettings: BLOCK_NONE`；非 Google 端点原样透传，可用 `PI_SAFETY_PAYLOAD=off` 关闭 |
 | **L2 插件级** | `pi.on("input")` + 上下文守卫 | Pi Agent | 口语 → 合规术语转译 |
 | **L3 链路级** | **compliance-relay 回环中继** | **任意 HTTP Agent** | **请求体离开本机前改写** |
 
@@ -216,6 +216,7 @@ Copy-Item "$env:USERPROFILE\.codex\config.toml" "$env:USERPROFILE\.codex\config.
 | 请求成功但未改写 | 未开启 Lab Mode | 在 Agent 中发送 `lab：`，或用 `--force-on` 验证 |
 | 日志显示 `changed=0` | 文本未命中规则，或命中守卫白名单 | 用 `--verbose` 查看是否被识别为透传 |
 | 端口被占用 | 17890 已被其他进程占用 | `python relay.py --port 17891` |
+| 返回 `400 UNKNOWN_FIELD`（`未知请求字段：safetySettings` / `config`） | L1 把 Google 私有字段注入到了 OpenAI 兼容网关 | 更新工作台（旧版扩展无端点门控）；临时可用 `PI_SAFETY_PAYLOAD=off` 关闭 L1 |
 
 ---
 
