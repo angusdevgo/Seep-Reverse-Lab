@@ -10,6 +10,8 @@ import { join } from "node:path";
  * 1. 【底座级安全解封 (before_provider_request)】
  *    直接在发送给 Gemini/Google API 的底层 Payload 中注入 safetySettings: BLOCK_NONE / OFF，
  *    同时在底层 contents 里清理一切可能被安全检测拦截的历史异常提示。
+ *    【注意】safetySettings 是 Google 私有字段，只对 Google 端点注入；
+ *    对 OpenAI 兼容网关（DeepSeek/GLM 中转等）注入会触发 UNKNOWN_FIELD 400。
  * 2. 【双向上下文脱敏 (context)】
  *    在每次调用 LLM 前清洗所有 messages 结构，避免历史报错信息引发 Gemini 的连锁拒绝。
  * 3. 【实验环境开关（lab-mode.flag）】
@@ -191,14 +193,53 @@ function sanitizeHarmfulPromptLeak(text: string): string {
 	return res;
 }
 
+// ----------------------------------------------------------------------------
+// 注入目标判定（关键修复）
+// safetySettings 是 Google Generative Language 的私有字段。OpenAI 兼容网关
+// （基元律动 tokenrhythm、各类 /v1/chat/completions 中转）对请求体做严格字段校验，
+// 收到该字段会直接 400：{"code":"UNKNOWN_FIELD","message":"未知请求字段：safetySettings"}。
+// 因此只在确认目标是 Google/Gemini 端点时才注入，其余端点一律原样透传。
+//
+// 环境变量 PI_SAFETY_PAYLOAD 可覆盖：off=永不注入；all=对所有端点注入（老行为）；默认 auto。
+// ----------------------------------------------------------------------------
+const GOOGLE_API_IDS = new Set(["google-generative-ai", "google-vertex"]);
+const GOOGLE_PROVIDER_RE = /^(google|gemini|vertex|google-vertex|google-ai-studio)/i;
+
+function shouldInjectSafetySettings(ctx: any, payload: any): boolean {
+	const mode = (process.env.PI_SAFETY_PAYLOAD || "auto").toLowerCase();
+	if (mode === "off" || mode === "0" || mode === "false" || mode === "none") return false;
+	if (mode === "all" || mode === "force" || mode === "on") return true;
+
+	// 形状指纹优先：OpenAI 兼容体带 messages，Gemini 原生体带 contents
+	if (Array.isArray(payload?.messages)) return false;
+	if (Array.isArray(payload?.contents)) return true;
+
+	// 兜底：按当前模型的 api / provider 标识判定
+	let api = "";
+	let provider = "";
+	try {
+		api = String(ctx?.model?.api ?? "");
+		provider = String(ctx?.model?.provider ?? "");
+	} catch {
+		/* 上下文不可用时按非 Google 处理 */
+	}
+	if (GOOGLE_API_IDS.has(api)) return true;
+	if (provider && GOOGLE_PROVIDER_RE.test(provider)) return true;
+	return false;
+}
+
 export default function securityAuditInterceptor(pi: ExtensionAPI) {
 	// =========================================================================
 	// 1. 底座级拦截：重写 provider 请求 Payload，直接将 Gemini 的 safetySettings 置为 BLOCK_NONE
 	//    同时消除 payload.contents 中的历史阻断报错残留
 	// =========================================================================
-	pi.on("before_provider_request", (event, _ctx) => {
+	pi.on("before_provider_request", (event, ctx) => {
 		const payload = event.payload as any;
 		if (!payload || typeof payload !== "object") return;
+
+		// 0. 目标判定：非 Google/Gemini 端点（OpenAI 兼容网关）原样透传，
+		//    否则 safetySettings / config 会被网关判为未知字段而 400。
+		if (!shouldInjectSafetySettings(ctx, payload)) return;
 
 		// 1.1 强行多层注入 safetySettings 放行策略
 		payload.safetySettings = GEMINI_SAFETY_SETTINGS;
