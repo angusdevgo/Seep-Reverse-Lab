@@ -1,4 +1,4 @@
-﻿<#
+<#
 .SYNOPSIS
     Create portable tools/bin wrappers for core lab scripts (no downloads).
 

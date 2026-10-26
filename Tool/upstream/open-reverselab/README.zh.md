@@ -14,8 +14,7 @@ Ghidra · Frida · x64dbg · Rizin · PE · APK · Malware Analysis · CTF · Bi
 
 <br />
 
-[![Discord](https://img.shields.io/badge/Discord-join-5865F2?style=flat-square&logo=discord&logoColor=white)](https://discord.gg/But5j58J2f)
-[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/LING71671/open-reverselab)
+[![Ask DeepWiki](assets/badges/ask-deepwiki.svg)](https://deepwiki.com/LING71671/open-reverselab)
 [![License: GPL-3.0](https://img.shields.io/github/license/LING71671/open-reverselab?style=flat-square&color=blue)](LICENSE)
 [![Sponsor: Sentry](https://img.shields.io/badge/sponsored%20by-Sentry-362D59?style=flat-square&logo=sentry&logoColor=white)](#sponsors)
 
@@ -69,7 +68,6 @@ ReverseLab 是一份「观点鲜明、可直接跑」的逆向工程攻击知识
 [ :book: 知识库速览 ](#知识库速览)
 &nbsp;&nbsp;[ :rocket: 快速开始 ](#快速开始)
 &nbsp;&nbsp;[ :handshake: 参与贡献 ](.github/CONTRIBUTING.md)
-&nbsp;&nbsp;[ :speech_balloon: Discord ](https://discord.gg/But5j58J2f)
 
 </div>
 
@@ -213,7 +211,6 @@ cases/        轻量索引 —— 不复制大文件
 
 ## 社区与贡献
 
-- **Discord** —— [discord.gg/But5j58J2f](https://discord.gg/But5j58J2f)。问「这个怎么搞」的首选去处。
 - **贡献指南** —— 见 [`.github/CONTRIBUTING.md`](.github/CONTRIBUTING.md)。欢迎提 Issue、提交 KB 文章 PR、新增 MCP wrapper、添加新板块。
 - **行为准则** —— [`.github/CODE_OF_CONDUCT.md`](.github/CODE_OF_CONDUCT.md)（Contributor Covenant）。
 - **安全问题** —— 公开提 Issue 前请先看 [SECURITY 策略](SECURITY.md)。
@@ -250,6 +247,22 @@ ReverseLab 的持续运营靠的是为基础设施、工具、审稿时间投入
 </table>
 
 **想成为赞助方？** 见 [SPONSORS.md](SPONSORS.md)，或邮件联系 **belloshehubz@gmail.com** —— 无论大小，每一位赞助者都会被列出，并注明所提供支持。
+
+---
+
+## Star History
+
+<div align="center">
+
+<a href="https://star-history.com/#LING71671/open-reverselab&Date">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=LING71671/open-reverselab&type=Date&theme=dark" />
+    <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/svg?repos=LING71671/open-reverselab&type=Date" />
+    <img alt="Star History Chart" src="https://api.star-history.com/svg?repos=LING71671/open-reverselab&type=Date" />
+  </picture>
+</a>
+
+</div>
 
 ---
 

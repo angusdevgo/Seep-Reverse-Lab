@@ -1,4 +1,4 @@
-﻿param(
+param(
     [string]$AdbPath = "C:\Program Files (x86)\Android\android-sdk\platform-tools\adb.exe",
     [string]$Serial = "127.0.0.1:16384",
     [string]$Version = "17.9.8",
