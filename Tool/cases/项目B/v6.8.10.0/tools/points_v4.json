@@ -1,0 +1,542 @@
+[
+ {
+  "host": "项目BNxMain.exe",
+  "id": "nxmain_ad_gate_member_remove_ad_ok_bypass",
+  "rva": 2571699,
+  "orig": "0f84b9010000",
+  "patch": "909090909090",
+  "optional": false,
+  "kind": "bytes",
+  "desc": "广告决策闸门：强制穿透到 member_remove_ad_ok 信号发射"
+ },
+ {
+  "host": "项目BNxMain.exe",
+  "id": "nxmain_skip_trial_banner_flow",
+  "rva": 20417295,
+  "orig": "0f8eed000000",
+  "patch": "e9ee00000090",
+  "optional": false,
+  "kind": "bytes",
+  "desc": "AccountFlowManager：跳过试用/购买引导流程"
+ },
+ {
+  "host": "项目BNxMain.exe",
+  "id": "nxmain_resp_expiry_2099_12_31",
+  "rva": 20681482,
+  "orig": "e87740cbfe",
+  "patch": "b87fe685f4",
+  "optional": false,
+  "kind": "call",
+  "desc": "回包 member_expired_at -> 2099-12-31"
+ },
+ {
+  "host": "项目BNxMain.exe",
+  "id": "nxmain_resp_member_status_enabled",
+  "rva": 20681630,
+  "orig": "e83be9c4fe",
+  "patch": "b801000000",
+  "optional": false,
+  "kind": "call",
+  "desc": "回包 member_status -> 1"
+ },
+ {
+  "host": "项目BNxMain.exe",
+  "id": "nxmain_resp_member_type_vip",
+  "rva": 20681770,
+  "orig": "e8afe8c4fe",
+  "patch": "b801000000",
+  "optional": false,
+  "kind": "call",
+  "desc": "回包 member_type -> 1 (VIP)"
+ },
+ {
+  "host": "项目BNxMain.exe",
+  "id": "nxmain_resp_device_count_5",
+  "rva": 20681909,
+  "orig": "e824e8c4fe",
+  "patch": "b805000000",
+  "optional": false,
+  "kind": "call",
+  "desc": "回包 enabled_device_count -> 5"
+ },
+ {
+  "host": "项目BNxMain.exe",
+  "id": "nxmain_resp_trial_status_used",
+  "rva": 20682340,
+  "orig": "e875e6c4fe",
+  "patch": "b802000000",
+  "optional": false,
+  "kind": "call",
+  "desc": "回包 member_trial_status -> 2 (已用)"
+ },
+ {
+  "host": "项目BNxMain.exe",
+  "id": "nxmain_resp_privilege_enable",
+  "rva": 20683094,
+  "orig": "e883e3c4fe",
+  "patch": "b801000000",
+  "optional": false,
+  "kind": "call",
+  "desc": "回包 member_privilege_enable -> 1"
+ },
+ {
+  "host": "项目BNxMain.exe",
+  "id": "nxmain_parse_a_expiry_2099_12_31",
+  "rva": 25944920,
+  "orig": "e829f07afe",
+  "patch": "b87fe685f4",
+  "optional": false,
+  "kind": "call",
+  "desc": "解析A member_expired_time"
+ },
+ {
+  "host": "项目BNxMain.exe",
+  "id": "nxmain_parse_a_member_status_enabled",
+  "rva": 25945019,
+  "orig": "e81e9974fe",
+  "patch": "b801000000",
+  "optional": false,
+  "kind": "call",
+  "desc": "解析A member_status"
+ },
+ {
+  "host": "项目BNxMain.exe",
+  "id": "nxmain_parse_a_trial_status_used",
+  "rva": 25945213,
+  "orig": "e85c9874fe",
+  "patch": "b802000000",
+  "optional": false,
+  "kind": "call",
+  "desc": "解析A member_trail_status"
+ },
+ {
+  "host": "项目BNxMain.exe",
+  "id": "nxmain_parse_a_member_type_vip",
+  "rva": 25945332,
+  "orig": "e8e59774fe",
+  "patch": "b801000000",
+  "optional": false,
+  "kind": "call",
+  "desc": "解析A member_type"
+ },
+ {
+  "host": "项目BNxMain.exe",
+  "id": "nxmain_parse_b_expiry_2099_12_31",
+  "rva": 25958341,
+  "orig": "e8bcbb7afe",
+  "patch": "b87fe685f4",
+  "optional": false,
+  "kind": "call",
+  "desc": "解析B member_expired_time"
+ },
+ {
+  "host": "项目BNxMain.exe",
+  "id": "nxmain_parse_b_member_status_enabled",
+  "rva": 25958477,
+  "orig": "e88c6474fe",
+  "patch": "b801000000",
+  "optional": false,
+  "kind": "call",
+  "desc": "解析B member_status"
+ },
+ {
+  "host": "项目BNxMain.exe",
+  "id": "nxmain_parse_b_device_member_enabled",
+  "rva": 25958560,
+  "orig": "e8396474fe",
+  "patch": "b801000000",
+  "optional": false,
+  "kind": "call",
+  "desc": "解析B device_member_status"
+ },
+ {
+  "host": "项目BNxMain.exe",
+  "id": "nxmain_parse_b_member_type_vip",
+  "rva": 25959208,
+  "orig": "e8b16174fe",
+  "patch": "b801000000",
+  "optional": false,
+  "kind": "call",
+  "desc": "解析B member_type"
+ },
+ {
+  "host": "项目BNxMain.exe",
+  "id": "nxmain_serialize_a_expiry_2099_12_31",
+  "rva": 25919646,
+  "orig": "488b85c8020000",
+  "patch": "b87fe685f49090",
+  "optional": false,
+  "kind": "bytes",
+  "desc": "序列化A 到期时间"
+ },
+ {
+  "host": "项目BNxMain.exe",
+  "id": "nxmain_serialize_a_member_status_enabled",
+  "rva": 25919903,
+  "orig": "8b85d4020000",
+  "patch": "b80100000090",
+  "optional": false,
+  "kind": "bytes",
+  "desc": "序列化A 会员状态"
+ },
+ {
+  "host": "项目BNxMain.exe",
+  "id": "nxmain_serialize_a_member_type_vip",
+  "rva": 25920144,
+  "orig": "8b85d8020000",
+  "patch": "b80100000090",
+  "optional": false,
+  "kind": "bytes",
+  "desc": "序列化A 会员类型"
+ },
+ {
+  "host": "项目BNxMain.exe",
+  "id": "nxmain_serialize_a_device_member_enabled",
+  "rva": 25920640,
+  "orig": "8b8508030000",
+  "patch": "b80100000090",
+  "optional": false,
+  "kind": "bytes",
+  "desc": "序列化A 设备权益"
+ },
+ {
+  "host": "项目BNxMain.exe",
+  "id": "nxmain_serialize_a_trial_status_used",
+  "rva": 25920850,
+  "orig": "8b8500030000",
+  "patch": "b80200000090",
+  "optional": false,
+  "kind": "bytes",
+  "desc": "序列化A 试用状态"
+ },
+ {
+  "host": "项目BNxMain.exe",
+  "id": "nxmain_serialize_b_expiry_2099_12_31",
+  "rva": 25965776,
+  "orig": "488b8d78030000",
+  "patch": "b97fe685f49090",
+  "optional": false,
+  "kind": "bytes",
+  "desc": "序列化B 到期时间"
+ },
+ {
+  "host": "项目BNxMain.exe",
+  "id": "nxmain_serialize_b_member_status_enabled",
+  "rva": 25966034,
+  "orig": "8b8d84030000",
+  "patch": "b90100000090",
+  "optional": false,
+  "kind": "bytes",
+  "desc": "序列化B 会员状态"
+ },
+ {
+  "host": "项目BNxMain.exe",
+  "id": "nxmain_serialize_b_device_member_enabled",
+  "rva": 25966493,
+  "orig": "8b8d88030000",
+  "patch": "b90100000090",
+  "optional": false,
+  "kind": "bytes",
+  "desc": "序列化B 设备权益"
+ },
+ {
+  "host": "项目BNxMain.exe",
+  "id": "nxmain_serialize_b_member_type_vip",
+  "rva": 25966926,
+  "orig": "8b8db0030000",
+  "patch": "b90100000090",
+  "optional": false,
+  "kind": "bytes",
+  "desc": "序列化B 会员类型"
+ },
+ {
+  "host": "项目BNxMain.exe",
+  "id": "nxmain_serialize_b_trial_status_used",
+  "rva": 25967149,
+  "orig": "8b8db4030000",
+  "patch": "b90200000090",
+  "optional": false,
+  "kind": "bytes",
+  "desc": "序列化B 试用状态"
+ },
+ {
+  "host": "项目BNxMain.exe",
+  "id": "nxmain_ui_member_check_direct",
+  "rva": 18269936,
+  "orig": "488b89480100004885c97407488b0148ff601832c0c3",
+  "patch": "b001c3",
+  "optional": false,
+  "kind": "bytes",
+  "desc": "UI 会员判定直返真"
+ },
+ {
+  "host": "项目BNxMain.exe",
+  "id": "nxmain_ui_member_check_direct_b",
+  "rva": 18276736,
+  "orig": "488b89c80100004885c9740a488b0148ffa0b800000032c0c3",
+  "patch": "b001c3",
+  "optional": true,
+  "kind": "bytes",
+  "desc": "UI 第二会员判定端点"
+ },
+ {
+  "host": "项目BNxMain.exe",
+  "id": "nxmain_force_no_upgradeable",
+  "rva": 23297474,
+  "orig": "40b601",
+  "patch": "4030f6",
+  "optional": false,
+  "kind": "bytes",
+  "desc": "is_upgradeable 强制假（主进程）"
+ },
+ {
+  "host": "项目BNxService.exe",
+  "id": "nxservice_parse_a_expiry_2099_12_31",
+  "rva": 15229576,
+  "orig": "e854031dff",
+  "patch": "b87fe685f4",
+  "optional": false,
+  "kind": "call",
+  "desc": "服务解析A member_expired_time"
+ },
+ {
+  "host": "项目BNxService.exe",
+  "id": "nxservice_parse_a_member_status_enabled",
+  "rva": 15229675,
+  "orig": "e8500318ff",
+  "patch": "b801000000",
+  "optional": false,
+  "kind": "call",
+  "desc": "服务解析A member_status"
+ },
+ {
+  "host": "项目BNxService.exe",
+  "id": "nxservice_parse_a_trial_status_used",
+  "rva": 15229869,
+  "orig": "e88e0218ff",
+  "patch": "b802000000",
+  "optional": false,
+  "kind": "call",
+  "desc": "服务解析A member_trail_status"
+ },
+ {
+  "host": "项目BNxService.exe",
+  "id": "nxservice_parse_a_member_type_vip",
+  "rva": 15229988,
+  "orig": "e8170218ff",
+  "patch": "b801000000",
+  "optional": false,
+  "kind": "call",
+  "desc": "服务解析A member_type"
+ },
+ {
+  "host": "项目BNxService.exe",
+  "id": "nxservice_parse_a_is_valid_infos_true",
+  "rva": 15230404,
+  "orig": "e8e45a19ff",
+  "patch": "b001909090",
+  "optional": false,
+  "kind": "call",
+  "desc": "服务解析A is_valid_infos 置真"
+ },
+ {
+  "host": "项目BNxService.exe",
+  "id": "nxservice_parse_b_expiry_2099_12_31",
+  "rva": 15242997,
+  "orig": "e8e7ce1cff",
+  "patch": "b87fe685f4",
+  "optional": false,
+  "kind": "call",
+  "desc": "服务解析B member_expired_time"
+ },
+ {
+  "host": "项目BNxService.exe",
+  "id": "nxservice_parse_b_member_status_enabled",
+  "rva": 15243133,
+  "orig": "e8bece17ff",
+  "patch": "b801000000",
+  "optional": false,
+  "kind": "call",
+  "desc": "服务解析B member_status"
+ },
+ {
+  "host": "项目BNxService.exe",
+  "id": "nxservice_parse_b_device_member_enabled",
+  "rva": 15243216,
+  "orig": "e86bce17ff",
+  "patch": "b801000000",
+  "optional": false,
+  "kind": "call",
+  "desc": "服务解析B device_member_status"
+ },
+ {
+  "host": "项目BNxService.exe",
+  "id": "nxservice_parse_b_member_type_vip",
+  "rva": 15243864,
+  "orig": "e8e3cb17ff",
+  "patch": "b801000000",
+  "optional": false,
+  "kind": "call",
+  "desc": "服务解析B member_type"
+ },
+ {
+  "host": "项目BNxService.exe",
+  "id": "nxservice_serialize_expiry_2099_12_31",
+  "rva": 15204302,
+  "orig": "488b85c8020000",
+  "patch": "b87fe685f49090",
+  "optional": false,
+  "kind": "bytes",
+  "desc": "服务序列化A 到期时间"
+ },
+ {
+  "host": "项目BNxService.exe",
+  "id": "nxservice_serialize_member_status_enabled",
+  "rva": 15204559,
+  "orig": "8b85d4020000",
+  "patch": "b80100000090",
+  "optional": false,
+  "kind": "bytes",
+  "desc": "服务序列化A 会员状态"
+ },
+ {
+  "host": "项目BNxService.exe",
+  "id": "nxservice_serialize_member_type_vip",
+  "rva": 15204800,
+  "orig": "8b85d8020000",
+  "patch": "b80100000090",
+  "optional": false,
+  "kind": "bytes",
+  "desc": "服务序列化A 会员类型"
+ },
+ {
+  "host": "项目BNxService.exe",
+  "id": "nxservice_serialize_device_member_enabled",
+  "rva": 15205296,
+  "orig": "8b8508030000",
+  "patch": "b80100000090",
+  "optional": false,
+  "kind": "bytes",
+  "desc": "服务序列化A 设备权益"
+ },
+ {
+  "host": "项目BNxService.exe",
+  "id": "nxservice_serialize_trial_status_used",
+  "rva": 15205506,
+  "orig": "8b8500030000",
+  "patch": "b80200000090",
+  "optional": false,
+  "kind": "bytes",
+  "desc": "服务序列化A 试用状态"
+ },
+ {
+  "host": "项目BNxService.exe",
+  "id": "nxservice_serialize_expiry_b_2099_12_31",
+  "rva": 15251008,
+  "orig": "488b8d78030000",
+  "patch": "b97fe685f49090",
+  "optional": false,
+  "kind": "bytes",
+  "desc": "服务序列化B 到期时间"
+ },
+ {
+  "host": "项目BNxService.exe",
+  "id": "nxservice_serialize_member_status_b_enabled",
+  "rva": 15251266,
+  "orig": "8b8d84030000",
+  "patch": "b90100000090",
+  "optional": false,
+  "kind": "bytes",
+  "desc": "服务序列化B 会员状态"
+ },
+ {
+  "host": "项目BNxService.exe",
+  "id": "nxservice_serialize_device_member_b_enabled",
+  "rva": 15251725,
+  "orig": "8b8d88030000",
+  "patch": "b90100000090",
+  "optional": false,
+  "kind": "bytes",
+  "desc": "服务序列化B 设备权益"
+ },
+ {
+  "host": "项目BNxService.exe",
+  "id": "nxservice_serialize_member_type_b_vip",
+  "rva": 15252158,
+  "orig": "8b8db0030000",
+  "patch": "b90100000090",
+  "optional": false,
+  "kind": "bytes",
+  "desc": "服务序列化B 会员类型"
+ },
+ {
+  "host": "项目BNxService.exe",
+  "id": "nxservice_serialize_trial_status_b_used",
+  "rva": 15252381,
+  "orig": "8b8db4030000",
+  "patch": "b90200000090",
+  "optional": false,
+  "kind": "bytes",
+  "desc": "服务序列化B 试用状态"
+ },
+ {
+  "host": "项目BNxService.exe",
+  "id": "nxservice_serialize_is_valid_infos_true",
+  "rva": 15253659,
+  "orig": "0fb68d32040000",
+  "patch": "b1019090909090",
+  "optional": false,
+  "kind": "bytes",
+  "desc": "服务序列化 is_valid_infos 置真"
+ },
+ {
+  "host": "项目BNxService.exe",
+  "id": "nxservice_disable_cloud_member_trial_endpoint",
+  "rva": 24338008,
+  "orig": "76312f6d656d6265722f747269616c",
+  "patch": "76312f6d656d6265722f6c6f63616c",
+  "optional": false,
+  "kind": "bytes",
+  "desc": "端点降级 v1/member/trial -> local"
+ },
+ {
+  "host": "项目BNxService.exe",
+  "id": "nxservice_force_no_upgradeable",
+  "rva": 6085426,
+  "orig": "40b601",
+  "patch": "4030f6",
+  "optional": false,
+  "kind": "bytes",
+  "desc": "is_upgradeable 强制假（服务）"
+ },
+ {
+  "host": "项目BRemoteService.exe",
+  "id": "nxremote_is_current_session_remote_session_false",
+  "rva": 1617856,
+  "orig": "4883ec58",
+  "patch": "33c0c390",
+  "optional": false,
+  "kind": "bytes",
+  "desc": "platform::isCurrentSessionRemoteSession 恒假"
+ },
+ {
+  "host": "项目BRemoteService.exe",
+  "id": "nxremote_skip_healthd_launch",
+  "rva": 867936,
+  "orig": "48895c2410",
+  "patch": "c390909090",
+  "optional": false,
+  "kind": "bytes",
+  "desc": "阻断 Healthd 守护进程拉起"
+ },
+ {
+  "host": "项目BNxUpdater.exe",
+  "id": "nxupdater_force_no_upgradeable",
+  "rva": 6942626,
+  "orig": "40b601",
+  "patch": "4030f6",
+  "optional": false,
+  "kind": "bytes",
+  "desc": "is_upgradeable 强制假（更新器）"
+ }
+]

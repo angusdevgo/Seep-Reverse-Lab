@@ -1,0 +1,992 @@
+[2026-10-29 22:20:51.686] === 项目B Universal Guard (winhttp.dll single-DLL) start ===
+[+] host=项目BNxMain.exe base=0x7ff71b850000 points=31
+[MISMATCH] nxmain_ad_gate_member_remove_ad_ok_bypass      rva=0x00144463 got=25f843670248 -> SKIP
+[MISMATCH] nxmain_skip_trial_banner_flow                  rva=0x00D29CAF got=89480841b801 -> SKIP
+[MISMATCH] nxmain_resp_expiry_2099_12_31                  rva=0x00D5738A got=cccccccccc -> SKIP
+[MISMATCH] nxmain_resp_member_status_enabled              rva=0x00D5741E got=cccccccccc -> SKIP
+[MISMATCH] nxmain_resp_member_type_vip                    rva=0x00D574AA got=cccccccccc -> SKIP
+[MISMATCH] nxmain_resp_device_count_5                     rva=0x00D57535 got=cccccccccc -> SKIP
+[MISMATCH] nxmain_resp_trial_status_used                  rva=0x00D576E4 got=e836bf2bff -> SKIP
+[MISMATCH] nxmain_resp_privilege_enable                   rva=0x00D579D6 got=8b8d180100 -> SKIP
+[MISMATCH] nxmain_parse_a_device_member_enabled           rva=0x010CAF9E got=5fc3483bf3 -> SKIP
+[MISMATCH] nxmain_parse_a_expiry_2099_12_31               rva=0x010CB0F8 got=4f28488d54 -> SKIP
+[MISMATCH] nxmain_parse_a_member_status_enabled           rva=0x010CB15B got=ff15e7d66e -> SKIP
+[MISMATCH] nxmain_parse_a_trial_status_used               rva=0x010CB21D got=cccccc4889 -> SKIP
+[MISMATCH] nxmain_parse_a_member_type_vip                 rva=0x010CB294 got=8bceff15e4 -> SKIP
+[MISMATCH] nxmain_parse_b_expiry_2099_12_31               rva=0x010CE445 got=ff157da46e -> SKIP
+[MISMATCH] nxmain_parse_b_member_status_enabled           rva=0x010CE4CD got=6c24684883 -> SKIP
+[MISMATCH] nxmain_parse_b_device_member_enabled           rva=0x010CE520 got=4889542410 -> SKIP
+[MISMATCH] nxmain_parse_b_trial_status_used               rva=0x010CE6C1 got=cccccccccc -> SKIP
+[MISMATCH] nxmain_parse_b_member_type_vip                 rva=0x010CE7A8 got=a06e01c744 -> SKIP
+[MISMATCH] nxmain_serialize_a_expiry_2099_12_31           rva=0x010C4E6E got=b741b901000000 -> SKIP
+[MISMATCH] nxmain_serialize_a_member_status_enabled       rva=0x010C4F6F got=fe4881c4b800 -> SKIP
+[MISMATCH] nxmain_serialize_a_member_type_vip             rva=0x010C5060 got=488bc1c3cccc -> SKIP
+[MISMATCH] nxmain_serialize_a_device_member_enabled       rva=0x010C5250 got=488bc1c3cccc -> SKIP
+[MISMATCH] nxmain_serialize_a_trial_status_used           rva=0x010C5322 got=c1c3cccccccc -> SKIP
+[MISMATCH] nxmain_serialize_b_expiry_2099_12_31           rva=0x010D0150 got=5e5f5e5d5bc3cc -> SKIP
+[MISMATCH] nxmain_serialize_b_member_status_enabled       rva=0x010D0252 got=fb0048890648 -> SKIP
+[MISMATCH] nxmain_serialize_b_device_member_enabled       rva=0x010D041D got=d2488bceff15 -> SKIP
+[MISMATCH] nxmain_serialize_b_member_type_vip             rva=0x010D05CE got=48000000e84f -> SKIP
+[MISMATCH] nxmain_serialize_b_trial_status_used           rva=0x010D06AD got=01488bc6488b -> SKIP
+[MISMATCH] nxmain_ui_member_check_direct                  rva=0x00B89CF0 got=ff488d8b30010000e894b64aff488d8b10010000e888 -> SKIP
+[MISMATCH] nxmain_ui_member_check_direct_b                rva=0x00B8B780 got=cccccccccccccccccccccccccccccccc488d0589cf41014889 -> SKIP
+[MISMATCH] nxmain_force_no_upgradeable                    rva=0x00F1B932 got=cccccc -> SKIP
+=== summary: applied=0 already=0 mismatch=31 skipped=0 total=31 ===
+[boot-cost] DllMain->patched elapsed = 0 ms
+[2026-10-29 22:20:58.973] === 项目B Universal Guard (winhttp.dll single-DLL) start ===
+[+] host=项目BNxMain.exe base=0x7ff71b850000 points=31
+[MISMATCH] nxmain_ad_gate_member_remove_ad_ok_bypass      rva=0x00144463 got=25f843670248 -> SKIP
+[MISMATCH] nxmain_skip_trial_banner_flow                  rva=0x00D29CAF got=89480841b801 -> SKIP
+[MISMATCH] nxmain_resp_expiry_2099_12_31                  rva=0x00D5738A got=cccccccccc -> SKIP
+[MISMATCH] nxmain_resp_member_status_enabled              rva=0x00D5741E got=cccccccccc -> SKIP
+[MISMATCH] nxmain_resp_member_type_vip                    rva=0x00D574AA got=cccccccccc -> SKIP
+[MISMATCH] nxmain_resp_device_count_5                     rva=0x00D57535 got=cccccccccc -> SKIP
+[MISMATCH] nxmain_resp_trial_status_used                  rva=0x00D576E4 got=e836bf2bff -> SKIP
+[MISMATCH] nxmain_resp_privilege_enable                   rva=0x00D579D6 got=8b8d180100 -> SKIP
+[MISMATCH] nxmain_parse_a_device_member_enabled           rva=0x010CAF9E got=5fc3483bf3 -> SKIP
+[MISMATCH] nxmain_parse_a_expiry_2099_12_31               rva=0x010CB0F8 got=4f28488d54 -> SKIP
+[MISMATCH] nxmain_parse_a_member_status_enabled           rva=0x010CB15B got=ff15e7d66e -> SKIP
+[MISMATCH] nxmain_parse_a_trial_status_used               rva=0x010CB21D got=cccccc4889 -> SKIP
+[MISMATCH] nxmain_parse_a_member_type_vip                 rva=0x010CB294 got=8bceff15e4 -> SKIP
+[MISMATCH] nxmain_parse_b_expiry_2099_12_31               rva=0x010CE445 got=ff157da46e -> SKIP
+[MISMATCH] nxmain_parse_b_member_status_enabled           rva=0x010CE4CD got=6c24684883 -> SKIP
+[MISMATCH] nxmain_parse_b_device_member_enabled           rva=0x010CE520 got=4889542410 -> SKIP
+[MISMATCH] nxmain_parse_b_trial_status_used               rva=0x010CE6C1 got=cccccccccc -> SKIP
+[MISMATCH] nxmain_parse_b_member_type_vip                 rva=0x010CE7A8 got=a06e01c744 -> SKIP
+[MISMATCH] nxmain_serialize_a_expiry_2099_12_31           rva=0x010C4E6E got=b741b901000000 -> SKIP
+[MISMATCH] nxmain_serialize_a_member_status_enabled       rva=0x010C4F6F got=fe4881c4b800 -> SKIP
+[MISMATCH] nxmain_serialize_a_member_type_vip             rva=0x010C5060 got=488bc1c3cccc -> SKIP
+[MISMATCH] nxmain_serialize_a_device_member_enabled       rva=0x010C5250 got=488bc1c3cccc -> SKIP
+[MISMATCH] nxmain_serialize_a_trial_status_used           rva=0x010C5322 got=c1c3cccccccc -> SKIP
+[MISMATCH] nxmain_serialize_b_expiry_2099_12_31           rva=0x010D0150 got=5e5f5e5d5bc3cc -> SKIP
+[MISMATCH] nxmain_serialize_b_member_status_enabled       rva=0x010D0252 got=fb0048890648 -> SKIP
+[MISMATCH] nxmain_serialize_b_device_member_enabled       rva=0x010D041D got=d2488bceff15 -> SKIP
+[MISMATCH] nxmain_serialize_b_member_type_vip             rva=0x010D05CE got=48000000e84f -> SKIP
+[MISMATCH] nxmain_serialize_b_trial_status_used           rva=0x010D06AD got=01488bc6488b -> SKIP
+[MISMATCH] nxmain_ui_member_check_direct                  rva=0x00B89CF0 got=ff488d8b30010000e894b64aff488d8b10010000e888 -> SKIP
+[MISMATCH] nxmain_ui_member_check_direct_b                rva=0x00B8B780 got=cccccccccccccccccccccccccccccccc488d0589cf41014889 -> SKIP
+[MISMATCH] nxmain_force_no_upgradeable                    rva=0x00F1B932 got=cccccc -> SKIP
+=== summary: applied=0 already=0 mismatch=31 skipped=0 total=31 ===
+[boot-cost] DllMain->patched elapsed = 0 ms
+[2026-10-29 22:21:00.123] === 项目B Universal Guard (winhttp.dll single-DLL) start ===
+[SKIPPED ] host 'crashpad_handler.exe' not covered by this proxy -> no modification
+
+[2026-10-29 22:21:00.424] === 项目B Universal Guard (winhttp.dll single-DLL) start ===
+[+] host=项目BNxService.exe base=0x7ff6ee8d0000 points=19
+[MISMATCH] nxservice_parse_a_device_member_enabled        rva=0x00A15B5E got=cccccccccc -> SKIP
+[MISMATCH] nxservice_parse_a_expiry_2099_12_31            rva=0x00A15CB8 got=cccccccccc -> SKIP
+[MISMATCH] nxservice_parse_a_member_status_enabled        rva=0x00A15D1B got=cccccccccc -> SKIP
+[MISMATCH] nxservice_parse_a_trial_status_used            rva=0x00A15DDD got=33c9ff1553 -> SKIP
+[MISMATCH] nxservice_parse_a_member_type_vip              rva=0x00A15E54 got=cccccccccc -> SKIP
+[MISMATCH] nxservice_parse_a_is_valid_infos_true          rva=0x00A15FF4 got=488b8b9003 -> SKIP
+[MISMATCH] nxservice_parse_b_expiry_2099_12_31            rva=0x00A19005 got=00660f6f0d -> SKIP
+[MISMATCH] nxservice_parse_b_member_status_enabled        rva=0x00A1908D got=00f30f7f8c -> SKIP
+[MISMATCH] nxservice_parse_b_device_member_enabled        rva=0x00A190E0 got=8424900100 -> SKIP
+[MISMATCH] nxservice_parse_b_trial_status_used            rva=0x00A19281 got=000000c603 -> SKIP
+[MISMATCH] nxservice_parse_b_member_type_vip              rva=0x00A19368 got=0000e8ee0d -> SKIP
+[MISMATCH] nxservice_serialize_expiry_2099_12_31          rva=0x00A1AF20 got=c2488b8c24f000 -> SKIP
+[MISMATCH] nxservice_serialize_member_status_enabled      rva=0x00A1B022 got=9c2490000000 -> SKIP
+[MISMATCH] nxservice_serialize_device_member_enabled      rva=0x00A1B1ED got=2458488bc8ff -> SKIP
+[MISMATCH] nxservice_serialize_member_type_vip            rva=0x00A1B39E got=250190488d94 -> SKIP
+[MISMATCH] nxservice_serialize_trial_status_used          rva=0x00A1B47D got=f81f76164c89 -> SKIP
+[MISMATCH] nxservice_serialize_is_valid_infos_true        rva=0x00A1B97B got=cccccccccccccc -> SKIP
+[MISMATCH] nxservice_disable_cloud_member_trial_endpoint  rva=0x010D2C78 got=4da08b05ac1b63008945900fb605a6 -> SKIP
+[MISMATCH] nxservice_force_no_upgradeable                 rva=0x003DB452 got=5c2408 -> SKIP
+=== summary: applied=0 already=0 mismatch=19 skipped=0 total=19 ===
+[boot-cost] DllMain->patched elapsed = 0 ms
+[2026-10-29 22:21:00.591] === 项目B Universal Guard (winhttp.dll single-DLL) start ===
+[UPDATER  ] host '项目BNxUpdater.exe' -> 安全默认：不终止进程，仅打补丁 + 传输层拦截（避免破坏启动链）
+[+] host=项目BNxUpdater.exe base=0x7ff6f1b40000 points=1
+[MISMATCH] nxupdater_force_no_upgradeable                 rva=0x00468592 got=ff1530 -> SKIP
+=== summary: applied=0 already=0 mismatch=1 skipped=0 total=1 ===
+[boot-cost] DllMain->patched elapsed = 0 ms
+[2026-10-29 22:21:00.602] === 项目B Universal Guard (winhttp.dll single-DLL) start ===
+[SKIPPED ] host 'crashpad_handler.exe' not covered by this proxy -> no modification
+
+[2026-10-29 22:21:00.606] === 项目B Universal Guard (winhttp.dll single-DLL) start ===
+[SKIPPED ] host '项目BRemoteBackend.exe' not covered by this proxy -> no modification
+
+[2026-10-29 22:21:00.679] === 项目B Universal Guard (winhttp.dll single-DLL) start ===
+[SKIPPED ] host '项目BRemoteHealthd.exe' not covered by this proxy -> no modification
+
+[2026-10-29 22:21:00.680] === 项目B Universal Guard (winhttp.dll single-DLL) start ===
+[SKIPPED ] host 'crashpad_handler.exe' not covered by this proxy -> no modification
+
+[2026-10-29 22:21:00.766] === 项目B Universal Guard (winhttp.dll single-DLL) start ===
+[SKIPPED ] host 'crashpad_handler.exe' not covered by this proxy -> no modification
+
+[2026-10-29 22:21:01.738] === 项目B Universal Guard (winhttp.dll single-DLL) start ===
+[SKIPPED ] host 'crashpad_handler.exe' not covered by this proxy -> no modification
+
+[2026-10-29 22:21:02.605] === 项目B Universal Guard (winhttp.dll single-DLL) start ===
+[SKIPPED ] host 'crashpad_handler.exe' not covered by this proxy -> no modification
+
+[2026-10-29 22:21:03.283] === 项目B Universal Guard (winhttp.dll single-DLL) start ===
+[SKIPPED ] host 'crashpad_handler.exe' not covered by this proxy -> no modification
+
+[2026-10-29 22:21:05.936] === 项目B Universal Guard (winhttp.dll single-DLL) start ===
+[UPDATER  ] host '项目BNxUpdater.exe' -> 安全默认：不终止进程，仅打补丁 + 传输层拦截（避免破坏启动链）
+[+] host=项目BNxUpdater.exe base=0x7ff6f1b40000 points=1
+[MISMATCH] nxupdater_force_no_upgradeable                 rva=0x00468592 got=ff1530 -> SKIP
+=== summary: applied=0 already=0 mismatch=1 skipped=0 total=1 ===
+[boot-cost] DllMain->patched elapsed = 0 ms
+[2026-10-29 22:21:06.097] === 项目B Universal Guard (winhttp.dll single-DLL) start ===
+[SKIPPED ] host 'crashpad_handler.exe' not covered by this proxy -> no modification
+
+[2026-10-29 22:21:44.233] === 项目B Universal Guard (winhttp.dll single-DLL) start ===
+[+] host=项目BNxMain.exe base=0x7ff71b850000 points=31
+[MISMATCH] nxmain_ad_gate_member_remove_ad_ok_bypass      rva=0x00144463 got=25f843670248 -> SKIP
+[MISMATCH] nxmain_skip_trial_banner_flow                  rva=0x00D29CAF got=89480841b801 -> SKIP
+[MISMATCH] nxmain_resp_expiry_2099_12_31                  rva=0x00D5738A got=cccccccccc -> SKIP
+[MISMATCH] nxmain_resp_member_status_enabled              rva=0x00D5741E got=cccccccccc -> SKIP
+[MISMATCH] nxmain_resp_member_type_vip                    rva=0x00D574AA got=cccccccccc -> SKIP
+[MISMATCH] nxmain_resp_device_count_5                     rva=0x00D57535 got=cccccccccc -> SKIP
+[MISMATCH] nxmain_resp_trial_status_used                  rva=0x00D576E4 got=e836bf2bff -> SKIP
+[MISMATCH] nxmain_resp_privilege_enable                   rva=0x00D579D6 got=8b8d180100 -> SKIP
+[MISMATCH] nxmain_parse_a_device_member_enabled           rva=0x010CAF9E got=5fc3483bf3 -> SKIP
+[MISMATCH] nxmain_parse_a_expiry_2099_12_31               rva=0x010CB0F8 got=4f28488d54 -> SKIP
+[MISMATCH] nxmain_parse_a_member_status_enabled           rva=0x010CB15B got=ff15e7d66e -> SKIP
+[MISMATCH] nxmain_parse_a_trial_status_used               rva=0x010CB21D got=cccccc4889 -> SKIP
+[MISMATCH] nxmain_parse_a_member_type_vip                 rva=0x010CB294 got=8bceff15e4 -> SKIP
+[MISMATCH] nxmain_parse_b_expiry_2099_12_31               rva=0x010CE445 got=ff157da46e -> SKIP
+[MISMATCH] nxmain_parse_b_member_status_enabled           rva=0x010CE4CD got=6c24684883 -> SKIP
+[MISMATCH] nxmain_parse_b_device_member_enabled           rva=0x010CE520 got=4889542410 -> SKIP
+[MISMATCH] nxmain_parse_b_trial_status_used               rva=0x010CE6C1 got=cccccccccc -> SKIP
+[MISMATCH] nxmain_parse_b_member_type_vip                 rva=0x010CE7A8 got=a06e01c744 -> SKIP
+[MISMATCH] nxmain_serialize_a_expiry_2099_12_31           rva=0x010C4E6E got=b741b901000000 -> SKIP
+[MISMATCH] nxmain_serialize_a_member_status_enabled       rva=0x010C4F6F got=fe4881c4b800 -> SKIP
+[MISMATCH] nxmain_serialize_a_member_type_vip             rva=0x010C5060 got=488bc1c3cccc -> SKIP
+[MISMATCH] nxmain_serialize_a_device_member_enabled       rva=0x010C5250 got=488bc1c3cccc -> SKIP
+[MISMATCH] nxmain_serialize_a_trial_status_used           rva=0x010C5322 got=c1c3cccccccc -> SKIP
+[MISMATCH] nxmain_serialize_b_expiry_2099_12_31           rva=0x010D0150 got=5e5f5e5d5bc3cc -> SKIP
+[MISMATCH] nxmain_serialize_b_member_status_enabled       rva=0x010D0252 got=fb0048890648 -> SKIP
+[MISMATCH] nxmain_serialize_b_device_member_enabled       rva=0x010D041D got=d2488bceff15 -> SKIP
+[MISMATCH] nxmain_serialize_b_member_type_vip             rva=0x010D05CE got=48000000e84f -> SKIP
+[MISMATCH] nxmain_serialize_b_trial_status_used           rva=0x010D06AD got=01488bc6488b -> SKIP
+[MISMATCH] nxmain_ui_member_check_direct                  rva=0x00B89CF0 got=ff488d8b30010000e894b64aff488d8b10010000e888 -> SKIP
+[MISMATCH] nxmain_ui_member_check_direct_b                rva=0x00B8B780 got=cccccccccccccccccccccccccccccccc488d0589cf41014889 -> SKIP
+[MISMATCH] nxmain_force_no_upgradeable                    rva=0x00F1B932 got=cccccc -> SKIP
+=== summary: applied=0 already=0 mismatch=31 skipped=0 total=31 ===
+[boot-cost] DllMain->patched elapsed = 0 ms
+[2026-10-29 22:21:45.391] === 项目B Universal Guard (winhttp.dll single-DLL) start ===
+[SKIPPED ] host 'crashpad_handler.exe' not covered by this proxy -> no modification
+
+[2026-10-29 22:21:45.835] === 项目B Universal Guard (winhttp.dll single-DLL) start ===
+[+] host=项目BNxService.exe base=0x7ff6ee8d0000 points=19
+[MISMATCH] nxservice_parse_a_device_member_enabled        rva=0x00A15B5E got=cccccccccc -> SKIP
+[MISMATCH] nxservice_parse_a_expiry_2099_12_31            rva=0x00A15CB8 got=cccccccccc -> SKIP
+[MISMATCH] nxservice_parse_a_member_status_enabled        rva=0x00A15D1B got=cccccccccc -> SKIP
+[MISMATCH] nxservice_parse_a_trial_status_used            rva=0x00A15DDD got=33c9ff1553 -> SKIP
+[MISMATCH] nxservice_parse_a_member_type_vip              rva=0x00A15E54 got=cccccccccc -> SKIP
+[MISMATCH] nxservice_parse_a_is_valid_infos_true          rva=0x00A15FF4 got=488b8b9003 -> SKIP
+[MISMATCH] nxservice_parse_b_expiry_2099_12_31            rva=0x00A19005 got=00660f6f0d -> SKIP
+[MISMATCH] nxservice_parse_b_member_status_enabled        rva=0x00A1908D got=00f30f7f8c -> SKIP
+[MISMATCH] nxservice_parse_b_device_member_enabled        rva=0x00A190E0 got=8424900100 -> SKIP
+[MISMATCH] nxservice_parse_b_trial_status_used            rva=0x00A19281 got=000000c603 -> SKIP
+[MISMATCH] nxservice_parse_b_member_type_vip              rva=0x00A19368 got=0000e8ee0d -> SKIP
+[MISMATCH] nxservice_serialize_expiry_2099_12_31          rva=0x00A1AF20 got=c2488b8c24f000 -> SKIP
+[MISMATCH] nxservice_serialize_member_status_enabled      rva=0x00A1B022 got=9c2490000000 -> SKIP
+[MISMATCH] nxservice_serialize_device_member_enabled      rva=0x00A1B1ED got=2458488bc8ff -> SKIP
+[MISMATCH] nxservice_serialize_member_type_vip            rva=0x00A1B39E got=250190488d94 -> SKIP
+[MISMATCH] nxservice_serialize_trial_status_used          rva=0x00A1B47D got=f81f76164c89 -> SKIP
+[MISMATCH] nxservice_serialize_is_valid_infos_true        rva=0x00A1B97B got=cccccccccccccc -> SKIP
+[MISMATCH] nxservice_disable_cloud_member_trial_endpoint  rva=0x010D2C78 got=4da08b05ac1b63008945900fb605a6 -> SKIP
+[MISMATCH] nxservice_force_no_upgradeable                 rva=0x003DB452 got=5c2408 -> SKIP
+=== summary: applied=0 already=0 mismatch=19 skipped=0 total=19 ===
+[boot-cost] DllMain->patched elapsed = 15 ms
+[2026-10-29 22:21:45.907] === 项目B Universal Guard (winhttp.dll single-DLL) start ===
+[UPDATER  ] host '项目BNxUpdater.exe' -> 安全默认：不终止进程，仅打补丁 + 传输层拦截（避免破坏启动链）
+[+] host=项目BNxUpdater.exe base=0x7ff6f1b40000 points=1
+[MISMATCH] nxupdater_force_no_upgradeable                 rva=0x00468592 got=ff1530 -> SKIP
+=== summary: applied=0 already=0 mismatch=1 skipped=0 total=1 ===
+[boot-cost] DllMain->patched elapsed = 0 ms
+[2026-10-29 22:21:46.014] === 项目B Universal Guard (winhttp.dll single-DLL) start ===
+[SKIPPED ] host 'crashpad_handler.exe' not covered by this proxy -> no modification
+
+[2026-10-29 22:21:46.083] === 项目B Universal Guard (winhttp.dll single-DLL) start ===
+[SKIPPED ] host 'crashpad_handler.exe' not covered by this proxy -> no modification
+
+[2026-10-29 22:21:46.123] === 项目B Universal Guard (winhttp.dll single-DLL) start ===
+[SKIPPED ] host '项目BRemoteBackend.exe' not covered by this proxy -> no modification
+
+[2026-10-29 22:21:46.200] === 项目B Universal Guard (winhttp.dll single-DLL) start ===
+[SKIPPED ] host 'crashpad_handler.exe' not covered by this proxy -> no modification
+
+[2026-10-29 22:21:46.220] === 项目B Universal Guard (winhttp.dll single-DLL) start ===
+[SKIPPED ] host '项目BRemoteHealthd.exe' not covered by this proxy -> no modification
+
+[2026-10-29 22:21:47.293] === 项目B Universal Guard (winhttp.dll single-DLL) start ===
+[SKIPPED ] host 'crashpad_handler.exe' not covered by this proxy -> no modification
+
+[2026-10-29 22:21:47.936] === 项目B Universal Guard (winhttp.dll single-DLL) start ===
+[SKIPPED ] host 'crashpad_handler.exe' not covered by this proxy -> no modification
+
+[2026-10-29 22:21:48.569] === 项目B Universal Guard (winhttp.dll single-DLL) start ===
+[SKIPPED ] host 'crashpad_handler.exe' not covered by this proxy -> no modification
+
+[2026-10-29 22:21:55.121] === 项目B Universal Guard (winhttp.dll single-DLL) start ===
+[+] host=项目BNxMain.exe base=0x7ff71b850000 points=31
+[MISMATCH] nxmain_ad_gate_member_remove_ad_ok_bypass      rva=0x00144463 got=25f843670248 -> SKIP
+[MISMATCH] nxmain_skip_trial_banner_flow                  rva=0x00D29CAF got=89480841b801 -> SKIP
+[MISMATCH] nxmain_resp_expiry_2099_12_31                  rva=0x00D5738A got=cccccccccc -> SKIP
+[MISMATCH] nxmain_resp_member_status_enabled              rva=0x00D5741E got=cccccccccc -> SKIP
+[MISMATCH] nxmain_resp_member_type_vip                    rva=0x00D574AA got=cccccccccc -> SKIP
+[MISMATCH] nxmain_resp_device_count_5                     rva=0x00D57535 got=cccccccccc -> SKIP
+[MISMATCH] nxmain_resp_trial_status_used                  rva=0x00D576E4 got=e836bf2bff -> SKIP
+[MISMATCH] nxmain_resp_privilege_enable                   rva=0x00D579D6 got=8b8d180100 -> SKIP
+[MISMATCH] nxmain_parse_a_device_member_enabled           rva=0x010CAF9E got=5fc3483bf3 -> SKIP
+[MISMATCH] nxmain_parse_a_expiry_2099_12_31               rva=0x010CB0F8 got=4f28488d54 -> SKIP
+[MISMATCH] nxmain_parse_a_member_status_enabled           rva=0x010CB15B got=ff15e7d66e -> SKIP
+[MISMATCH] nxmain_parse_a_trial_status_used               rva=0x010CB21D got=cccccc4889 -> SKIP
+[MISMATCH] nxmain_parse_a_member_type_vip                 rva=0x010CB294 got=8bceff15e4 -> SKIP
+[MISMATCH] nxmain_parse_b_expiry_2099_12_31               rva=0x010CE445 got=ff157da46e -> SKIP
+[MISMATCH] nxmain_parse_b_member_status_enabled           rva=0x010CE4CD got=6c24684883 -> SKIP
+[MISMATCH] nxmain_parse_b_device_member_enabled           rva=0x010CE520 got=4889542410 -> SKIP
+[MISMATCH] nxmain_parse_b_trial_status_used               rva=0x010CE6C1 got=cccccccccc -> SKIP
+[MISMATCH] nxmain_parse_b_member_type_vip                 rva=0x010CE7A8 got=a06e01c744 -> SKIP
+[MISMATCH] nxmain_serialize_a_expiry_2099_12_31           rva=0x010C4E6E got=b741b901000000 -> SKIP
+[MISMATCH] nxmain_serialize_a_member_status_enabled       rva=0x010C4F6F got=fe4881c4b800 -> SKIP
+[MISMATCH] nxmain_serialize_a_member_type_vip             rva=0x010C5060 got=488bc1c3cccc -> SKIP
+[MISMATCH] nxmain_serialize_a_device_member_enabled       rva=0x010C5250 got=488bc1c3cccc -> SKIP
+[MISMATCH] nxmain_serialize_a_trial_status_used           rva=0x010C5322 got=c1c3cccccccc -> SKIP
+[MISMATCH] nxmain_serialize_b_expiry_2099_12_31           rva=0x010D0150 got=5e5f5e5d5bc3cc -> SKIP
+[MISMATCH] nxmain_serialize_b_member_status_enabled       rva=0x010D0252 got=fb0048890648 -> SKIP
+[MISMATCH] nxmain_serialize_b_device_member_enabled       rva=0x010D041D got=d2488bceff15 -> SKIP
+[MISMATCH] nxmain_serialize_b_member_type_vip             rva=0x010D05CE got=48000000e84f -> SKIP
+[MISMATCH] nxmain_serialize_b_trial_status_used           rva=0x010D06AD got=01488bc6488b -> SKIP
+[MISMATCH] nxmain_ui_member_check_direct                  rva=0x00B89CF0 got=ff488d8b30010000e894b64aff488d8b10010000e888 -> SKIP
+[MISMATCH] nxmain_ui_member_check_direct_b                rva=0x00B8B780 got=cccccccccccccccccccccccccccccccc488d0589cf41014889 -> SKIP
+[MISMATCH] nxmain_force_no_upgradeable                    rva=0x00F1B932 got=cccccc -> SKIP
+=== summary: applied=0 already=0 mismatch=31 skipped=0 total=31 ===
+[boot-cost] DllMain->patched elapsed = 0 ms
+[2026-10-29 22:23:47.964] === 项目B Universal Guard (winhttp.dll single-DLL) start ===
+[SKIPPED ] host 'crashpad_handler.exe' not covered by this proxy -> no modification
+
+[2026-10-29 22:39:21.978] === 项目B Universal Guard (winhttp.dll single-DLL) start ===
+[+] host=项目BNxMain.exe base=0x7ff71b850000 points=31
+[MISMATCH] nxmain_ad_gate_member_remove_ad_ok_bypass      rva=0x00144463 got=25f843670248 -> SKIP
+[MISMATCH] nxmain_skip_trial_banner_flow                  rva=0x00D29CAF got=89480841b801 -> SKIP
+[MISMATCH] nxmain_resp_expiry_2099_12_31                  rva=0x00D5738A got=cccccccccc -> SKIP
+[MISMATCH] nxmain_resp_member_status_enabled              rva=0x00D5741E got=cccccccccc -> SKIP
+[MISMATCH] nxmain_resp_member_type_vip                    rva=0x00D574AA got=cccccccccc -> SKIP
+[MISMATCH] nxmain_resp_device_count_5                     rva=0x00D57535 got=cccccccccc -> SKIP
+[MISMATCH] nxmain_resp_trial_status_used                  rva=0x00D576E4 got=e836bf2bff -> SKIP
+[MISMATCH] nxmain_resp_privilege_enable                   rva=0x00D579D6 got=8b8d180100 -> SKIP
+[MISMATCH] nxmain_parse_a_device_member_enabled           rva=0x010CAF9E got=5fc3483bf3 -> SKIP
+[MISMATCH] nxmain_parse_a_expiry_2099_12_31               rva=0x010CB0F8 got=4f28488d54 -> SKIP
+[MISMATCH] nxmain_parse_a_member_status_enabled           rva=0x010CB15B got=ff15e7d66e -> SKIP
+[MISMATCH] nxmain_parse_a_trial_status_used               rva=0x010CB21D got=cccccc4889 -> SKIP
+[MISMATCH] nxmain_parse_a_member_type_vip                 rva=0x010CB294 got=8bceff15e4 -> SKIP
+[MISMATCH] nxmain_parse_b_expiry_2099_12_31               rva=0x010CE445 got=ff157da46e -> SKIP
+[MISMATCH] nxmain_parse_b_member_status_enabled           rva=0x010CE4CD got=6c24684883 -> SKIP
+[MISMATCH] nxmain_parse_b_device_member_enabled           rva=0x010CE520 got=4889542410 -> SKIP
+[MISMATCH] nxmain_parse_b_trial_status_used               rva=0x010CE6C1 got=cccccccccc -> SKIP
+[MISMATCH] nxmain_parse_b_member_type_vip                 rva=0x010CE7A8 got=a06e01c744 -> SKIP
+[MISMATCH] nxmain_serialize_a_expiry_2099_12_31           rva=0x010C4E6E got=b741b901000000 -> SKIP
+[MISMATCH] nxmain_serialize_a_member_status_enabled       rva=0x010C4F6F got=fe4881c4b800 -> SKIP
+[MISMATCH] nxmain_serialize_a_member_type_vip             rva=0x010C5060 got=488bc1c3cccc -> SKIP
+[MISMATCH] nxmain_serialize_a_device_member_enabled       rva=0x010C5250 got=488bc1c3cccc -> SKIP
+[MISMATCH] nxmain_serialize_a_trial_status_used           rva=0x010C5322 got=c1c3cccccccc -> SKIP
+[MISMATCH] nxmain_serialize_b_expiry_2099_12_31           rva=0x010D0150 got=5e5f5e5d5bc3cc -> SKIP
+[MISMATCH] nxmain_serialize_b_member_status_enabled       rva=0x010D0252 got=fb0048890648 -> SKIP
+[MISMATCH] nxmain_serialize_b_device_member_enabled       rva=0x010D041D got=d2488bceff15 -> SKIP
+[MISMATCH] nxmain_serialize_b_member_type_vip             rva=0x010D05CE got=48000000e84f -> SKIP
+[MISMATCH] nxmain_serialize_b_trial_status_used           rva=0x010D06AD got=01488bc6488b -> SKIP
+[MISMATCH] nxmain_ui_member_check_direct                  rva=0x00B89CF0 got=ff488d8b30010000e894b64aff488d8b10010000e888 -> SKIP
+[MISMATCH] nxmain_ui_member_check_direct_b                rva=0x00B8B780 got=cccccccccccccccccccccccccccccccc488d0589cf41014889 -> SKIP
+[MISMATCH] nxmain_force_no_upgradeable                    rva=0x00F1B932 got=cccccc -> SKIP
+=== summary: applied=0 already=0 mismatch=31 skipped=0 total=31 ===
+[boot-cost] DllMain->patched elapsed = 16 ms
+[2026-10-29 22:40:19.580] === 项目B Universal Guard (winhttp.dll single-DLL) start ===
+[+] host=项目BNxMain.exe base=0x7ff71b850000 points=31
+[MISMATCH] nxmain_ad_gate_member_remove_ad_ok_bypass      rva=0x00144463 got=25f843670248 -> SKIP
+[MISMATCH] nxmain_skip_trial_banner_flow                  rva=0x00D29CAF got=89480841b801 -> SKIP
+[MISMATCH] nxmain_resp_expiry_2099_12_31                  rva=0x00D5738A got=cccccccccc -> SKIP
+[MISMATCH] nxmain_resp_member_status_enabled              rva=0x00D5741E got=cccccccccc -> SKIP
+[MISMATCH] nxmain_resp_member_type_vip                    rva=0x00D574AA got=cccccccccc -> SKIP
+[MISMATCH] nxmain_resp_device_count_5                     rva=0x00D57535 got=cccccccccc -> SKIP
+[MISMATCH] nxmain_resp_trial_status_used                  rva=0x00D576E4 got=e836bf2bff -> SKIP
+[MISMATCH] nxmain_resp_privilege_enable                   rva=0x00D579D6 got=8b8d180100 -> SKIP
+[MISMATCH] nxmain_parse_a_device_member_enabled           rva=0x010CAF9E got=5fc3483bf3 -> SKIP
+[MISMATCH] nxmain_parse_a_expiry_2099_12_31               rva=0x010CB0F8 got=4f28488d54 -> SKIP
+[MISMATCH] nxmain_parse_a_member_status_enabled           rva=0x010CB15B got=ff15e7d66e -> SKIP
+[MISMATCH] nxmain_parse_a_trial_status_used               rva=0x010CB21D got=cccccc4889 -> SKIP
+[MISMATCH] nxmain_parse_a_member_type_vip                 rva=0x010CB294 got=8bceff15e4 -> SKIP
+[MISMATCH] nxmain_parse_b_expiry_2099_12_31               rva=0x010CE445 got=ff157da46e -> SKIP
+[MISMATCH] nxmain_parse_b_member_status_enabled           rva=0x010CE4CD got=6c24684883 -> SKIP
+[MISMATCH] nxmain_parse_b_device_member_enabled           rva=0x010CE520 got=4889542410 -> SKIP
+[MISMATCH] nxmain_parse_b_trial_status_used               rva=0x010CE6C1 got=cccccccccc -> SKIP
+[MISMATCH] nxmain_parse_b_member_type_vip                 rva=0x010CE7A8 got=a06e01c744 -> SKIP
+[MISMATCH] nxmain_serialize_a_expiry_2099_12_31           rva=0x010C4E6E got=b741b901000000 -> SKIP
+[MISMATCH] nxmain_serialize_a_member_status_enabled       rva=0x010C4F6F got=fe4881c4b800 -> SKIP
+[MISMATCH] nxmain_serialize_a_member_type_vip             rva=0x010C5060 got=488bc1c3cccc -> SKIP
+[MISMATCH] nxmain_serialize_a_device_member_enabled       rva=0x010C5250 got=488bc1c3cccc -> SKIP
+[MISMATCH] nxmain_serialize_a_trial_status_used           rva=0x010C5322 got=c1c3cccccccc -> SKIP
+[MISMATCH] nxmain_serialize_b_expiry_2099_12_31           rva=0x010D0150 got=5e5f5e5d5bc3cc -> SKIP
+[MISMATCH] nxmain_serialize_b_member_status_enabled       rva=0x010D0252 got=fb0048890648 -> SKIP
+[MISMATCH] nxmain_serialize_b_device_member_enabled       rva=0x010D041D got=d2488bceff15 -> SKIP
+[MISMATCH] nxmain_serialize_b_member_type_vip             rva=0x010D05CE got=48000000e84f -> SKIP
+[MISMATCH] nxmain_serialize_b_trial_status_used           rva=0x010D06AD got=01488bc6488b -> SKIP
+[MISMATCH] nxmain_ui_member_check_direct                  rva=0x00B89CF0 got=ff488d8b30010000e894b64aff488d8b10010000e888 -> SKIP
+[MISMATCH] nxmain_ui_member_check_direct_b                rva=0x00B8B780 got=cccccccccccccccccccccccccccccccc488d0589cf41014889 -> SKIP
+[MISMATCH] nxmain_force_no_upgradeable                    rva=0x00F1B932 got=cccccc -> SKIP
+=== summary: applied=0 already=0 mismatch=31 skipped=0 total=31 ===
+[boot-cost] DllMain->patched elapsed = 0 ms
+[2026-10-30 00:12:45.353] === 项目B Universal Guard (winhttp.dll single-DLL) start ===
+[+] host=项目BNxMain.exe base=0x7ff71b850000 points=31
+[MISMATCH] nxmain_ad_gate_member_remove_ad_ok_bypass      rva=0x00144463 got=25f843670248 -> SKIP
+[MISMATCH] nxmain_skip_trial_banner_flow                  rva=0x00D29CAF got=89480841b801 -> SKIP
+[MISMATCH] nxmain_resp_expiry_2099_12_31                  rva=0x00D5738A got=cccccccccc -> SKIP
+[MISMATCH] nxmain_resp_member_status_enabled              rva=0x00D5741E got=cccccccccc -> SKIP
+[MISMATCH] nxmain_resp_member_type_vip                    rva=0x00D574AA got=cccccccccc -> SKIP
+[MISMATCH] nxmain_resp_device_count_5                     rva=0x00D57535 got=cccccccccc -> SKIP
+[MISMATCH] nxmain_resp_trial_status_used                  rva=0x00D576E4 got=e836bf2bff -> SKIP
+[MISMATCH] nxmain_resp_privilege_enable                   rva=0x00D579D6 got=8b8d180100 -> SKIP
+[MISMATCH] nxmain_parse_a_device_member_enabled           rva=0x010CAF9E got=5fc3483bf3 -> SKIP
+[MISMATCH] nxmain_parse_a_expiry_2099_12_31               rva=0x010CB0F8 got=4f28488d54 -> SKIP
+[MISMATCH] nxmain_parse_a_member_status_enabled           rva=0x010CB15B got=ff15e7d66e -> SKIP
+[MISMATCH] nxmain_parse_a_trial_status_used               rva=0x010CB21D got=cccccc4889 -> SKIP
+[MISMATCH] nxmain_parse_a_member_type_vip                 rva=0x010CB294 got=8bceff15e4 -> SKIP
+[MISMATCH] nxmain_parse_b_expiry_2099_12_31               rva=0x010CE445 got=ff157da46e -> SKIP
+[MISMATCH] nxmain_parse_b_member_status_enabled           rva=0x010CE4CD got=6c24684883 -> SKIP
+[MISMATCH] nxmain_parse_b_device_member_enabled           rva=0x010CE520 got=4889542410 -> SKIP
+[MISMATCH] nxmain_parse_b_trial_status_used               rva=0x010CE6C1 got=cccccccccc -> SKIP
+[MISMATCH] nxmain_parse_b_member_type_vip                 rva=0x010CE7A8 got=a06e01c744 -> SKIP
+[MISMATCH] nxmain_serialize_a_expiry_2099_12_31           rva=0x010C4E6E got=b741b901000000 -> SKIP
+[MISMATCH] nxmain_serialize_a_member_status_enabled       rva=0x010C4F6F got=fe4881c4b800 -> SKIP
+[MISMATCH] nxmain_serialize_a_member_type_vip             rva=0x010C5060 got=488bc1c3cccc -> SKIP
+[MISMATCH] nxmain_serialize_a_device_member_enabled       rva=0x010C5250 got=488bc1c3cccc -> SKIP
+[MISMATCH] nxmain_serialize_a_trial_status_used           rva=0x010C5322 got=c1c3cccccccc -> SKIP
+[MISMATCH] nxmain_serialize_b_expiry_2099_12_31           rva=0x010D0150 got=5e5f5e5d5bc3cc -> SKIP
+[MISMATCH] nxmain_serialize_b_member_status_enabled       rva=0x010D0252 got=fb0048890648 -> SKIP
+[MISMATCH] nxmain_serialize_b_device_member_enabled       rva=0x010D041D got=d2488bceff15 -> SKIP
+[MISMATCH] nxmain_serialize_b_member_type_vip             rva=0x010D05CE got=48000000e84f -> SKIP
+[MISMATCH] nxmain_serialize_b_trial_status_used           rva=0x010D06AD got=01488bc6488b -> SKIP
+[MISMATCH] nxmain_ui_member_check_direct                  rva=0x00B89CF0 got=ff488d8b30010000e894b64aff488d8b10010000e888 -> SKIP
+[MISMATCH] nxmain_ui_member_check_direct_b                rva=0x00B8B780 got=cccccccccccccccccccccccccccccccc488d0589cf41014889 -> SKIP
+[MISMATCH] nxmain_force_no_upgradeable                    rva=0x00F1B932 got=cccccc -> SKIP
+=== summary: applied=0 already=0 mismatch=31 skipped=0 total=31 ===
+[boot-cost] DllMain->patched elapsed = 16 ms
+[2026-10-30 00:12:46.752] === 项目B Universal Guard (winhttp.dll single-DLL) start ===
+[SKIPPED ] host 'crashpad_handler.exe' not covered by this proxy -> no modification
+
+[2026-10-30 00:12:47.157] === 项目B Universal Guard (winhttp.dll single-DLL) start ===
+[+] host=项目BNxService.exe base=0x7ff6ee8d0000 points=19
+[MISMATCH] nxservice_parse_a_device_member_enabled        rva=0x00A15B5E got=cccccccccc -> SKIP
+[MISMATCH] nxservice_parse_a_expiry_2099_12_31            rva=0x00A15CB8 got=cccccccccc -> SKIP
+[MISMATCH] nxservice_parse_a_member_status_enabled        rva=0x00A15D1B got=cccccccccc -> SKIP
+[MISMATCH] nxservice_parse_a_trial_status_used            rva=0x00A15DDD got=33c9ff1553 -> SKIP
+[MISMATCH] nxservice_parse_a_member_type_vip              rva=0x00A15E54 got=cccccccccc -> SKIP
+[MISMATCH] nxservice_parse_a_is_valid_infos_true          rva=0x00A15FF4 got=488b8b9003 -> SKIP
+[MISMATCH] nxservice_parse_b_expiry_2099_12_31            rva=0x00A19005 got=00660f6f0d -> SKIP
+[MISMATCH] nxservice_parse_b_member_status_enabled        rva=0x00A1908D got=00f30f7f8c -> SKIP
+[MISMATCH] nxservice_parse_b_device_member_enabled        rva=0x00A190E0 got=8424900100 -> SKIP
+[MISMATCH] nxservice_parse_b_trial_status_used            rva=0x00A19281 got=000000c603 -> SKIP
+[MISMATCH] nxservice_parse_b_member_type_vip              rva=0x00A19368 got=0000e8ee0d -> SKIP
+[MISMATCH] nxservice_serialize_expiry_2099_12_31          rva=0x00A1AF20 got=c2488b8c24f000 -> SKIP
+[MISMATCH] nxservice_serialize_member_status_enabled      rva=0x00A1B022 got=9c2490000000 -> SKIP
+[MISMATCH] nxservice_serialize_device_member_enabled      rva=0x00A1B1ED got=2458488bc8ff -> SKIP
+[MISMATCH] nxservice_serialize_member_type_vip            rva=0x00A1B39E got=250190488d94 -> SKIP
+[MISMATCH] nxservice_serialize_trial_status_used          rva=0x00A1B47D got=f81f76164c89 -> SKIP
+[MISMATCH] nxservice_serialize_is_valid_infos_true        rva=0x00A1B97B got=cccccccccccccc -> SKIP
+[MISMATCH] nxservice_disable_cloud_member_trial_endpoint  rva=0x010D2C78 got=4da08b05ac1b63008945900fb605a6 -> SKIP
+[MISMATCH] nxservice_force_no_upgradeable                 rva=0x003DB452 got=5c2408 -> SKIP
+=== summary: applied=0 already=0 mismatch=19 skipped=0 total=19 ===
+[boot-cost] DllMain->patched elapsed = 0 ms
+[2026-10-30 00:12:47.325] === 项目B Universal Guard (winhttp.dll single-DLL) start ===
+[SKIPPED ] host 'crashpad_handler.exe' not covered by this proxy -> no modification
+
+[2026-10-30 00:12:47.574] === 项目B Universal Guard (winhttp.dll single-DLL) start ===
+[UPDATER  ] host '项目BNxUpdater.exe' -> 安全默认：不终止进程，仅打补丁 + 传输层拦截（避免破坏启动链）
+[+] host=项目BNxUpdater.exe base=0x7ff7e4db0000 points=1
+[MISMATCH] nxupdater_force_no_upgradeable                 rva=0x00468592 got=ff1530 -> SKIP
+=== summary: applied=0 already=0 mismatch=1 skipped=0 total=1 ===
+[boot-cost] DllMain->patched elapsed = 16 ms
+[2026-10-30 00:12:47.595] === 项目B Universal Guard (winhttp.dll single-DLL) start ===
+[SKIPPED ] host '项目BRemoteBackend.exe' not covered by this proxy -> no modification
+
+[2026-10-30 00:12:47.675] === 项目B Universal Guard (winhttp.dll single-DLL) start ===
+[SKIPPED ] host 'crashpad_handler.exe' not covered by this proxy -> no modification
+
+[2026-10-30 00:12:47.677] === 项目B Universal Guard (winhttp.dll single-DLL) start ===
+[SKIPPED ] host '项目BRemoteHealthd.exe' not covered by this proxy -> no modification
+
+[2026-10-30 00:12:47.757] === 项目B Universal Guard (winhttp.dll single-DLL) start ===
+[SKIPPED ] host 'crashpad_handler.exe' not covered by this proxy -> no modification
+
+[2026-10-30 00:12:48.748] === 项目B Universal Guard (winhttp.dll single-DLL) start ===
+[SKIPPED ] host 'crashpad_handler.exe' not covered by this proxy -> no modification
+
+[2026-10-30 00:12:49.370] === 项目B Universal Guard (winhttp.dll single-DLL) start ===
+[SKIPPED ] host 'crashpad_handler.exe' not covered by this proxy -> no modification
+
+[2026-10-30 00:12:50.132] === 项目B Universal Guard (winhttp.dll single-DLL) start ===
+[SKIPPED ] host 'crashpad_handler.exe' not covered by this proxy -> no modification
+
+[2026-10-30 00:14:49.365] === 项目B Universal Guard (winhttp.dll single-DLL) start ===
+[SKIPPED ] host 'crashpad_handler.exe' not covered by this proxy -> no modification
+
+[2026-10-31 03:16:36.928] === 项目B Universal Guard (winhttp.dll single-DLL) start ===
+[+] host=项目BNxMain.exe base=0x7ff76a8e0000 points=31
+[MISMATCH] nxmain_ad_gate_member_remove_ad_ok_bypass      rva=0x00144463 got=25f843670248 -> SKIP
+[MISMATCH] nxmain_skip_trial_banner_flow                  rva=0x00D29CAF got=89480841b801 -> SKIP
+[MISMATCH] nxmain_resp_expiry_2099_12_31                  rva=0x00D5738A got=cccccccccc -> SKIP
+[MISMATCH] nxmain_resp_member_status_enabled              rva=0x00D5741E got=cccccccccc -> SKIP
+[MISMATCH] nxmain_resp_member_type_vip                    rva=0x00D574AA got=cccccccccc -> SKIP
+[MISMATCH] nxmain_resp_device_count_5                     rva=0x00D57535 got=cccccccccc -> SKIP
+[MISMATCH] nxmain_resp_trial_status_used                  rva=0x00D576E4 got=e836bf2bff -> SKIP
+[MISMATCH] nxmain_resp_privilege_enable                   rva=0x00D579D6 got=8b8d180100 -> SKIP
+[MISMATCH] nxmain_parse_a_device_member_enabled           rva=0x010CAF9E got=5fc3483bf3 -> SKIP
+[MISMATCH] nxmain_parse_a_expiry_2099_12_31               rva=0x010CB0F8 got=4f28488d54 -> SKIP
+[MISMATCH] nxmain_parse_a_member_status_enabled           rva=0x010CB15B got=ff15e7d66e -> SKIP
+[MISMATCH] nxmain_parse_a_trial_status_used               rva=0x010CB21D got=cccccc4889 -> SKIP
+[MISMATCH] nxmain_parse_a_member_type_vip                 rva=0x010CB294 got=8bceff15e4 -> SKIP
+[MISMATCH] nxmain_parse_b_expiry_2099_12_31               rva=0x010CE445 got=ff157da46e -> SKIP
+[MISMATCH] nxmain_parse_b_member_status_enabled           rva=0x010CE4CD got=6c24684883 -> SKIP
+[MISMATCH] nxmain_parse_b_device_member_enabled           rva=0x010CE520 got=4889542410 -> SKIP
+[MISMATCH] nxmain_parse_b_trial_status_used               rva=0x010CE6C1 got=cccccccccc -> SKIP
+[MISMATCH] nxmain_parse_b_member_type_vip                 rva=0x010CE7A8 got=a06e01c744 -> SKIP
+[MISMATCH] nxmain_serialize_a_expiry_2099_12_31           rva=0x010C4E6E got=b741b901000000 -> SKIP
+[MISMATCH] nxmain_serialize_a_member_status_enabled       rva=0x010C4F6F got=fe4881c4b800 -> SKIP
+[MISMATCH] nxmain_serialize_a_member_type_vip             rva=0x010C5060 got=488bc1c3cccc -> SKIP
+[MISMATCH] nxmain_serialize_a_device_member_enabled       rva=0x010C5250 got=488bc1c3cccc -> SKIP
+[MISMATCH] nxmain_serialize_a_trial_status_used           rva=0x010C5322 got=c1c3cccccccc -> SKIP
+[MISMATCH] nxmain_serialize_b_expiry_2099_12_31           rva=0x010D0150 got=5e5f5e5d5bc3cc -> SKIP
+[MISMATCH] nxmain_serialize_b_member_status_enabled       rva=0x010D0252 got=fb0048890648 -> SKIP
+[MISMATCH] nxmain_serialize_b_device_member_enabled       rva=0x010D041D got=d2488bceff15 -> SKIP
+[MISMATCH] nxmain_serialize_b_member_type_vip             rva=0x010D05CE got=48000000e84f -> SKIP
+[MISMATCH] nxmain_serialize_b_trial_status_used           rva=0x010D06AD got=01488bc6488b -> SKIP
+[MISMATCH] nxmain_ui_member_check_direct                  rva=0x00B89CF0 got=ff488d8b30010000e894b64aff488d8b10010000e888 -> SKIP
+[MISMATCH] nxmain_ui_member_check_direct_b                rva=0x00B8B780 got=cccccccccccccccccccccccccccccccc488d0589cf41014889 -> SKIP
+[MISMATCH] nxmain_force_no_upgradeable                    rva=0x00F1B932 got=cccccc -> SKIP
+=== summary: applied=0 already=0 mismatch=31 skipped=0 total=31 ===
+[boot-cost] DllMain->patched elapsed = 15 ms
+[2026-10-31 03:16:38.508] === 项目B Universal Guard (winhttp.dll single-DLL) start ===
+[SKIPPED ] host 'crashpad_handler.exe' not covered by this proxy -> no modification
+
+[2026-10-31 03:16:39.048] === 项目B Universal Guard (winhttp.dll single-DLL) start ===
+[+] host=项目BNxService.exe base=0x7ff6ee8d0000 points=19
+[MISMATCH] nxservice_parse_a_device_member_enabled        rva=0x00A15B5E got=cccccccccc -> SKIP
+[MISMATCH] nxservice_parse_a_expiry_2099_12_31            rva=0x00A15CB8 got=cccccccccc -> SKIP
+[MISMATCH] nxservice_parse_a_member_status_enabled        rva=0x00A15D1B got=cccccccccc -> SKIP
+[MISMATCH] nxservice_parse_a_trial_status_used            rva=0x00A15DDD got=33c9ff1553 -> SKIP
+[MISMATCH] nxservice_parse_a_member_type_vip              rva=0x00A15E54 got=cccccccccc -> SKIP
+[MISMATCH] nxservice_parse_a_is_valid_infos_true          rva=0x00A15FF4 got=488b8b9003 -> SKIP
+[MISMATCH] nxservice_parse_b_expiry_2099_12_31            rva=0x00A19005 got=00660f6f0d -> SKIP
+[MISMATCH] nxservice_parse_b_member_status_enabled        rva=0x00A1908D got=00f30f7f8c -> SKIP
+[MISMATCH] nxservice_parse_b_device_member_enabled        rva=0x00A190E0 got=8424900100 -> SKIP
+[MISMATCH] nxservice_parse_b_trial_status_used            rva=0x00A19281 got=000000c603 -> SKIP
+[MISMATCH] nxservice_parse_b_member_type_vip              rva=0x00A19368 got=0000e8ee0d -> SKIP
+[MISMATCH] nxservice_serialize_expiry_2099_12_31          rva=0x00A1AF20 got=c2488b8c24f000 -> SKIP
+[MISMATCH] nxservice_serialize_member_status_enabled      rva=0x00A1B022 got=9c2490000000 -> SKIP
+[MISMATCH] nxservice_serialize_device_member_enabled      rva=0x00A1B1ED got=2458488bc8ff -> SKIP
+[MISMATCH] nxservice_serialize_member_type_vip            rva=0x00A1B39E got=250190488d94 -> SKIP
+[MISMATCH] nxservice_serialize_trial_status_used          rva=0x00A1B47D got=f81f76164c89 -> SKIP
+[MISMATCH] nxservice_serialize_is_valid_infos_true        rva=0x00A1B97B got=cccccccccccccc -> SKIP
+[MISMATCH] nxservice_disable_cloud_member_trial_endpoint  rva=0x010D2C78 got=4da08b05ac1b63008945900fb605a6 -> SKIP
+[MISMATCH] nxservice_force_no_upgradeable                 rva=0x003DB452 got=5c2408 -> SKIP
+=== summary: applied=0 already=0 mismatch=19 skipped=0 total=19 ===
+[boot-cost] DllMain->patched elapsed = 15 ms
+[2026-10-31 03:16:39.220] === 项目B Universal Guard (winhttp.dll single-DLL) start ===
+[SKIPPED ] host 'crashpad_handler.exe' not covered by this proxy -> no modification
+
+[2026-10-31 03:16:41.068] === 项目B Universal Guard (winhttp.dll single-DLL) start ===
+[UPDATER  ] host '项目BNxUpdater.exe' -> 安全默认：不终止进程，仅打补丁 + 传输层拦截（避免破坏启动链）
+[+] host=项目BNxUpdater.exe base=0x7ff722900000 points=1
+[MISMATCH] nxupdater_force_no_upgradeable                 rva=0x00468592 got=ff1530 -> SKIP
+=== summary: applied=0 already=0 mismatch=1 skipped=0 total=1 ===
+[boot-cost] DllMain->patched elapsed = 0 ms
+[2026-10-31 03:16:41.254] === 项目B Universal Guard (winhttp.dll single-DLL) start ===
+[SKIPPED ] host 'crashpad_handler.exe' not covered by this proxy -> no modification
+
+[2026-10-31 03:16:41.295] === 项目B Universal Guard (winhttp.dll single-DLL) start ===
+[SKIPPED ] host '项目BRemoteBackend.exe' not covered by this proxy -> no modification
+
+[2026-10-31 03:16:41.383] === 项目B Universal Guard (winhttp.dll single-DLL) start ===
+[SKIPPED ] host 'crashpad_handler.exe' not covered by this proxy -> no modification
+
+[2026-10-31 03:16:42.891] === 项目B Universal Guard (winhttp.dll single-DLL) start ===
+[SKIPPED ] host '项目BRemoteHealthd.exe' not covered by this proxy -> no modification
+
+[2026-10-31 03:16:43.314] === 项目B Universal Guard (winhttp.dll single-DLL) start ===
+[SKIPPED ] host 'crashpad_handler.exe' not covered by this proxy -> no modification
+
+[2026-10-31 03:16:43.976] === 项目B Universal Guard (winhttp.dll single-DLL) start ===
+[SKIPPED ] host 'crashpad_handler.exe' not covered by this proxy -> no modification
+
+[2026-10-31 03:16:44.047] === 项目B Universal Guard (winhttp.dll single-DLL) start ===
+[SKIPPED ] host 'crashpad_handler.exe' not covered by this proxy -> no modification
+
+[2026-10-31 03:16:49.550] === 项目B Universal Guard (winhttp.dll single-DLL) start ===
+[+] host=项目BNxMain.exe base=0x7ff76a8e0000 points=31
+[MISMATCH] nxmain_ad_gate_member_remove_ad_ok_bypass      rva=0x00144463 got=25f843670248 -> SKIP
+[MISMATCH] nxmain_skip_trial_banner_flow                  rva=0x00D29CAF got=89480841b801 -> SKIP
+[MISMATCH] nxmain_resp_expiry_2099_12_31                  rva=0x00D5738A got=cccccccccc -> SKIP
+[MISMATCH] nxmain_resp_member_status_enabled              rva=0x00D5741E got=cccccccccc -> SKIP
+[MISMATCH] nxmain_resp_member_type_vip                    rva=0x00D574AA got=cccccccccc -> SKIP
+[MISMATCH] nxmain_resp_device_count_5                     rva=0x00D57535 got=cccccccccc -> SKIP
+[MISMATCH] nxmain_resp_trial_status_used                  rva=0x00D576E4 got=e836bf2bff -> SKIP
+[MISMATCH] nxmain_resp_privilege_enable                   rva=0x00D579D6 got=8b8d180100 -> SKIP
+[MISMATCH] nxmain_parse_a_device_member_enabled           rva=0x010CAF9E got=5fc3483bf3 -> SKIP
+[MISMATCH] nxmain_parse_a_expiry_2099_12_31               rva=0x010CB0F8 got=4f28488d54 -> SKIP
+[MISMATCH] nxmain_parse_a_member_status_enabled           rva=0x010CB15B got=ff15e7d66e -> SKIP
+[MISMATCH] nxmain_parse_a_trial_status_used               rva=0x010CB21D got=cccccc4889 -> SKIP
+[MISMATCH] nxmain_parse_a_member_type_vip                 rva=0x010CB294 got=8bceff15e4 -> SKIP
+[MISMATCH] nxmain_parse_b_expiry_2099_12_31               rva=0x010CE445 got=ff157da46e -> SKIP
+[MISMATCH] nxmain_parse_b_member_status_enabled           rva=0x010CE4CD got=6c24684883 -> SKIP
+[MISMATCH] nxmain_parse_b_device_member_enabled           rva=0x010CE520 got=4889542410 -> SKIP
+[MISMATCH] nxmain_parse_b_trial_status_used               rva=0x010CE6C1 got=cccccccccc -> SKIP
+[MISMATCH] nxmain_parse_b_member_type_vip                 rva=0x010CE7A8 got=a06e01c744 -> SKIP
+[MISMATCH] nxmain_serialize_a_expiry_2099_12_31           rva=0x010C4E6E got=b741b901000000 -> SKIP
+[MISMATCH] nxmain_serialize_a_member_status_enabled       rva=0x010C4F6F got=fe4881c4b800 -> SKIP
+[MISMATCH] nxmain_serialize_a_member_type_vip             rva=0x010C5060 got=488bc1c3cccc -> SKIP
+[MISMATCH] nxmain_serialize_a_device_member_enabled       rva=0x010C5250 got=488bc1c3cccc -> SKIP
+[MISMATCH] nxmain_serialize_a_trial_status_used           rva=0x010C5322 got=c1c3cccccccc -> SKIP
+[MISMATCH] nxmain_serialize_b_expiry_2099_12_31           rva=0x010D0150 got=5e5f5e5d5bc3cc -> SKIP
+[MISMATCH] nxmain_serialize_b_member_status_enabled       rva=0x010D0252 got=fb0048890648 -> SKIP
+[MISMATCH] nxmain_serialize_b_device_member_enabled       rva=0x010D041D got=d2488bceff15 -> SKIP
+[MISMATCH] nxmain_serialize_b_member_type_vip             rva=0x010D05CE got=48000000e84f -> SKIP
+[MISMATCH] nxmain_serialize_b_trial_status_used           rva=0x010D06AD got=01488bc6488b -> SKIP
+[MISMATCH] nxmain_ui_member_check_direct                  rva=0x00B89CF0 got=ff488d8b30010000e894b64aff488d8b10010000e888 -> SKIP
+[MISMATCH] nxmain_ui_member_check_direct_b                rva=0x00B8B780 got=cccccccccccccccccccccccccccccccc488d0589cf41014889 -> SKIP
+[MISMATCH] nxmain_force_no_upgradeable                    rva=0x00F1B932 got=cccccc -> SKIP
+=== summary: applied=0 already=0 mismatch=31 skipped=0 total=31 ===
+[boot-cost] DllMain->patched elapsed = 15 ms
+[2026-10-31 03:18:42.996] === 项目B Universal Guard (winhttp.dll single-DLL) start ===
+[SKIPPED ] host 'crashpad_handler.exe' not covered by this proxy -> no modification
+
+[2026-10-31 04:14:23.410] === 项目B Universal Guard (winhttp.dll single-DLL) start ===
+[+] host=项目BNxMain.exe base=0x7ff76a8e0000 points=31
+[MISMATCH] nxmain_ad_gate_member_remove_ad_ok_bypass      rva=0x00144463 got=25f843670248 -> SKIP
+[MISMATCH] nxmain_skip_trial_banner_flow                  rva=0x00D29CAF got=89480841b801 -> SKIP
+[MISMATCH] nxmain_resp_expiry_2099_12_31                  rva=0x00D5738A got=cccccccccc -> SKIP
+[MISMATCH] nxmain_resp_member_status_enabled              rva=0x00D5741E got=cccccccccc -> SKIP
+[MISMATCH] nxmain_resp_member_type_vip                    rva=0x00D574AA got=cccccccccc -> SKIP
+[MISMATCH] nxmain_resp_device_count_5                     rva=0x00D57535 got=cccccccccc -> SKIP
+[MISMATCH] nxmain_resp_trial_status_used                  rva=0x00D576E4 got=e836bf2bff -> SKIP
+[MISMATCH] nxmain_resp_privilege_enable                   rva=0x00D579D6 got=8b8d180100 -> SKIP
+[MISMATCH] nxmain_parse_a_device_member_enabled           rva=0x010CAF9E got=5fc3483bf3 -> SKIP
+[MISMATCH] nxmain_parse_a_expiry_2099_12_31               rva=0x010CB0F8 got=4f28488d54 -> SKIP
+[MISMATCH] nxmain_parse_a_member_status_enabled           rva=0x010CB15B got=ff15e7d66e -> SKIP
+[MISMATCH] nxmain_parse_a_trial_status_used               rva=0x010CB21D got=cccccc4889 -> SKIP
+[MISMATCH] nxmain_parse_a_member_type_vip                 rva=0x010CB294 got=8bceff15e4 -> SKIP
+[MISMATCH] nxmain_parse_b_expiry_2099_12_31               rva=0x010CE445 got=ff157da46e -> SKIP
+[MISMATCH] nxmain_parse_b_member_status_enabled           rva=0x010CE4CD got=6c24684883 -> SKIP
+[MISMATCH] nxmain_parse_b_device_member_enabled           rva=0x010CE520 got=4889542410 -> SKIP
+[MISMATCH] nxmain_parse_b_trial_status_used               rva=0x010CE6C1 got=cccccccccc -> SKIP
+[MISMATCH] nxmain_parse_b_member_type_vip                 rva=0x010CE7A8 got=a06e01c744 -> SKIP
+[MISMATCH] nxmain_serialize_a_expiry_2099_12_31           rva=0x010C4E6E got=b741b901000000 -> SKIP
+[MISMATCH] nxmain_serialize_a_member_status_enabled       rva=0x010C4F6F got=fe4881c4b800 -> SKIP
+[MISMATCH] nxmain_serialize_a_member_type_vip             rva=0x010C5060 got=488bc1c3cccc -> SKIP
+[MISMATCH] nxmain_serialize_a_device_member_enabled       rva=0x010C5250 got=488bc1c3cccc -> SKIP
+[MISMATCH] nxmain_serialize_a_trial_status_used           rva=0x010C5322 got=c1c3cccccccc -> SKIP
+[MISMATCH] nxmain_serialize_b_expiry_2099_12_31           rva=0x010D0150 got=5e5f5e5d5bc3cc -> SKIP
+[MISMATCH] nxmain_serialize_b_member_status_enabled       rva=0x010D0252 got=fb0048890648 -> SKIP
+[MISMATCH] nxmain_serialize_b_device_member_enabled       rva=0x010D041D got=d2488bceff15 -> SKIP
+[MISMATCH] nxmain_serialize_b_member_type_vip             rva=0x010D05CE got=48000000e84f -> SKIP
+[MISMATCH] nxmain_serialize_b_trial_status_used           rva=0x010D06AD got=01488bc6488b -> SKIP
+[MISMATCH] nxmain_ui_member_check_direct                  rva=0x00B89CF0 got=ff488d8b30010000e894b64aff488d8b10010000e888 -> SKIP
+[MISMATCH] nxmain_ui_member_check_direct_b                rva=0x00B8B780 got=cccccccccccccccccccccccccccccccc488d0589cf41014889 -> SKIP
+[MISMATCH] nxmain_force_no_upgradeable                    rva=0x00F1B932 got=cccccc -> SKIP
+=== summary: applied=0 already=0 mismatch=31 skipped=0 total=31 ===
+[boot-cost] DllMain->patched elapsed = 0 ms
+[2026-10-31 04:14:23.830] === 项目B Universal Guard (winhttp.dll single-DLL) start ===
+[UPDATER  ] host '项目BNxUpdater.exe' -> 安全默认：不终止进程，仅打补丁 + 传输层拦截（避免破坏启动链）
+[+] host=项目BNxUpdater.exe base=0x7ff75a5c0000 points=1
+[MISMATCH] nxupdater_force_no_upgradeable                 rva=0x00468592 got=ff1530 -> SKIP
+=== summary: applied=0 already=0 mismatch=1 skipped=0 total=1 ===
+[boot-cost] DllMain->patched elapsed = 0 ms
+[2026-10-31 04:14:23.998] === 项目B Universal Guard (winhttp.dll single-DLL) start ===
+[SKIPPED ] host 'crashpad_handler.exe' not covered by this proxy -> no modification
+
+[2026-11-02 13:44:15.674] === 项目B Universal Guard (winhttp.dll single-DLL) start ===
+[+] host=项目BNxMain.exe base=0x7ff78cc40000 points=31
+[MISMATCH] nxmain_ad_gate_member_remove_ad_ok_bypass      rva=0x00144463 got=25f843670248 -> SKIP
+[MISMATCH] nxmain_skip_trial_banner_flow                  rva=0x00D29CAF got=89480841b801 -> SKIP
+[MISMATCH] nxmain_resp_expiry_2099_12_31                  rva=0x00D5738A got=cccccccccc -> SKIP
+[MISMATCH] nxmain_resp_member_status_enabled              rva=0x00D5741E got=cccccccccc -> SKIP
+[MISMATCH] nxmain_resp_member_type_vip                    rva=0x00D574AA got=cccccccccc -> SKIP
+[MISMATCH] nxmain_resp_device_count_5                     rva=0x00D57535 got=cccccccccc -> SKIP
+[MISMATCH] nxmain_resp_trial_status_used                  rva=0x00D576E4 got=e836bf2bff -> SKIP
+[MISMATCH] nxmain_resp_privilege_enable                   rva=0x00D579D6 got=8b8d180100 -> SKIP
+[MISMATCH] nxmain_parse_a_device_member_enabled           rva=0x010CAF9E got=5fc3483bf3 -> SKIP
+[MISMATCH] nxmain_parse_a_expiry_2099_12_31               rva=0x010CB0F8 got=4f28488d54 -> SKIP
+[MISMATCH] nxmain_parse_a_member_status_enabled           rva=0x010CB15B got=ff15e7d66e -> SKIP
+[MISMATCH] nxmain_parse_a_trial_status_used               rva=0x010CB21D got=cccccc4889 -> SKIP
+[MISMATCH] nxmain_parse_a_member_type_vip                 rva=0x010CB294 got=8bceff15e4 -> SKIP
+[MISMATCH] nxmain_parse_b_expiry_2099_12_31               rva=0x010CE445 got=ff157da46e -> SKIP
+[MISMATCH] nxmain_parse_b_member_status_enabled           rva=0x010CE4CD got=6c24684883 -> SKIP
+[MISMATCH] nxmain_parse_b_device_member_enabled           rva=0x010CE520 got=4889542410 -> SKIP
+[MISMATCH] nxmain_parse_b_trial_status_used               rva=0x010CE6C1 got=cccccccccc -> SKIP
+[MISMATCH] nxmain_parse_b_member_type_vip                 rva=0x010CE7A8 got=a06e01c744 -> SKIP
+[MISMATCH] nxmain_serialize_a_expiry_2099_12_31           rva=0x010C4E6E got=b741b901000000 -> SKIP
+[MISMATCH] nxmain_serialize_a_member_status_enabled       rva=0x010C4F6F got=fe4881c4b800 -> SKIP
+[MISMATCH] nxmain_serialize_a_member_type_vip             rva=0x010C5060 got=488bc1c3cccc -> SKIP
+[MISMATCH] nxmain_serialize_a_device_member_enabled       rva=0x010C5250 got=488bc1c3cccc -> SKIP
+[MISMATCH] nxmain_serialize_a_trial_status_used           rva=0x010C5322 got=c1c3cccccccc -> SKIP
+[MISMATCH] nxmain_serialize_b_expiry_2099_12_31           rva=0x010D0150 got=5e5f5e5d5bc3cc -> SKIP
+[MISMATCH] nxmain_serialize_b_member_status_enabled       rva=0x010D0252 got=fb0048890648 -> SKIP
+[MISMATCH] nxmain_serialize_b_device_member_enabled       rva=0x010D041D got=d2488bceff15 -> SKIP
+[MISMATCH] nxmain_serialize_b_member_type_vip             rva=0x010D05CE got=48000000e84f -> SKIP
+[MISMATCH] nxmain_serialize_b_trial_status_used           rva=0x010D06AD got=01488bc6488b -> SKIP
+[MISMATCH] nxmain_ui_member_check_direct                  rva=0x00B89CF0 got=ff488d8b30010000e894b64aff488d8b10010000e888 -> SKIP
+[MISMATCH] nxmain_ui_member_check_direct_b                rva=0x00B8B780 got=cccccccccccccccccccccccccccccccc488d0589cf41014889 -> SKIP
+[MISMATCH] nxmain_force_no_upgradeable                    rva=0x00F1B932 got=cccccc -> SKIP
+=== summary: applied=0 already=0 mismatch=31 skipped=0 total=31 ===
+[boot-cost] DllMain->patched elapsed = 0 ms
+[2026-11-02 13:44:17.306] === 项目B Universal Guard (winhttp.dll single-DLL) start ===
+[SKIPPED ] host 'crashpad_handler.exe' not covered by this proxy -> no modification
+
+[2026-11-02 13:44:17.667] === 项目B Universal Guard (winhttp.dll single-DLL) start ===
+[+] host=项目BNxService.exe base=0x7ff661e50000 points=19
+[MISMATCH] nxservice_parse_a_device_member_enabled        rva=0x00A15B5E got=cccccccccc -> SKIP
+[MISMATCH] nxservice_parse_a_expiry_2099_12_31            rva=0x00A15CB8 got=cccccccccc -> SKIP
+[MISMATCH] nxservice_parse_a_member_status_enabled        rva=0x00A15D1B got=cccccccccc -> SKIP
+[MISMATCH] nxservice_parse_a_trial_status_used            rva=0x00A15DDD got=33c9ff1553 -> SKIP
+[MISMATCH] nxservice_parse_a_member_type_vip              rva=0x00A15E54 got=cccccccccc -> SKIP
+[MISMATCH] nxservice_parse_a_is_valid_infos_true          rva=0x00A15FF4 got=488b8b9003 -> SKIP
+[MISMATCH] nxservice_parse_b_expiry_2099_12_31            rva=0x00A19005 got=00660f6f0d -> SKIP
+[MISMATCH] nxservice_parse_b_member_status_enabled        rva=0x00A1908D got=00f30f7f8c -> SKIP
+[MISMATCH] nxservice_parse_b_device_member_enabled        rva=0x00A190E0 got=8424900100 -> SKIP
+[MISMATCH] nxservice_parse_b_trial_status_used            rva=0x00A19281 got=000000c603 -> SKIP
+[MISMATCH] nxservice_parse_b_member_type_vip              rva=0x00A19368 got=0000e8ee0d -> SKIP
+[MISMATCH] nxservice_serialize_expiry_2099_12_31          rva=0x00A1AF20 got=c2488b8c24f000 -> SKIP
+[MISMATCH] nxservice_serialize_member_status_enabled      rva=0x00A1B022 got=9c2490000000 -> SKIP
+[MISMATCH] nxservice_serialize_device_member_enabled      rva=0x00A1B1ED got=2458488bc8ff -> SKIP
+[MISMATCH] nxservice_serialize_member_type_vip            rva=0x00A1B39E got=250190488d94 -> SKIP
+[MISMATCH] nxservice_serialize_trial_status_used          rva=0x00A1B47D got=f81f76164c89 -> SKIP
+[MISMATCH] nxservice_serialize_is_valid_infos_true        rva=0x00A1B97B got=cccccccccccccc -> SKIP
+[MISMATCH] nxservice_disable_cloud_member_trial_endpoint  rva=0x010D2C78 got=4da08b05ac1b63008945900fb605a6 -> SKIP
+[MISMATCH] nxservice_force_no_upgradeable                 rva=0x003DB452 got=5c2408 -> SKIP
+=== summary: applied=0 already=0 mismatch=19 skipped=0 total=19 ===
+[boot-cost] DllMain->patched elapsed = 15 ms
+[2026-11-02 13:44:17.846] === 项目B Universal Guard (winhttp.dll single-DLL) start ===
+[SKIPPED ] host 'crashpad_handler.exe' not covered by this proxy -> no modification
+
+[2026-11-02 13:44:19.765] === 项目B Universal Guard (winhttp.dll single-DLL) start ===
+[SKIPPED ] host '项目BRemoteBackend.exe' not covered by this proxy -> no modification
+
+[2026-11-02 13:44:19.866] === 项目B Universal Guard (winhttp.dll single-DLL) start ===
+[SKIPPED ] host 'crashpad_handler.exe' not covered by this proxy -> no modification
+
+[2026-11-02 13:44:20.449] === 项目B Universal Guard (winhttp.dll single-DLL) start ===
+[SKIPPED ] host 'crashpad_handler.exe' not covered by this proxy -> no modification
+
+[2026-11-02 13:44:21.167] === 项目B Universal Guard (winhttp.dll single-DLL) start ===
+[SKIPPED ] host 'crashpad_handler.exe' not covered by this proxy -> no modification
+
+[2026-11-02 13:44:21.388] === 项目B Universal Guard (winhttp.dll single-DLL) start ===
+[SKIPPED ] host '项目BRemoteHealthd.exe' not covered by this proxy -> no modification
+
+[2026-11-02 13:44:22.457] === 项目B Universal Guard (winhttp.dll single-DLL) start ===
+[SKIPPED ] host 'crashpad_handler.exe' not covered by this proxy -> no modification
+
+[2026-11-02 13:46:20.138] === 项目B Universal Guard (winhttp.dll single-DLL) start ===
+[SKIPPED ] host 'crashpad_handler.exe' not covered by this proxy -> no modification
+
+[2026-11-02 13:47:57.738] === 项目B Universal Guard (winhttp.dll single-DLL) start ===
+[UPDATER  ] host '项目BNxUpdater.exe' -> 安全默认：不终止进程，仅打补丁 + 传输层拦截（避免破坏启动链）
+[+] host=项目BNxUpdater.exe base=0x7ff71e640000 points=1
+[MISMATCH] nxupdater_force_no_upgradeable                 rva=0x00468592 got=ff1530 -> SKIP
+=== summary: applied=0 already=0 mismatch=1 skipped=0 total=1 ===
+[boot-cost] DllMain->patched elapsed = 0 ms
+[2026-11-02 13:47:57.899] === 项目B Universal Guard (winhttp.dll single-DLL) start ===
+[SKIPPED ] host 'crashpad_handler.exe' not covered by this proxy -> no modification
+
+[2026-11-03 09:54:24.227] === 项目B Universal Guard (winhttp.dll single-DLL) start ===
+[+] host=项目BNxMain.exe base=0x7ff6c7f70000 points=31
+[MISMATCH] nxmain_ad_gate_member_remove_ad_ok_bypass      rva=0x00144463 got=25f843670248 -> SKIP
+[MISMATCH] nxmain_skip_trial_banner_flow                  rva=0x00D29CAF got=89480841b801 -> SKIP
+[MISMATCH] nxmain_resp_expiry_2099_12_31                  rva=0x00D5738A got=cccccccccc -> SKIP
+[MISMATCH] nxmain_resp_member_status_enabled              rva=0x00D5741E got=cccccccccc -> SKIP
+[MISMATCH] nxmain_resp_member_type_vip                    rva=0x00D574AA got=cccccccccc -> SKIP
+[MISMATCH] nxmain_resp_device_count_5                     rva=0x00D57535 got=cccccccccc -> SKIP
+[MISMATCH] nxmain_resp_trial_status_used                  rva=0x00D576E4 got=e836bf2bff -> SKIP
+[MISMATCH] nxmain_resp_privilege_enable                   rva=0x00D579D6 got=8b8d180100 -> SKIP
+[MISMATCH] nxmain_parse_a_device_member_enabled           rva=0x010CAF9E got=5fc3483bf3 -> SKIP
+[MISMATCH] nxmain_parse_a_expiry_2099_12_31               rva=0x010CB0F8 got=4f28488d54 -> SKIP
+[MISMATCH] nxmain_parse_a_member_status_enabled           rva=0x010CB15B got=ff15e7d66e -> SKIP
+[MISMATCH] nxmain_parse_a_trial_status_used               rva=0x010CB21D got=cccccc4889 -> SKIP
+[MISMATCH] nxmain_parse_a_member_type_vip                 rva=0x010CB294 got=8bceff15e4 -> SKIP
+[MISMATCH] nxmain_parse_b_expiry_2099_12_31               rva=0x010CE445 got=ff157da46e -> SKIP
+[MISMATCH] nxmain_parse_b_member_status_enabled           rva=0x010CE4CD got=6c24684883 -> SKIP
+[MISMATCH] nxmain_parse_b_device_member_enabled           rva=0x010CE520 got=4889542410 -> SKIP
+[MISMATCH] nxmain_parse_b_trial_status_used               rva=0x010CE6C1 got=cccccccccc -> SKIP
+[MISMATCH] nxmain_parse_b_member_type_vip                 rva=0x010CE7A8 got=a06e01c744 -> SKIP
+[MISMATCH] nxmain_serialize_a_expiry_2099_12_31           rva=0x010C4E6E got=b741b901000000 -> SKIP
+[MISMATCH] nxmain_serialize_a_member_status_enabled       rva=0x010C4F6F got=fe4881c4b800 -> SKIP
+[MISMATCH] nxmain_serialize_a_member_type_vip             rva=0x010C5060 got=488bc1c3cccc -> SKIP
+[MISMATCH] nxmain_serialize_a_device_member_enabled       rva=0x010C5250 got=488bc1c3cccc -> SKIP
+[MISMATCH] nxmain_serialize_a_trial_status_used           rva=0x010C5322 got=c1c3cccccccc -> SKIP
+[MISMATCH] nxmain_serialize_b_expiry_2099_12_31           rva=0x010D0150 got=5e5f5e5d5bc3cc -> SKIP
+[MISMATCH] nxmain_serialize_b_member_status_enabled       rva=0x010D0252 got=fb0048890648 -> SKIP
+[MISMATCH] nxmain_serialize_b_device_member_enabled       rva=0x010D041D got=d2488bceff15 -> SKIP
+[MISMATCH] nxmain_serialize_b_member_type_vip             rva=0x010D05CE got=48000000e84f -> SKIP
+[MISMATCH] nxmain_serialize_b_trial_status_used           rva=0x010D06AD got=01488bc6488b -> SKIP
+[MISMATCH] nxmain_ui_member_check_direct                  rva=0x00B89CF0 got=ff488d8b30010000e894b64aff488d8b10010000e888 -> SKIP
+[MISMATCH] nxmain_ui_member_check_direct_b                rva=0x00B8B780 got=cccccccccccccccccccccccccccccccc488d0589cf41014889 -> SKIP
+[MISMATCH] nxmain_force_no_upgradeable                    rva=0x00F1B932 got=cccccc -> SKIP
+=== summary: applied=0 already=0 mismatch=31 skipped=0 total=31 ===
+[boot-cost] DllMain->patched elapsed = 0 ms
+[2026-11-03 09:54:25.709] === 项目B Universal Guard (winhttp.dll single-DLL) start ===
+[SKIPPED ] host 'crashpad_handler.exe' not covered by this proxy -> no modification
+
+[2026-11-03 09:54:26.166] === 项目B Universal Guard (winhttp.dll single-DLL) start ===
+[+] host=项目BNxService.exe base=0x7ff7f23a0000 points=19
+[MISMATCH] nxservice_parse_a_device_member_enabled        rva=0x00A15B5E got=cccccccccc -> SKIP
+[MISMATCH] nxservice_parse_a_expiry_2099_12_31            rva=0x00A15CB8 got=cccccccccc -> SKIP
+[MISMATCH] nxservice_parse_a_member_status_enabled        rva=0x00A15D1B got=cccccccccc -> SKIP
+[MISMATCH] nxservice_parse_a_trial_status_used            rva=0x00A15DDD got=33c9ff1553 -> SKIP
+[MISMATCH] nxservice_parse_a_member_type_vip              rva=0x00A15E54 got=cccccccccc -> SKIP
+[MISMATCH] nxservice_parse_a_is_valid_infos_true          rva=0x00A15FF4 got=488b8b9003 -> SKIP
+[MISMATCH] nxservice_parse_b_expiry_2099_12_31            rva=0x00A19005 got=00660f6f0d -> SKIP
+[MISMATCH] nxservice_parse_b_member_status_enabled        rva=0x00A1908D got=00f30f7f8c -> SKIP
+[MISMATCH] nxservice_parse_b_device_member_enabled        rva=0x00A190E0 got=8424900100 -> SKIP
+[MISMATCH] nxservice_parse_b_trial_status_used            rva=0x00A19281 got=000000c603 -> SKIP
+[MISMATCH] nxservice_parse_b_member_type_vip              rva=0x00A19368 got=0000e8ee0d -> SKIP
+[MISMATCH] nxservice_serialize_expiry_2099_12_31          rva=0x00A1AF20 got=c2488b8c24f000 -> SKIP
+[MISMATCH] nxservice_serialize_member_status_enabled      rva=0x00A1B022 got=9c2490000000 -> SKIP
+[MISMATCH] nxservice_serialize_device_member_enabled      rva=0x00A1B1ED got=2458488bc8ff -> SKIP
+[MISMATCH] nxservice_serialize_member_type_vip            rva=0x00A1B39E got=250190488d94 -> SKIP
+[MISMATCH] nxservice_serialize_trial_status_used          rva=0x00A1B47D got=f81f76164c89 -> SKIP
+[MISMATCH] nxservice_serialize_is_valid_infos_true        rva=0x00A1B97B got=cccccccccccccc -> SKIP
+[MISMATCH] nxservice_disable_cloud_member_trial_endpoint  rva=0x010D2C78 got=4da08b05ac1b63008945900fb605a6 -> SKIP
+[MISMATCH] nxservice_force_no_upgradeable                 rva=0x003DB452 got=5c2408 -> SKIP
+=== summary: applied=0 already=0 mismatch=19 skipped=0 total=19 ===
+[boot-cost] DllMain->patched elapsed = 15 ms
+[2026-11-03 09:54:26.343] === 项目B Universal Guard (winhttp.dll single-DLL) start ===
+[SKIPPED ] host 'crashpad_handler.exe' not covered by this proxy -> no modification
+
+[2026-11-03 09:54:28.145] === 项目B Universal Guard (winhttp.dll single-DLL) start ===
+[SKIPPED ] host '项目BRemoteBackend.exe' not covered by this proxy -> no modification
+
+[2026-11-03 09:54:28.227] === 项目B Universal Guard (winhttp.dll single-DLL) start ===
+[SKIPPED ] host 'crashpad_handler.exe' not covered by this proxy -> no modification
+
+[2026-11-03 09:54:28.253] === 项目B Universal Guard (winhttp.dll single-DLL) start ===
+[SKIPPED ] host '项目BRemoteHealthd.exe' not covered by this proxy -> no modification
+
+[2026-11-03 09:54:28.981] === 项目B Universal Guard (winhttp.dll single-DLL) start ===
+[SKIPPED ] host 'crashpad_handler.exe' not covered by this proxy -> no modification
+
+[2026-11-03 09:54:29.331] === 项目B Universal Guard (winhttp.dll single-DLL) start ===
+[SKIPPED ] host 'crashpad_handler.exe' not covered by this proxy -> no modification
+
+[2026-11-03 09:54:29.744] === 项目B Universal Guard (winhttp.dll single-DLL) start ===
+[SKIPPED ] host 'crashpad_handler.exe' not covered by this proxy -> no modification
+
+[2026-11-03 09:56:28.589] === 项目B Universal Guard (winhttp.dll single-DLL) start ===
+[SKIPPED ] host 'crashpad_handler.exe' not covered by this proxy -> no modification
+
+[2026-11-04 22:13:21.680] === 项目B Universal Guard (winhttp.dll single-DLL) start ===
+[+] host=项目BNxMain.exe base=0x7ff676f00000 points=31
+[MISMATCH] nxmain_ad_gate_member_remove_ad_ok_bypass      rva=0x00144463 got=25f843670248 -> SKIP
+[MISMATCH] nxmain_skip_trial_banner_flow                  rva=0x00D29CAF got=89480841b801 -> SKIP
+[MISMATCH] nxmain_resp_expiry_2099_12_31                  rva=0x00D5738A got=cccccccccc -> SKIP
+[MISMATCH] nxmain_resp_member_status_enabled              rva=0x00D5741E got=cccccccccc -> SKIP
+[MISMATCH] nxmain_resp_member_type_vip                    rva=0x00D574AA got=cccccccccc -> SKIP
+[MISMATCH] nxmain_resp_device_count_5                     rva=0x00D57535 got=cccccccccc -> SKIP
+[MISMATCH] nxmain_resp_trial_status_used                  rva=0x00D576E4 got=e836bf2bff -> SKIP
+[MISMATCH] nxmain_resp_privilege_enable                   rva=0x00D579D6 got=8b8d180100 -> SKIP
+[MISMATCH] nxmain_parse_a_device_member_enabled           rva=0x010CAF9E got=5fc3483bf3 -> SKIP
+[MISMATCH] nxmain_parse_a_expiry_2099_12_31               rva=0x010CB0F8 got=4f28488d54 -> SKIP
+[MISMATCH] nxmain_parse_a_member_status_enabled           rva=0x010CB15B got=ff15e7d66e -> SKIP
+[MISMATCH] nxmain_parse_a_trial_status_used               rva=0x010CB21D got=cccccc4889 -> SKIP
+[MISMATCH] nxmain_parse_a_member_type_vip                 rva=0x010CB294 got=8bceff15e4 -> SKIP
+[MISMATCH] nxmain_parse_b_expiry_2099_12_31               rva=0x010CE445 got=ff157da46e -> SKIP
+[MISMATCH] nxmain_parse_b_member_status_enabled           rva=0x010CE4CD got=6c24684883 -> SKIP
+[MISMATCH] nxmain_parse_b_device_member_enabled           rva=0x010CE520 got=4889542410 -> SKIP
+[MISMATCH] nxmain_parse_b_trial_status_used               rva=0x010CE6C1 got=cccccccccc -> SKIP
+[MISMATCH] nxmain_parse_b_member_type_vip                 rva=0x010CE7A8 got=a06e01c744 -> SKIP
+[MISMATCH] nxmain_serialize_a_expiry_2099_12_31           rva=0x010C4E6E got=b741b901000000 -> SKIP
+[MISMATCH] nxmain_serialize_a_member_status_enabled       rva=0x010C4F6F got=fe4881c4b800 -> SKIP
+[MISMATCH] nxmain_serialize_a_member_type_vip             rva=0x010C5060 got=488bc1c3cccc -> SKIP
+[MISMATCH] nxmain_serialize_a_device_member_enabled       rva=0x010C5250 got=488bc1c3cccc -> SKIP
+[MISMATCH] nxmain_serialize_a_trial_status_used           rva=0x010C5322 got=c1c3cccccccc -> SKIP
+[MISMATCH] nxmain_serialize_b_expiry_2099_12_31           rva=0x010D0150 got=5e5f5e5d5bc3cc -> SKIP
+[MISMATCH] nxmain_serialize_b_member_status_enabled       rva=0x010D0252 got=fb0048890648 -> SKIP
+[MISMATCH] nxmain_serialize_b_device_member_enabled       rva=0x010D041D got=d2488bceff15 -> SKIP
+[MISMATCH] nxmain_serialize_b_member_type_vip             rva=0x010D05CE got=48000000e84f -> SKIP
+[MISMATCH] nxmain_serialize_b_trial_status_used           rva=0x010D06AD got=01488bc6488b -> SKIP
+[MISMATCH] nxmain_ui_member_check_direct                  rva=0x00B89CF0 got=ff488d8b30010000e894b64aff488d8b10010000e888 -> SKIP
+[MISMATCH] nxmain_ui_member_check_direct_b                rva=0x00B8B780 got=cccccccccccccccccccccccccccccccc488d0589cf41014889 -> SKIP
+[MISMATCH] nxmain_force_no_upgradeable                    rva=0x00F1B932 got=cccccc -> SKIP
+=== summary: applied=0 already=0 mismatch=31 skipped=0 total=31 ===
+[boot-cost] DllMain->patched elapsed = 0 ms
+[2026-11-04 22:13:23.181] === 项目B Universal Guard (winhttp.dll single-DLL) start ===
+[SKIPPED ] host 'crashpad_handler.exe' not covered by this proxy -> no modification
+
+[2026-11-04 22:13:23.695] === 项目B Universal Guard (winhttp.dll single-DLL) start ===
+[+] host=项目BNxService.exe base=0x7ff7f23a0000 points=19
+[MISMATCH] nxservice_parse_a_device_member_enabled        rva=0x00A15B5E got=cccccccccc -> SKIP
+[MISMATCH] nxservice_parse_a_expiry_2099_12_31            rva=0x00A15CB8 got=cccccccccc -> SKIP
+[MISMATCH] nxservice_parse_a_member_status_enabled        rva=0x00A15D1B got=cccccccccc -> SKIP
+[MISMATCH] nxservice_parse_a_trial_status_used            rva=0x00A15DDD got=33c9ff1553 -> SKIP
+[MISMATCH] nxservice_parse_a_member_type_vip              rva=0x00A15E54 got=cccccccccc -> SKIP
+[MISMATCH] nxservice_parse_a_is_valid_infos_true          rva=0x00A15FF4 got=488b8b9003 -> SKIP
+[MISMATCH] nxservice_parse_b_expiry_2099_12_31            rva=0x00A19005 got=00660f6f0d -> SKIP
+[MISMATCH] nxservice_parse_b_member_status_enabled        rva=0x00A1908D got=00f30f7f8c -> SKIP
+[MISMATCH] nxservice_parse_b_device_member_enabled        rva=0x00A190E0 got=8424900100 -> SKIP
+[MISMATCH] nxservice_parse_b_trial_status_used            rva=0x00A19281 got=000000c603 -> SKIP
+[MISMATCH] nxservice_parse_b_member_type_vip              rva=0x00A19368 got=0000e8ee0d -> SKIP
+[MISMATCH] nxservice_serialize_expiry_2099_12_31          rva=0x00A1AF20 got=c2488b8c24f000 -> SKIP
+[MISMATCH] nxservice_serialize_member_status_enabled      rva=0x00A1B022 got=9c2490000000 -> SKIP
+[MISMATCH] nxservice_serialize_device_member_enabled      rva=0x00A1B1ED got=2458488bc8ff -> SKIP
+[MISMATCH] nxservice_serialize_member_type_vip            rva=0x00A1B39E got=250190488d94 -> SKIP
+[MISMATCH] nxservice_serialize_trial_status_used          rva=0x00A1B47D got=f81f76164c89 -> SKIP
+[MISMATCH] nxservice_serialize_is_valid_infos_true        rva=0x00A1B97B got=cccccccccccccc -> SKIP
+[MISMATCH] nxservice_disable_cloud_member_trial_endpoint  rva=0x010D2C78 got=4da08b05ac1b63008945900fb605a6 -> SKIP
+[MISMATCH] nxservice_force_no_upgradeable                 rva=0x003DB452 got=5c2408 -> SKIP
+=== summary: applied=0 already=0 mismatch=19 skipped=0 total=19 ===
+[boot-cost] DllMain->patched elapsed = 0 ms
+[2026-11-04 22:13:23.866] === 项目B Universal Guard (winhttp.dll single-DLL) start ===
+[SKIPPED ] host 'crashpad_handler.exe' not covered by this proxy -> no modification
+
+[2026-11-04 22:13:25.601] === 项目B Universal Guard (winhttp.dll single-DLL) start ===
+[SKIPPED ] host '项目BRemoteBackend.exe' not covered by this proxy -> no modification
+
+[2026-11-04 22:13:25.691] === 项目B Universal Guard (winhttp.dll single-DLL) start ===
+[SKIPPED ] host 'crashpad_handler.exe' not covered by this proxy -> no modification
+
+[2026-11-04 22:13:25.906] === 项目B Universal Guard (winhttp.dll single-DLL) start ===
+[UPDATER  ] host '项目BNxUpdater.exe' -> 安全默认：不终止进程，仅打补丁 + 传输层拦截（避免破坏启动链）
+[+] host=项目BNxUpdater.exe base=0x7ff6f0110000 points=1
+[MISMATCH] nxupdater_force_no_upgradeable                 rva=0x00468592 got=ff1530 -> SKIP
+=== summary: applied=0 already=0 mismatch=1 skipped=0 total=1 ===
+[boot-cost] DllMain->patched elapsed = 16 ms
+[2026-11-04 22:13:26.099] === 项目B Universal Guard (winhttp.dll single-DLL) start ===
+[SKIPPED ] host 'crashpad_handler.exe' not covered by this proxy -> no modification
+
+[2026-11-04 22:13:26.391] === 项目B Universal Guard (winhttp.dll single-DLL) start ===
+[SKIPPED ] host 'crashpad_handler.exe' not covered by this proxy -> no modification
+
+[2026-11-04 22:13:26.776] === 项目B Universal Guard (winhttp.dll single-DLL) start ===
+[UPDATER  ] host '项目BNxUpdater.exe' -> 安全默认：不终止进程，仅打补丁 + 传输层拦截（避免破坏启动链）
+[+] host=项目BNxUpdater.exe base=0x7ff6f0110000 points=1
+[MISMATCH] nxupdater_force_no_upgradeable                 rva=0x00468592 got=ff1530 -> SKIP
+=== summary: applied=0 already=0 mismatch=1 skipped=0 total=1 ===
+[boot-cost] DllMain->patched elapsed = 16 ms
+[2026-11-04 22:13:26.956] === 项目B Universal Guard (winhttp.dll single-DLL) start ===
+[SKIPPED ] host 'crashpad_handler.exe' not covered by this proxy -> no modification
+
+[2026-11-04 22:13:27.214] === 项目B Universal Guard (winhttp.dll single-DLL) start ===
+[SKIPPED ] host 'crashpad_handler.exe' not covered by this proxy -> no modification
+
+[2026-11-04 22:13:27.276] === 项目B Universal Guard (winhttp.dll single-DLL) start ===
+[SKIPPED ] host '项目BRemoteHealthd.exe' not covered by this proxy -> no modification
+
+[2026-11-04 22:13:28.345] === 项目B Universal Guard (winhttp.dll single-DLL) start ===
+[SKIPPED ] host 'crashpad_handler.exe' not covered by this proxy -> no modification
+
+[2026-11-04 22:13:35.717] === 项目B Universal Guard (winhttp.dll single-DLL) start ===
+[SKIPPED ] host 'crashpad_handler.exe' not covered by this proxy -> no modification
+
+[2026-11-04 22:13:35.789] === 项目B Universal Guard (winhttp.dll single-DLL) start ===
+[SKIPPED ] host 'crashpad_handler.exe' not covered by this proxy -> no modification
+
+[2026-11-04 22:13:35.803] === 项目B Universal Guard (winhttp.dll single-DLL) start ===
+[SKIPPED ] host 'crashpad_handler.exe' not covered by this proxy -> no modification
+
+[2026-11-04 22:14:04.111] === 项目B Universal Guard (winhttp.dll single-DLL) start ===
+[+] host=项目BNxMain.exe base=0x7ff676f00000 points=31
+[MISMATCH] nxmain_ad_gate_member_remove_ad_ok_bypass      rva=0x00144463 got=25f843670248 -> SKIP
+[MISMATCH] nxmain_skip_trial_banner_flow                  rva=0x00D29CAF got=89480841b801 -> SKIP
+[MISMATCH] nxmain_resp_expiry_2099_12_31                  rva=0x00D5738A got=cccccccccc -> SKIP
+[MISMATCH] nxmain_resp_member_status_enabled              rva=0x00D5741E got=cccccccccc -> SKIP
+[MISMATCH] nxmain_resp_member_type_vip                    rva=0x00D574AA got=cccccccccc -> SKIP
+[MISMATCH] nxmain_resp_device_count_5                     rva=0x00D57535 got=cccccccccc -> SKIP
+[MISMATCH] nxmain_resp_trial_status_used                  rva=0x00D576E4 got=e836bf2bff -> SKIP
+[MISMATCH] nxmain_resp_privilege_enable                   rva=0x00D579D6 got=8b8d180100 -> SKIP
+[MISMATCH] nxmain_parse_a_device_member_enabled           rva=0x010CAF9E got=5fc3483bf3 -> SKIP
+[MISMATCH] nxmain_parse_a_expiry_2099_12_31               rva=0x010CB0F8 got=4f28488d54 -> SKIP
+[MISMATCH] nxmain_parse_a_member_status_enabled           rva=0x010CB15B got=ff15e7d66e -> SKIP
+[MISMATCH] nxmain_parse_a_trial_status_used               rva=0x010CB21D got=cccccc4889 -> SKIP
+[MISMATCH] nxmain_parse_a_member_type_vip                 rva=0x010CB294 got=8bceff15e4 -> SKIP
+[MISMATCH] nxmain_parse_b_expiry_2099_12_31               rva=0x010CE445 got=ff157da46e -> SKIP
+[MISMATCH] nxmain_parse_b_member_status_enabled           rva=0x010CE4CD got=6c24684883 -> SKIP
+[MISMATCH] nxmain_parse_b_device_member_enabled           rva=0x010CE520 got=4889542410 -> SKIP
+[MISMATCH] nxmain_parse_b_trial_status_used               rva=0x010CE6C1 got=cccccccccc -> SKIP
+[MISMATCH] nxmain_parse_b_member_type_vip                 rva=0x010CE7A8 got=a06e01c744 -> SKIP
+[MISMATCH] nxmain_serialize_a_expiry_2099_12_31           rva=0x010C4E6E got=b741b901000000 -> SKIP
+[MISMATCH] nxmain_serialize_a_member_status_enabled       rva=0x010C4F6F got=fe4881c4b800 -> SKIP
+[MISMATCH] nxmain_serialize_a_member_type_vip             rva=0x010C5060 got=488bc1c3cccc -> SKIP
+[MISMATCH] nxmain_serialize_a_device_member_enabled       rva=0x010C5250 got=488bc1c3cccc -> SKIP
+[MISMATCH] nxmain_serialize_a_trial_status_used           rva=0x010C5322 got=c1c3cccccccc -> SKIP
+[MISMATCH] nxmain_serialize_b_expiry_2099_12_31           rva=0x010D0150 got=5e5f5e5d5bc3cc -> SKIP
+[MISMATCH] nxmain_serialize_b_member_status_enabled       rva=0x010D0252 got=fb0048890648 -> SKIP
+[MISMATCH] nxmain_serialize_b_device_member_enabled       rva=0x010D041D got=d2488bceff15 -> SKIP
+[MISMATCH] nxmain_serialize_b_member_type_vip             rva=0x010D05CE got=48000000e84f -> SKIP
+[MISMATCH] nxmain_serialize_b_trial_status_used           rva=0x010D06AD got=01488bc6488b -> SKIP
+[MISMATCH] nxmain_ui_member_check_direct                  rva=0x00B89CF0 got=ff488d8b30010000e894b64aff488d8b10010000e888 -> SKIP
+[MISMATCH] nxmain_ui_member_check_direct_b                rva=0x00B8B780 got=cccccccccccccccccccccccccccccccc488d0589cf41014889 -> SKIP
+[MISMATCH] nxmain_force_no_upgradeable                    rva=0x00F1B932 got=cccccc -> SKIP
+=== summary: applied=0 already=0 mismatch=31 skipped=0 total=31 ===
+[boot-cost] DllMain->patched elapsed = 16 ms
+[2026-11-04 22:14:05.535] === 项目B Universal Guard (winhttp.dll single-DLL) start ===
+[SKIPPED ] host 'crashpad_handler.exe' not covered by this proxy -> no modification
+
+[2026-11-04 22:14:05.982] === 项目B Universal Guard (winhttp.dll single-DLL) start ===
+[+] host=项目BNxService.exe base=0x7ff7f23a0000 points=19
+[MISMATCH] nxservice_parse_a_device_member_enabled        rva=0x00A15B5E got=cccccccccc -> SKIP
+[MISMATCH] nxservice_parse_a_expiry_2099_12_31            rva=0x00A15CB8 got=cccccccccc -> SKIP
+[MISMATCH] nxservice_parse_a_member_status_enabled        rva=0x00A15D1B got=cccccccccc -> SKIP
+[MISMATCH] nxservice_parse_a_trial_status_used            rva=0x00A15DDD got=33c9ff1553 -> SKIP
+[MISMATCH] nxservice_parse_a_member_type_vip              rva=0x00A15E54 got=cccccccccc -> SKIP
+[MISMATCH] nxservice_parse_a_is_valid_infos_true          rva=0x00A15FF4 got=488b8b9003 -> SKIP
+[MISMATCH] nxservice_parse_b_expiry_2099_12_31            rva=0x00A19005 got=00660f6f0d -> SKIP
+[MISMATCH] nxservice_parse_b_member_status_enabled        rva=0x00A1908D got=00f30f7f8c -> SKIP
+[MISMATCH] nxservice_parse_b_device_member_enabled        rva=0x00A190E0 got=8424900100 -> SKIP
+[MISMATCH] nxservice_parse_b_trial_status_used            rva=0x00A19281 got=000000c603 -> SKIP
+[MISMATCH] nxservice_parse_b_member_type_vip              rva=0x00A19368 got=0000e8ee0d -> SKIP
+[MISMATCH] nxservice_serialize_expiry_2099_12_31          rva=0x00A1AF20 got=c2488b8c24f000 -> SKIP
+[MISMATCH] nxservice_serialize_member_status_enabled      rva=0x00A1B022 got=9c2490000000 -> SKIP
+[MISMATCH] nxservice_serialize_device_member_enabled      rva=0x00A1B1ED got=2458488bc8ff -> SKIP
+[MISMATCH] nxservice_serialize_member_type_vip            rva=0x00A1B39E got=250190488d94 -> SKIP
+[MISMATCH] nxservice_serialize_trial_status_used          rva=0x00A1B47D got=f81f76164c89 -> SKIP
+[MISMATCH] nxservice_serialize_is_valid_infos_true        rva=0x00A1B97B got=cccccccccccccc -> SKIP
+[MISMATCH] nxservice_disable_cloud_member_trial_endpoint  rva=0x010D2C78 got=4da08b05ac1b63008945900fb605a6 -> SKIP
+[MISMATCH] nxservice_force_no_upgradeable                 rva=0x003DB452 got=5c2408 -> SKIP
+=== summary: applied=0 already=0 mismatch=19 skipped=0 total=19 ===
+[boot-cost] DllMain->patched elapsed = 16 ms
+[2026-11-04 22:14:06.162] === 项目B Universal Guard (winhttp.dll single-DLL) start ===
+[SKIPPED ] host 'crashpad_handler.exe' not covered by this proxy -> no modification
+
+[2026-11-04 22:14:06.345] === 项目B Universal Guard (winhttp.dll single-DLL) start ===
+[SKIPPED ] host '项目BRemoteBackend.exe' not covered by this proxy -> no modification
+
+[2026-11-04 22:14:06.421] === 项目B Universal Guard (winhttp.dll single-DLL) start ===
+[SKIPPED ] host '项目BRemoteHealthd.exe' not covered by this proxy -> no modification
+
+[2026-11-04 22:14:06.440] === 项目B Universal Guard (winhttp.dll single-DLL) start ===
+[SKIPPED ] host 'crashpad_handler.exe' not covered by this proxy -> no modification
+
+[2026-11-04 22:14:06.470] === 项目B Universal Guard (winhttp.dll single-DLL) start ===
+[UPDATER  ] host '项目BNxUpdater.exe' -> 安全默认：不终止进程，仅打补丁 + 传输层拦截（避免破坏启动链）
+[+] host=项目BNxUpdater.exe base=0x7ff6f0110000 points=1
+[MISMATCH] nxupdater_force_no_upgradeable                 rva=0x00468592 got=ff1530 -> SKIP
+=== summary: applied=0 already=0 mismatch=1 skipped=0 total=1 ===
+[boot-cost] DllMain->patched elapsed = 0 ms
+[2026-11-04 22:14:06.662] === 项目B Universal Guard (winhttp.dll single-DLL) start ===
+[SKIPPED ] host 'crashpad_handler.exe' not covered by this proxy -> no modification
+
+[2026-11-04 22:14:07.497] === 项目B Universal Guard (winhttp.dll single-DLL) start ===
+[SKIPPED ] host 'crashpad_handler.exe' not covered by this proxy -> no modification
+
+[2026-11-04 22:14:08.161] === 项目B Universal Guard (winhttp.dll single-DLL) start ===
+[SKIPPED ] host 'crashpad_handler.exe' not covered by this proxy -> no modification
+
+[2026-11-04 22:14:08.314] === 项目B Universal Guard (winhttp.dll single-DLL) start ===
+[UPDATER  ] host '项目BNxUpdater.exe' -> 安全默认：不终止进程，仅打补丁 + 传输层拦截（避免破坏启动链）
+[+] host=项目BNxUpdater.exe base=0x7ff6f0110000 points=1
+[MISMATCH] nxupdater_force_no_upgradeable                 rva=0x00468592 got=ff1530 -> SKIP
+=== summary: applied=0 already=0 mismatch=1 skipped=0 total=1 ===
+[boot-cost] DllMain->patched elapsed = 16 ms
+[2026-11-04 22:14:08.504] === 项目B Universal Guard (winhttp.dll single-DLL) start ===
+[SKIPPED ] host 'crashpad_handler.exe' not covered by this proxy -> no modification
+
+[2026-11-04 22:14:08.888] === 项目B Universal Guard (winhttp.dll single-DLL) start ===
+[SKIPPED ] host 'crashpad_handler.exe' not covered by this proxy -> no modification
+
+[2026-11-04 22:16:08.197] === 项目B Universal Guard (winhttp.dll single-DLL) start ===
+[SKIPPED ] host 'crashpad_handler.exe' not covered by this proxy -> no modification
+

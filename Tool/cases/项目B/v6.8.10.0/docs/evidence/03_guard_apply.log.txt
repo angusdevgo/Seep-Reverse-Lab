@@ -1,0 +1,95 @@
+[2026-11-04 22:31:54.898] === 项目B Universal Guard (winhttp.dll single-DLL) start ===
+[+] host=项目BNxMain.exe base=0x7ff698830000 points=29
+[APPLIED ] nxmain_ad_gate_member_remove_ad_ok_bypass      rva=0x00273DB3  6/6 bytes
+[APPLIED ] nxmain_skip_trial_banner_flow                  rva=0x01378B0F  6/6 bytes
+[APPLIED ] nxmain_resp_expiry_2099_12_31                  rva=0x013B930A  5/5 bytes
+[APPLIED ] nxmain_resp_member_status_enabled              rva=0x013B939E  5/5 bytes
+[APPLIED ] nxmain_resp_member_type_vip                    rva=0x013B942A  5/5 bytes
+[APPLIED ] nxmain_resp_device_count_5                     rva=0x013B94B5  5/5 bytes
+[APPLIED ] nxmain_resp_trial_status_used                  rva=0x013B9664  5/5 bytes
+[APPLIED ] nxmain_resp_privilege_enable                   rva=0x013B9956  5/5 bytes
+[APPLIED ] nxmain_parse_a_expiry_2099_12_31               rva=0x018BE358  5/5 bytes
+[APPLIED ] nxmain_parse_a_member_status_enabled           rva=0x018BE3BB  5/5 bytes
+[APPLIED ] nxmain_parse_a_trial_status_used               rva=0x018BE47D  5/5 bytes
+[APPLIED ] nxmain_parse_a_member_type_vip                 rva=0x018BE4F4  5/5 bytes
+[APPLIED ] nxmain_parse_b_expiry_2099_12_31               rva=0x018C17C5  5/5 bytes
+[APPLIED ] nxmain_parse_b_member_status_enabled           rva=0x018C184D  5/5 bytes
+[APPLIED ] nxmain_parse_b_device_member_enabled           rva=0x018C18A0  5/5 bytes
+[APPLIED ] nxmain_parse_b_member_type_vip                 rva=0x018C1B28  5/5 bytes
+[APPLIED ] nxmain_serialize_a_expiry_2099_12_31           rva=0x018B809E  7/7 bytes
+[APPLIED ] nxmain_serialize_a_member_status_enabled       rva=0x018B819F  6/6 bytes
+[APPLIED ] nxmain_serialize_a_member_type_vip             rva=0x018B8290  6/6 bytes
+[APPLIED ] nxmain_serialize_a_device_member_enabled       rva=0x018B8480  6/6 bytes
+[APPLIED ] nxmain_serialize_a_trial_status_used           rva=0x018B8552  6/6 bytes
+[APPLIED ] nxmain_serialize_b_expiry_2099_12_31           rva=0x018C34D0  7/7 bytes
+[APPLIED ] nxmain_serialize_b_member_status_enabled       rva=0x018C35D2  6/6 bytes
+[APPLIED ] nxmain_serialize_b_device_member_enabled       rva=0x018C379D  6/6 bytes
+[APPLIED ] nxmain_serialize_b_member_type_vip             rva=0x018C394E  6/6 bytes
+[APPLIED ] nxmain_serialize_b_trial_status_used           rva=0x018C3A2D  6/6 bytes
+[APPLIED ] nxmain_ui_member_check_direct                  rva=0x0116C6F0  3/22 bytes
+[APPLIED ] nxmain_ui_member_check_direct_b                rva=0x0116E180  3/25 bytes
+[APPLIED ] nxmain_force_no_upgradeable                    rva=0x01637DC2  3/3 bytes
+=== summary: applied=29 already=0 mismatch=0 skipped=0 total=29 ===
+[boot-cost] DllMain->patched elapsed = 0 ms
+[2026-11-04 22:31:56.247] === 项目B Universal Guard (winhttp.dll single-DLL) start ===
+[SKIPPED ] host 'crashpad_handler.exe' not covered by this proxy -> no modification
+
+[2026-11-04 22:31:56.721] === 项目B Universal Guard (winhttp.dll single-DLL) start ===
+[+] host=项目BNxService.exe base=0x7ff7f23a0000 points=22
+[APPLIED ] nxservice_parse_a_expiry_2099_12_31            rva=0x00E86288  5/5 bytes
+[APPLIED ] nxservice_parse_a_member_status_enabled        rva=0x00E862EB  5/5 bytes
+[APPLIED ] nxservice_parse_a_trial_status_used            rva=0x00E863AD  5/5 bytes
+[APPLIED ] nxservice_parse_a_member_type_vip              rva=0x00E86424  5/5 bytes
+[APPLIED ] nxservice_parse_a_is_valid_infos_true          rva=0x00E865C4  5/5 bytes
+[APPLIED ] nxservice_parse_b_expiry_2099_12_31            rva=0x00E896F5  5/5 bytes
+[APPLIED ] nxservice_parse_b_member_status_enabled        rva=0x00E8977D  5/5 bytes
+[APPLIED ] nxservice_parse_b_device_member_enabled        rva=0x00E897D0  5/5 bytes
+[APPLIED ] nxservice_parse_b_member_type_vip              rva=0x00E89A58  5/5 bytes
+[APPLIED ] nxservice_serialize_expiry_2099_12_31          rva=0x00E7FFCE  7/7 bytes
+[APPLIED ] nxservice_serialize_member_status_enabled      rva=0x00E800CF  6/6 bytes
+[APPLIED ] nxservice_serialize_member_type_vip            rva=0x00E801C0  6/6 bytes
+[APPLIED ] nxservice_serialize_device_member_enabled      rva=0x00E803B0  6/6 bytes
+[APPLIED ] nxservice_serialize_trial_status_used          rva=0x00E80482  6/6 bytes
+[APPLIED ] nxservice_serialize_expiry_b_2099_12_31        rva=0x00E8B640  7/7 bytes
+[APPLIED ] nxservice_serialize_member_status_b_enabled    rva=0x00E8B742  6/6 bytes
+[APPLIED ] nxservice_serialize_device_member_b_enabled    rva=0x00E8B90D  6/6 bytes
+[APPLIED ] nxservice_serialize_member_type_b_vip          rva=0x00E8BABE  6/6 bytes
+[APPLIED ] nxservice_serialize_trial_status_b_used        rva=0x00E8BB9D  6/6 bytes
+[APPLIED ] nxservice_serialize_is_valid_infos_true        rva=0x00E8C09B  7/7 bytes
+[APPLIED ] nxservice_disable_cloud_member_trial_endpoint  rva=0x01735E58  15/15 bytes
+[APPLIED ] nxservice_force_no_upgradeable                 rva=0x005CDB32  3/3 bytes
+=== summary: applied=22 already=0 mismatch=0 skipped=0 total=22 ===
+[boot-cost] DllMain->patched elapsed = 0 ms
+[2026-11-04 22:31:56.975] === 项目B Universal Guard (winhttp.dll single-DLL) start ===
+[SKIPPED ] host '项目BRemoteBackend.exe' not covered by this proxy -> no modification
+
+[2026-11-04 22:31:57.041] === 项目B Universal Guard (winhttp.dll single-DLL) start ===
+[SKIPPED ] host '项目BRemoteHealthd.exe' not covered by this proxy -> no modification
+
+[2026-11-04 22:31:57.072] === 项目B Universal Guard (winhttp.dll single-DLL) start ===
+[SKIPPED ] host 'crashpad_handler.exe' not covered by this proxy -> no modification
+
+[2026-11-04 22:31:57.116] === 项目B Universal Guard (winhttp.dll single-DLL) start ===
+[UPDATER  ] host '项目BNxUpdater.exe' -> 安全默认：不终止进程，仅打补丁 + 传输层拦截（避免破坏启动链）
+[+] host=项目BNxUpdater.exe base=0x7ff67d230000 points=1
+[APPLIED ] nxupdater_force_no_upgradeable                 rva=0x0069EFA2  3/3 bytes
+=== summary: applied=1 already=0 mismatch=0 skipped=0 total=1 ===
+[boot-cost] DllMain->patched elapsed = 0 ms
+[2026-11-04 22:31:57.508] === 项目B Universal Guard (winhttp.dll single-DLL) start ===
+[SKIPPED ] host 'crashpad_handler.exe' not covered by this proxy -> no modification
+
+[2026-11-04 22:31:58.100] === 项目B Universal Guard (winhttp.dll single-DLL) start ===
+[SKIPPED ] host 'crashpad_handler.exe' not covered by this proxy -> no modification
+
+[2026-11-04 22:31:58.115] === 项目B Universal Guard (winhttp.dll single-DLL) start ===
+[SKIPPED ] host 'crashpad_handler.exe' not covered by this proxy -> no modification
+
+[2026-11-04 22:31:59.147] === 项目B Universal Guard (winhttp.dll single-DLL) start ===
+[SKIPPED ] host 'crashpad_handler.exe' not covered by this proxy -> no modification
+
+[2026-11-04 22:31:59.871] === 项目B Universal Guard (winhttp.dll single-DLL) start ===
+[SKIPPED ] host 'crashpad_handler.exe' not covered by this proxy -> no modification
+
+[2026-11-04 22:33:59.146] === 项目B Universal Guard (winhttp.dll single-DLL) start ===
+[SKIPPED ] host 'crashpad_handler.exe' not covered by this proxy -> no modification
+

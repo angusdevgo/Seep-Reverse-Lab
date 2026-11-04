@@ -1,0 +1,55 @@
+host,id,rva,file_offset,orig,patch,optional,desc
+项目BNxMain.exe,nxmain_ad_gate_member_remove_ad_ok_bypass,0x00273DB3,0x002731B3,0f84b9010000,909090909090,0,广告决策闸门：强制穿透到 member_remove_ad_ok 信号发射
+项目BNxMain.exe,nxmain_skip_trial_banner_flow,0x01378B0F,0x01377F0F,0f8eed000000,e9ee00000090,0,AccountFlowManager：跳过试用/购买引导流程
+项目BNxMain.exe,nxmain_resp_expiry_2099_12_31,0x013B930A,0x013B870A,e87740cbfe,b87fe685f4,0,回包 member_expired_at -> 2099-12-31
+项目BNxMain.exe,nxmain_resp_member_status_enabled,0x013B939E,0x013B879E,e83be9c4fe,b801000000,0,回包 member_status -> 1
+项目BNxMain.exe,nxmain_resp_member_type_vip,0x013B942A,0x013B882A,e8afe8c4fe,b801000000,0,回包 member_type -> 1 (VIP)
+项目BNxMain.exe,nxmain_resp_device_count_5,0x013B94B5,0x013B88B5,e824e8c4fe,b805000000,0,回包 enabled_device_count -> 5
+项目BNxMain.exe,nxmain_resp_trial_status_used,0x013B9664,0x013B8A64,e875e6c4fe,b802000000,0,回包 member_trial_status -> 2 (已用)
+项目BNxMain.exe,nxmain_resp_privilege_enable,0x013B9956,0x013B8D56,e883e3c4fe,b801000000,0,回包 member_privilege_enable -> 1
+项目BNxMain.exe,nxmain_parse_a_expiry_2099_12_31,0x018BE358,0x018BD758,e829f07afe,b87fe685f4,0,解析A member_expired_time
+项目BNxMain.exe,nxmain_parse_a_member_status_enabled,0x018BE3BB,0x018BD7BB,e81e9974fe,b801000000,0,解析A member_status
+项目BNxMain.exe,nxmain_parse_a_trial_status_used,0x018BE47D,0x018BD87D,e85c9874fe,b802000000,0,解析A member_trail_status
+项目BNxMain.exe,nxmain_parse_a_member_type_vip,0x018BE4F4,0x018BD8F4,e8e59774fe,b801000000,0,解析A member_type
+项目BNxMain.exe,nxmain_parse_b_expiry_2099_12_31,0x018C17C5,0x018C0BC5,e8bcbb7afe,b87fe685f4,0,解析B member_expired_time
+项目BNxMain.exe,nxmain_parse_b_member_status_enabled,0x018C184D,0x018C0C4D,e88c6474fe,b801000000,0,解析B member_status
+项目BNxMain.exe,nxmain_parse_b_device_member_enabled,0x018C18A0,0x018C0CA0,e8396474fe,b801000000,0,解析B device_member_status
+项目BNxMain.exe,nxmain_parse_b_member_type_vip,0x018C1B28,0x018C0F28,e8b16174fe,b801000000,0,解析B member_type
+项目BNxMain.exe,nxmain_serialize_a_expiry_2099_12_31,0x018B809E,0x018B749E,488b85c8020000,b87fe685f49090,0,序列化A 到期时间
+项目BNxMain.exe,nxmain_serialize_a_member_status_enabled,0x018B819F,0x018B759F,8b85d4020000,b80100000090,0,序列化A 会员状态
+项目BNxMain.exe,nxmain_serialize_a_member_type_vip,0x018B8290,0x018B7690,8b85d8020000,b80100000090,0,序列化A 会员类型
+项目BNxMain.exe,nxmain_serialize_a_device_member_enabled,0x018B8480,0x018B7880,8b8508030000,b80100000090,0,序列化A 设备权益
+项目BNxMain.exe,nxmain_serialize_a_trial_status_used,0x018B8552,0x018B7952,8b8500030000,b80200000090,0,序列化A 试用状态
+项目BNxMain.exe,nxmain_serialize_b_expiry_2099_12_31,0x018C34D0,0x018C28D0,488b8d78030000,b97fe685f49090,0,序列化B 到期时间
+项目BNxMain.exe,nxmain_serialize_b_member_status_enabled,0x018C35D2,0x018C29D2,8b8d84030000,b90100000090,0,序列化B 会员状态
+项目BNxMain.exe,nxmain_serialize_b_device_member_enabled,0x018C379D,0x018C2B9D,8b8d88030000,b90100000090,0,序列化B 设备权益
+项目BNxMain.exe,nxmain_serialize_b_member_type_vip,0x018C394E,0x018C2D4E,8b8db0030000,b90100000090,0,序列化B 会员类型
+项目BNxMain.exe,nxmain_serialize_b_trial_status_used,0x018C3A2D,0x018C2E2D,8b8db4030000,b90200000090,0,序列化B 试用状态
+项目BNxMain.exe,nxmain_ui_member_check_direct,0x0116C6F0,0x0116BAF0,488b89480100004885c97407488b0148ff601832c0c3,b001c3,0,UI 会员判定直返真
+项目BNxMain.exe,nxmain_ui_member_check_direct_b,0x0116E180,0x0116D580,488b89c80100004885c9740a488b0148ffa0b800000032c0c3,b001c3,1,UI 第二会员判定端点
+项目BNxMain.exe,nxmain_force_no_upgradeable,0x01637DC2,0x016371C2,40b601,4030f6,0,is_upgradeable 强制假（主进程）
+项目BNxService.exe,nxservice_parse_a_expiry_2099_12_31,0x00E86288,0x00E85688,e854031dff,b87fe685f4,0,服务解析A member_expired_time
+项目BNxService.exe,nxservice_parse_a_member_status_enabled,0x00E862EB,0x00E856EB,e8500318ff,b801000000,0,服务解析A member_status
+项目BNxService.exe,nxservice_parse_a_trial_status_used,0x00E863AD,0x00E857AD,e88e0218ff,b802000000,0,服务解析A member_trail_status
+项目BNxService.exe,nxservice_parse_a_member_type_vip,0x00E86424,0x00E85824,e8170218ff,b801000000,0,服务解析A member_type
+项目BNxService.exe,nxservice_parse_a_is_valid_infos_true,0x00E865C4,0x00E859C4,e8e45a19ff,b001909090,0,服务解析A is_valid_infos 置真
+项目BNxService.exe,nxservice_parse_b_expiry_2099_12_31,0x00E896F5,0x00E88AF5,e8e7ce1cff,b87fe685f4,0,服务解析B member_expired_time
+项目BNxService.exe,nxservice_parse_b_member_status_enabled,0x00E8977D,0x00E88B7D,e8bece17ff,b801000000,0,服务解析B member_status
+项目BNxService.exe,nxservice_parse_b_device_member_enabled,0x00E897D0,0x00E88BD0,e86bce17ff,b801000000,0,服务解析B device_member_status
+项目BNxService.exe,nxservice_parse_b_member_type_vip,0x00E89A58,0x00E88E58,e8e3cb17ff,b801000000,0,服务解析B member_type
+项目BNxService.exe,nxservice_serialize_expiry_2099_12_31,0x00E7FFCE,0x00E7F3CE,488b85c8020000,b87fe685f49090,0,服务序列化A 到期时间
+项目BNxService.exe,nxservice_serialize_member_status_enabled,0x00E800CF,0x00E7F4CF,8b85d4020000,b80100000090,0,服务序列化A 会员状态
+项目BNxService.exe,nxservice_serialize_member_type_vip,0x00E801C0,0x00E7F5C0,8b85d8020000,b80100000090,0,服务序列化A 会员类型
+项目BNxService.exe,nxservice_serialize_device_member_enabled,0x00E803B0,0x00E7F7B0,8b8508030000,b80100000090,0,服务序列化A 设备权益
+项目BNxService.exe,nxservice_serialize_trial_status_used,0x00E80482,0x00E7F882,8b8500030000,b80200000090,0,服务序列化A 试用状态
+项目BNxService.exe,nxservice_serialize_expiry_b_2099_12_31,0x00E8B640,0x00E8AA40,488b8d78030000,b97fe685f49090,0,服务序列化B 到期时间
+项目BNxService.exe,nxservice_serialize_member_status_b_enabled,0x00E8B742,0x00E8AB42,8b8d84030000,b90100000090,0,服务序列化B 会员状态
+项目BNxService.exe,nxservice_serialize_device_member_b_enabled,0x00E8B90D,0x00E8AD0D,8b8d88030000,b90100000090,0,服务序列化B 设备权益
+项目BNxService.exe,nxservice_serialize_member_type_b_vip,0x00E8BABE,0x00E8AEBE,8b8db0030000,b90100000090,0,服务序列化B 会员类型
+项目BNxService.exe,nxservice_serialize_trial_status_b_used,0x00E8BB9D,0x00E8AF9D,8b8db4030000,b90200000090,0,服务序列化B 试用状态
+项目BNxService.exe,nxservice_serialize_is_valid_infos_true,0x00E8C09B,0x00E8B49B,0fb68d32040000,b1019090909090,0,服务序列化 is_valid_infos 置真
+项目BNxService.exe,nxservice_disable_cloud_member_trial_endpoint,0x01735E58,0x01734458,76312f6d656d6265722f747269616c,76312f6d656d6265722f6c6f63616c,0,端点降级 v1/member/trial -> local
+项目BNxService.exe,nxservice_force_no_upgradeable,0x005CDB32,0x005CCF32,40b601,4030f6,0,is_upgradeable 强制假（服务）
+项目BRemoteService.exe,nxremote_is_current_session_remote_session_false,0x0018AFC0,0x0018A3C0,4883ec58,33c0c390,0,platform::isCurrentSessionRemoteSession 恒假
+项目BRemoteService.exe,nxremote_skip_healthd_launch,0x000D3E60,0x000D3260,48895c2410,c390909090,0,阻断 Healthd 守护进程拉起
+项目BNxUpdater.exe,nxupdater_force_no_upgradeable,0x0069EFA2,0x0069E3A2,40b601,4030f6,0,is_upgradeable 强制假（更新器）

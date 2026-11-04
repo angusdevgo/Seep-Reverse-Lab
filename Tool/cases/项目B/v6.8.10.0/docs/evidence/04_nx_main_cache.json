@@ -1,0 +1,45 @@
+{
+  "nxmain": {
+    "android15_guide_dialog_shown": "1",
+    "first_laucnh": "false",
+    "is_member_theme": "1",
+    "last_use": {
+      "logged_in_user_id": "<user_id>",
+      "logged_in_user_member_type": "1"
+    },
+    "member_status": {
+      "last_info": {
+        "device_member_status": "1",
+        "user_id": "<user_id>"
+      }
+    },
+    "message_id": {
+      "list": ""
+    },
+    "novice_guide_is_shown": "true",
+    "privacy": {
+      "version": "1001"
+    },
+    "quit_status": "2",
+    "report": {
+      "close": {
+        "last_timestamp": "1793801624825"
+      },
+      "launch": {
+        "last_timestamp": "1793801603966"
+      },
+      "running": {
+        "last_timestamp": "1793801603983"
+      }
+    },
+    "setting": {
+      "apk_association": "1"
+    },
+    "signaling_connect": {
+      "log_report_config": "[-100,-101,-102,-103,-104,-105,-106,-98]"
+    }
+  },
+  "statistics": {
+    "main_program_foreground_stay_quota": "2026-11-04:2"
+  }
+}

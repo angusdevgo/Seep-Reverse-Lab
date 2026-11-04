@@ -23,7 +23,7 @@
 * **架构特征**：
   * 复杂的“前台 UI (Qt/CEF) + 核心代理服务 + 后台虚拟化 Daemon (Service/Driver) + 独立升级 Updater”多进程拓扑结构；
   * 兼具“云端账号同步”与“离线降级可用”双轨设计，组件间通过 IPC（命名管道、本地 RPC）通信；
-  * 版本演进谱系明确：v12.0 早期方案 (`2ead96f7...` / `b229f56e...`) → v6.8.1 现代方案 (`f1f507b9...` / 全量 52 点位)。
+  * 版本演进谱系明确：v12.0 早期方案 (`2ead96f7...` / `b229f56e...`) → v6.8.1 (`f1f507b9...` / 52 点位) → v6.8.10.0 (`6012a087...` / 54 点位 · 语义全量重标定)；厂商每次重编译都会按编译单元重排函数块，**不能沿用固定平移量**。
 * **脆弱性成因 (CWE-602 + BFLA)**：
   * **本地状态盲信**：UI 进程为了弱网可用，将特权状态缓存于本地文件或内存单例中，缺乏强数字签名保护；
   * **跨进程边界单向信任 (BFLA)**：后台虚拟机特权服务盲目信任来自前端 UI 的 RPC 指令，未在服务进程内独立进行服务端凭证验签。
@@ -36,9 +36,13 @@
      * 短路 RTTI 函数 `platform::isCurrentSessionRemoteSession()`（强制返回 false），并在入口处 `ret` 阻断 Healthd 与 Backend 推流守护进程；
   4. **单文件 `winhttp.dll` 裸桩劫持新范式**：
      * 突破传统多 DLL 转发（需改名原版与额外 `_orig.dll`）的缺陷；利用三大主进程与 Updater 均静态导入 `winhttp.dll` 且根目录原本无该文件的特性，采用 64 位原生裸汇编桩（`mov rax; jmp rax`）动态桥接系统库，实现**单文件零覆盖即插即用**；
-  5. **更新截断自毁防御**：
-     * 在 `winhttp.dll` 中自识别宿主 `MuMuNxUpdater.exe`，在网络连接握手前安全触发 `ExitProcess(0)`，终结云端静默升级对补丁的冲刷；
-  6. **C++ ABI 防崩红线**：
+  5. **更新截断防御（自毁 → 软阻断）**：
+     * v6.8.1 采用自识别宿主 `MuMuNxUpdater.exe` 后 `ExitProcess(0)`；v6.8.10.0 发现更新器是启动链一环，改为三端 `is_upgradeable` 恒假（`40 b6 01` → `40 30 f6`），让客户端自判"无更新"，既不破坏启动链又阻断 CDN 差分覆盖；
+  6. **版本漂移后的语义重标定（v6.8.10.0 方法论）**：
+     * 旧包 51 点位在新构建命中 0/51。重建顺序：业务字符串/RTTI → `lea` xref 找函数 → JSON key（`lea +0x25` 或 `movsd` 内联）→ 调用间距指纹（`+94/+8C/+8B/+1AF/+2F2` 且后 5 个目标相同）→ 结构体栈偏移互证（序列化 `0x2C8/0x2D4/0x2D8/0x308/0x300` 与 `0x378/0x384/0x388/0x3B0/0x3B4`）→ 逐点 `memcmp` 原始字节后才落表；
+  7. **重启持久性验证**：
+     * 必须做"退出 Main+Service 后重启"的二次验证：Main 29/29、Service 22/22 再次 APPLIED，且 VIP 徽标与缓存字段（`member_type=1`、`device_member_status=1`）不回退，才能证明解析/序列化闭环成立；
+  8. **C++ ABI 防崩红线**：
      * 严格遵守标量函数直返原则；打补丁前先执行 PE 节区范围校验（`rva_in_module`），避免跨进程加载越界访问违例（`0xC0000005`）。
 
 ---
@@ -332,15 +336,18 @@
 
 **路径甲：单文件 winhttp.dll 裸桩极简注入（⭐ 强烈推荐，终极形态，保签名，免改名）**
 ```
-【基线】目标四大 EXE 指纹核验；备份
-【载体】单一 winhttp.dll 放入主目录（原生 64 位裸汇编桩 jmp rax 桥接系统 92 个 API，免 _orig 附属文件）
+【基线】四大 EXE 指纹核验（v6.8.10.0: Main 42,784,248 / 6012a087...）；备份
+【载体】单一 winhttp.dll 放入主目录（88 个 WinHttp 裸汇编桩 jmp rax 桥接系统库，共 94 项导出，免 _orig）
 【自动分流】DllMain 看门狗线程 GetModuleFileNameA 判定宿主：
-        • Main (30点)    : 广告闸门 NOP(0x12ADA3) + 试用Banner跳转(0xCEF5DF) + 
-                           网络响应6点(2099到期/VIP/5设备) + 缓存读写A/B(20点) + UI直返2点
-        • Service (18点) : 缓存解析A/B(10点) + 序列化(5点) + is_valid_infos置真(2点) + 端点本地化
-        • Remote (4点)   : 启动入口ret阻断推流双进程 + 短路isCurrentSessionRemoteSession
-        • Updater        : 自动触发 ExitProcess(0) 安全自毁，截断云端静默升级与版本覆盖
-【验证】免广告 + 永久 VIP (2099-12-31) + 无后台推流常驻 + 终结版本更新覆盖
+        • Main (29点)   : 广告闸门 NOP(0x273DB3) + 试用Banner(0x1378B0F) +
+                          回包6点(0x13B930A起) + 解析A/B(8点) + 序列化A/B(10点) +
+                          UI直返2点 + is_upgradeable恒假
+        • Service (22点): 解析A/B(9点) + 序列化A/B(10点) + is_valid_infos(2点) +
+                          端点本地化 + is_upgradeable恒假
+        • Remote (2点)  : isCurrentSessionRemoteSession恒假 + Healthd拉起入口ret
+                          （Windows 服务，需管理员 sc stop 后生效）
+        • Updater (1点) : is_upgradeable恒假（软阻断，不杀进程、不破坏启动链）
+【验证】免广告 + 永久 VIP (2099-12-31) + 退出重启后 29/29+22/22 再次 APPLIED + 更新提示消失
 ```
 
 **路径乙：双 DLL 传统转发路径（v12.0 早期方案）**
@@ -349,9 +356,9 @@
 【机制】重命名原版库，DllMain 跨进程判断加载补丁集
 ```
 
-**路径丙：改 EXE 本体（52 点十六进制硬改，会破坏签名）**
+**路径丙：改 EXE 本体（54 点十六进制硬改，会破坏签名）**
 ```
-Main 30 点 + Service 18 点 + Remote 4 点
+Main 29 点 + Service 22 点 + Remote 2 点 + Updater 1 点
 每点先核对“原始字节” → 匹配才写入“修补字节”
 ```
 
