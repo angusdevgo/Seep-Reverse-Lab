@@ -12,6 +12,26 @@
 
 ## [Unreleased]
 
+### 修复：seep_pe_* 工具在 stdio 模式下无限挂起
+
+- **`Tool/mcp/seep_mcp_server.py`**：`_run_cmd()` 的 `subprocess.run()` 补上 `stdin=subprocess.DEVNULL`。
+  此前子进程会继承 MCP 服务端自己的 stdin —— 那是一条由客户端（Claude Code / DSH / OpenCode / Pi）
+  持有、会话结束前不会关闭的管道。在 stdio 传输下，孙进程卡在解释器启动阶段（业务代码一行都没执行），
+  `seep_pe_triage` / `seep_pe_aob_scan` / `seep_pe_diff` / `seep_pe_patch` 表现为**永久挂起**，直到客户端超时。
+  注意：只在 MCP 里复现 —— 手动在 shell 里跑同一个脚本只要 0.09s，所以旧检查完全测不出来。
+- **新增 `Tool/mcp/test_stdio_smoke.py`**：stdio 冒烟回归。静态层用 AST 校验每个
+  `subprocess.run/Popen/call/check_*` 调用点都显式给了 `stdin=`（`--quick`，零依赖、毫秒级）；
+  端到端层真的以 stdio 拉起服务端，走 initialize → tools/list → tools/call，并真调一次 `seep_pe_triage`。
+- **`setup/verify.ps1`**：MCP 核心服务端检查从「仅 ast.parse 语法自洽」升级为「语法 + stdio 冒烟 `--quick`」，
+  漏掉 `stdin=` 会直接 FAIL 并点出具体行号。
+
+### 修复：install-python.ps1 在 uv / 发行版托管 Python 上必然失败
+
+- **`setup/install-python.ps1`**：设置 `PIP_BREAK_SYSTEM_PACKAGES=1`。uv 管理的解释器与多数 Linux
+  发行版自带 Python 都带 PEP 668 `externally-managed` 标记，裸 `pip install` 会直接以
+  `error: externally-managed-environment` 退出，导致 mcp 依赖装不上、MCP 服务起不来。
+  该脚本只面向本工作台的部署依赖，覆盖这层保护是预期行为。
+
 ### 案例库：项目D 合并原地演进至 v1.6.1（build 16 支持）
 
 - `Tool/cases/项目D/docs/reverse-engineering.md` 新增 §10：build 16 代码重排迁移（.text +245 KB、段内位移非均匀、capstone 局部定向反汇编、操作数补丁识别）

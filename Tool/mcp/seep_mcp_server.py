@@ -91,6 +91,7 @@ def _run_cmd(cmd: List[str], cwd: Optional[str] = None, timeout: int = 60) -> st
     try:
         proc = subprocess.run(
             cmd,
+            stdin=subprocess.DEVNULL,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
             cwd=cwd,

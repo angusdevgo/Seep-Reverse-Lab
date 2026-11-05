@@ -271,16 +271,20 @@ if (Test-Path $AgentDir) {
 # -----------------------------------------------------------------------------
 Write-Host "`n[5/9] 🔌 MCP 服务引擎与物理内置工具箱 (Native Tools)" -ForegroundColor White
 
-Test-CheckItem "MCP" "核心服务端脚本 (seep_mcp_server.py 语法自洽)" {
+Test-CheckItem "MCP" "核心服务端脚本 (语法自洽 + stdio 子进程不继承 stdin)" {
     $sp = Join-Path $ToolDir 'mcp\seep_mcp_server.py'
-    if (Test-Path $sp) {
-        $pyCmd = Get-Command python -ErrorAction SilentlyContinue
-        if ($pyCmd) {
-            & python -c "import ast; ast.parse(open(r'$sp', encoding='utf-8').read())" 2>&1 | Out-Null
-            $LASTEXITCODE -eq 0
-        } else { $true }
-    } else { $false }
-} "seep_mcp_server.py 丢失或存在 Python 语法解析错误" "27 个原生工具定义" "$ToolDir\mcp\seep_mcp_server.py"
+    if (-not (Test-Path $sp)) { return $false }
+    $pyCmd = Get-Command python -ErrorAction SilentlyContinue
+    if (-not $pyCmd) { return $true }   # 无 Python 时不判定，避免误报阻断
+    & python -c "import ast; ast.parse(open(r'$sp', encoding='utf-8').read())" 2>&1 | Out-Null
+    if ($LASTEXITCODE -ne 0) { return $false }
+    # 语法合法 ≠ 能在 stdio 下工作：subprocess 派生点若漏了 stdin=，工具会挂死到超时。
+    # 冒烟脚本的 --quick 层零依赖、毫秒级，能直接点出行号。
+    $smoke = Join-Path $ToolDir 'mcp\test_stdio_smoke.py'
+    if (-not (Test-Path $smoke)) { return $true }
+    & python $smoke --quick 2>&1 | Out-Null
+    $LASTEXITCODE -eq 0
+} "seep_mcp_server.py 丢失/语法错误，或 subprocess 调用未重定向 stdin（stdio 模式下 seep_pe_* 会挂死）；运行 python Tool/mcp/test_stdio_smoke.py 查看具体行号" "27 个原生工具定义 + stdio 冒烟" "$ToolDir\mcp\seep_mcp_server.py"
 
 Test-CheckItem "工具箱" "Jadx 反编译引擎 (jadx-1.5.6 完整就绪)" {
     $j = Join-Path $ToolsDir 'jadx\lib\jadx-1.5.6-all.jar'
