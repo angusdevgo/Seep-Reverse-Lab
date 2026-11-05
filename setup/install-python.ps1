@@ -9,6 +9,10 @@ param(
 
 $ErrorActionPreference = 'Continue'
 
+# uv / 发行版托管的 Python 带 PEP 668 externally-managed 标记，
+# 直接 pip install 会被拒绝；本脚本只面向部署本工作台的依赖，允许覆盖该保护。
+if (-not $env:PIP_BREAK_SYSTEM_PACKAGES) { $env:PIP_BREAK_SYSTEM_PACKAGES = '1' }
+
 function Write-Ok($m)   { Write-Host "    [OK] $m" -ForegroundColor Green }
 function Write-Warn($m) { Write-Host "    [!!] $m" -ForegroundColor Yellow }
 
