@@ -19,7 +19,8 @@ $Root      = Split-Path -Parent $ScriptDir
 $ToolDir   = Join-Path $Root 'Tool'
 $ToolsDir  = Join-Path $Root 'Tool\mcp\Tool\safe'
 $KbDir     = Join-Path $Root 'Tool\mcp\Tool\reverselab\kb'
-$AgentDir  = Join-Path $env:USERPROFILE '.pi\agent'
+# 允许用 SEEP_AGENT_DIR 覆盖（隔离部署 / 沙盒测试 / 自定义 agent 根目录）
+$AgentDir  = if ($env:SEEP_AGENT_DIR) { $env:SEEP_AGENT_DIR } else { Join-Path $env:USERPROFILE '.pi\agent' }
 $ManualDir = Join-Path $Root 'MANUAL'
 $localSkills = Join-Path $ToolDir 'skill'
 

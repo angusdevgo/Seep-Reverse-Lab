@@ -12,6 +12,64 @@
 
 ## [Unreleased]
 
+## [1.10.2] - 2026-11-08
+
+### 新增：DSH 隔离开箱部署（不碰 Pi Agent）
+
+需求很具体：在**单独一个文件夹**里部署 DSH，并确认两件事 —— 部署是否完整、
+会不会污染 Pi Agent 的 skill 与 MCP。
+
+新增 `setup/dsh-isolated-setup.ps1`，一条命令在 `<LabDir>\.dsh` 建立独立 DSH_HOME：
+
+```powershell
+powershell -File setup\dsh-isolated-setup.ps1
+```
+
+它**只做 DSH 相关的事**：自举 profile → 生成配置 → 把 seep 补丁挂载进隔离 DSH_HOME →
+端到端验证 → 前后快照比对。**不**跑 `install-pi.ps1`（不动 `~/.pi/agent` 的 skill 与 mcp.json），
+**不**跑 `install-ida.ps1`（不动 mcp.json 的 ida 条目），也不改任何全局依赖。
+
+### 新增：`setup/pi-agent-snapshot.py` —— 用指纹证明「没被污染」
+
+```bash
+python setup/pi-agent-snapshot.py snapshot before.json
+python setup/pi-agent-snapshot.py diff before.json after.json    # 有漂移则 rc=1
+```
+
+只覆盖会被部署流程触碰的面（`mcp.json` / `settings.json` / `AGENTS.md` / `seep-system.md` /
+`skills/` / `extensions/`），**不扫** `project/`、`logs/` 这类作业目录。
+`install.ps1` / `update.ps1` 之后想自证「只动了该动的」，用它就行。
+
+### 四个脚本支持 `SEEP_AGENT_DIR`
+
+`install.ps1` / `install-pi.ps1` / `install-ida.ps1` / `verify.ps1` 此前把 agent 目录写死为
+`%USERPROFILE%\.pi\agent`。现在可用 `SEEP_AGENT_DIR` 覆盖（与 `setup/install.sh` 早已支持的
+`SEEP_AGENT_DIR` 对齐），隔离部署与沙盒测试都因此可行。
+
+### 修复：DSH 自举出的空 patch 文件导致挂载后解析失败
+
+DSH 首次生成 profile 时，`cordis.patch.yml` 的内容是「注释头 + 一行 `[]`」。
+`setup/dsh-merge.py` 若直接在后面追加块序列，文档就变成 `[]\n- insert:` ——
+YAML 直接报 `end of the stream or a document separator is expected`，
+隔离部署会在「挂载成功」之后才发现 DSH 起不来。
+
+现在合并前会检测「全文除注释外只剩 `[]`」的情况并先移除该字面量；
+有真实条目时不动。实测：全新 DSH_HOME 上自举 → 挂载 → `dsh --dump-config` 通过。
+
+### 隔离部署的完整性实测（本机）
+
+```
+隔离 DSH_HOME : <lab>\.dsh   （默认 <桌面>\dsh-lab\.dsh）
+自举 profile  : web（198 条合成配置，含 seep-mcp / seep-js-reverse-mcp）
+端到端        : tools/list 38 个工具，含 seep_pe_triage
+pi agent 漂移 : 新增 0 / 删除 0 / 变更 0  -> 完全未改动
+```
+
+隔离环境相对你的真实 `~/.dsh` **只少登录态**（`.credentials.yaml` / `.anonymous-user-id`），
+`profiles/` 是独立的，`sessions/` 与 `storages/` 首次使用时自动创建。
+所以首次启动需要在 DSH 里重新登录（或自行复制凭据文件，脚本会在结尾提示，不自动复制）。
+
+
 ## [1.10.1] - 2026-11-08
 
 ### 修复（会让长任务全部失败）：DSH 补丁没设 `toolCallTimeoutMs`

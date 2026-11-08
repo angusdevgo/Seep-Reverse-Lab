@@ -98,6 +98,28 @@ def build_block(gen_path: str, python_exe: str, root: str) -> str:
     return BEGIN + "\n" + body + "\n" + END
 
 
+EMPTY_SEQ_RE = re.compile(r"^[ \t]*\[[ \t]*\][ \t]*$", re.M)
+
+
+def _strip_empty_flow_seq(text: str) -> str:
+    """去掉 DSH 自举时写入的空数组字面量 `[]`。
+
+    DSH 首次生成 profile 时，cordis.patch.yml 的内容是注释头 + 一行 `[]`。
+    如果直接在后面追加块序列 `- insert:`，文档就成了 `[]\n- insert:` ——
+    YAML 解析直接报 "end of the stream or a document separator is expected"。
+    只有「全文除了注释就只剩这个 []」时才移除；有真实条目时 `[]` 不该出现。
+    """
+    if not EMPTY_SEQ_RE.search(text):
+        return text
+    meaningful = [
+        ln for ln in text.splitlines()
+        if ln.strip() and not ln.lstrip().startswith("#")
+    ]
+    if not all(EMPTY_SEQ_RE.match(ln) for ln in meaningful):
+        return text
+    return EMPTY_SEQ_RE.sub("", text)
+
+
 def ensure_parent(path: str) -> None:
     d = os.path.dirname(path)
     if d and not os.path.isdir(d):
@@ -211,7 +233,7 @@ def main(argv=None) -> int:
     if has_block:
         new = BLOCK_RE.sub(block + "\n", existing)
     else:
-        base = existing.rstrip("\n")
+        base = _strip_empty_flow_seq(existing).rstrip("\n")
         new = (base + "\n\n" if base else "") + block + "\n"
 
     changed = new != existing

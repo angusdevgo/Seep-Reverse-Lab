@@ -21,6 +21,29 @@
 存在则自动执行持久挂载，不存在则跳过（不给你制造无关步骤）。
 跳过该步骤用 `-SkipDsh`（Windows）/ `--skip-dsh`（Unix）。
 
+### 隔离部署（不动 Pi Agent）
+
+如果只想在一个独立文件夹里玩 DSH，不想碰 `~/.pi/agent` 的 skill 与 mcp.json：
+
+```powershell
+powershell -File setup\dsh-isolated-setup.ps1                 # 默认落到 Desktop\dsh-lab
+powershell -File setup\dsh-isolated-setup.ps1 -LabDir "D:\dsh-lab"
+```
+
+它自举独立的 `DSH_HOME`、生成配置、挂载补丁、端到端验证，并在前后各拍一张
+pi agent 指纹快照做比对（`setup/pi-agent-snapshot.py`）。**不会**运行
+`install-pi.ps1` / `install-ida.ps1`，所以 `~/.pi/agent` 一个字节都不会变。
+
+启动时带上隔离的 DSH_HOME：
+
+```powershell
+$env:DSH_HOME = "<LabDir>\.dsh"
+dsh --profile web
+```
+
+> 隔离 DSH_HOME 是全新的，**没有登录态**：首次启动需在 DSH 里重新登录，
+> 或自行把 `~/.dsh/.credentials.yaml` 复制过去（脚本不代劳，避免搬运凭据）。
+
 ### 卸载
 
 ```bash

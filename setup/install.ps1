@@ -27,7 +27,8 @@ param(
 $ErrorActionPreference = 'Continue'
 $ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 $Root      = Split-Path -Parent $ScriptDir
-$AgentDir  = Join-Path $env:USERPROFILE '.pi\agent'
+# 允许用 SEEP_AGENT_DIR 覆盖（隔离部署 / 沙盒测试 / 自定义 agent 根目录）
+$AgentDir  = if ($env:SEEP_AGENT_DIR) { $env:SEEP_AGENT_DIR } else { Join-Path $env:USERPROFILE '.pi\agent' }
 
 $script:Failed = @()
 
