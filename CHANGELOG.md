@@ -77,7 +77,30 @@
 → 体检报告 核心检查通过 61 项 → 🎉 READY
 ```
 
-**路径 B · 老用户升级**：见下一节验证输出。
+**路径 B · 老用户升级**（克隆到 v1.8.2 `e9b6c9e`，跑的仍是**旧版** `update.ps1`）：
+
+```
+版本已更新: v1.8.2  ->  v1.9.2
+技能 11 个（含 webseep）· MCP 工具定义 38 个 · 新增 setup/install-capabilities.ps1
+补齐外部能力包（auto）→ [OK] 全部外部能力已就绪
+体检报告 核心检查通过 61 项 → 🎉 READY
+[!!] 警告 0 条 · git stash 0 条 · 工作区 0 项改动
+```
+
+**路径 B 二次执行**（此时已是新版 `update.ps1`，验幂等与新报告格式）：
+
+```
+[..] 版本未变化（v1.9.2）—— 将执行一次幂等重同步（补齐可能缺失的组件）
+本次同步: 逆向技能 11 个 · MCP 工具定义 38 个
+外部能力看板: ffmpeg / ffprobe / frida / objection / apkid / aotopsy / adb 全部 [READY]
+体检报告 核心检查通过 61 项 → 🎉 READY
+```
+
+> 双路验证过程中又发现并修掉三个部署缺陷：
+> ① `install-python.ps1` 用裸 `python`，垫片失效时 pip 全线失败，且**把错误文本当成功打印**；
+> ② 验证 pytest 时 `| Select-Object -First 1` 提前终止管线，装好的包被判「不可用」；
+> ③ `generate-configs.ps1` 每次重写内容相同的 `.mcp.json`，mtime 变化让 `git status` 报「已修改」，
+> 于是 `update.ps1` 每次都弹一次「本地改动已 stash」——用户以为自己的文件被动过。
 
 `clean-format.py` 零问题；中继单测 84/84。
 
