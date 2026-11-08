@@ -71,3 +71,71 @@
   - `hook <函数/位点>`：直接编写动态验证脚本
   - `gen-patch <位点>`：编写内存热补丁/代理DLL验证代码
   - `report`：一键归纳全流程白盒审计报告
+
+---
+
+## 五、Android 外部工具箱（动态插桩 / 内存脱壳 / Flutter AOT）
+
+仓库内置的是可随包分发的文件型工具（JADX / Apktool / Radare2 / 知识库）；
+而 **Frida / objection / frida-dexdump / APKiD / Aotopsy** 属于运行时工具，安装在
+`D:\Tool\Android`（独立 venv，不污染系统 Python），并通过垫片进入 `PATH`。
+
+### 一键安装 / 修复（幂等）
+
+```powershell
+powershell -ExecutionPolicy Bypass -File Tool\scripts\android\install-android-toolbox.ps1
+```
+
+### 四个作战脚本
+
+| 脚本 | 作用 | 典型调用 |
+| :--- | :--- | :--- |
+| `android-recon.ps1` | 一键资产画像：结构清点 + APKiD 加固指纹 + 清单摘要 + Flutter 判定 → **直接给路线建议** | `-ApkPath .\target.apk` |
+| `apkid-scan.ps1` | 只看壳 / 反调试 / 反模拟器 / 混淆器 | `-ApkPath .\target.apk` |
+| `frida-dexdump-run.ps1` | 加固包内存脱壳（前置校验 adb + frida-server 版本一致性） | `-Package <包名> -Spawn -DeepSearch` |
+| `aotopsy-run.ps1` | Flutter `libapp.so` 分析：函数名 / 字符串引用 / Dart 伪代码 / 源码重建 | `-Target app.apk -Action find-libapp\|signal\|strings` |
+| `objection-run.ps1` | 运行时自动化 REPL（关 SSL Pinning / 关 Root / 观察鉴权方法） | `-Package <包名>` |
+
+### MCP 原生工具
+
+`seep_android_toolbox()` / `seep_apkid_scan(apk_path)` / `seep_aotopsy(target_path, action, keyword)`
+
+### 两条硬门
+
+1. **Frida 主机 ↔ 设备 frida-server 版本必须严格一致** —— 不一致时的"抓不到"是工具问题，不是漏洞不存在；
+2. **Aotopsy ↔ Dart 版本** —— 输出 `Support: NOK` 必须停下来换工具，不能把反汇编当正确答案读。
+
+完整说明见 **`Tool/docs/ANDROID-TOOLBOX.md`**。
+
+---
+
+## 六、Web / 流媒体取证工具箱（HLS · 防盗链 · Spider）
+
+补的是 Web 维度的“手”：**能脱离浏览器发请求、改包、验流、拆 spider**。
+
+### 一键安装 / 修复（幂等）
+
+```powershell
+powershell -ExecutionPolicy Bypass -File Tool\scripts\web\install-web-toolbox.ps1
+```
+
+默认落盘 `D:\Tool\Web`（`SEEP_WEB_TOOLBOX` 可覆盖），装 ffmpeg + ffprobe 并生成垫片入 PATH。
+
+### 三个作战脚本
+
+| 脚本 | 作用 | 典型调用 |
+| :--- | :--- | :--- |
+| `hls-analyze.ps1` | **HLS 取证主力**：判 6 类根因（防盗链 / key 鉴权 / AES-128 / SAMPLE-AES / DRM / 源失效）+ key 双态探测 + ffmpeg 实解 + ffprobe 验证 | `-Url <m3u8> -Referer <r> -UserAgent <ua>` |
+| `http-replay.ps1` | 头变体矩阵重放，**定位真正的门槛头**（或证明头不是门槛） | `-Url <api>` 或 `-Curl "<浏览器复制>"`，`-RateTest 10` 检测频控 |
+| `spider-extract.ps1` | TVBox/CatVod spider 三入口（home/category/detail/player）+ 硬编码域名/接口/**凭据**/**请求头**提取 | `-Path .\spider.jar` |
+
+### MCP 原生工具
+
+`seep_web_toolbox()` / `seep_hls_analyze(...)` / `seep_http_replay(...)` / `seep_spider_extract(target_path)`
+
+### 两条硬门
+
+1. **ffmpeg 只给 `-headers` 不给 `-user_agent`** → 分片必 403（影视站典型陷阱）。UA/Referer 必须用独立选项；
+2. **命中 DRM（Widevine/FairPlay/PlayReady）立即 STOP** —— 写“不可逆向，需版权方授权”，不探测许可证服务器。
+
+完整说明见 **`Tool/docs/WEB-TOOLBOX.md`**；战术纪律见 Skill **`webseep`**。

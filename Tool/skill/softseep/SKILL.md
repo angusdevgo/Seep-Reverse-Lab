@@ -162,7 +162,7 @@ metadata:
 | | **ida-reverse** | `~/.pi/agent/skills/ida-reverse/SKILL.md` | IDA 自动唤醒 + 联动 |
 | | client-license-validation-bypass | `Tool/client-license-validation-bypass/SKILL.md` | 许可校验专项 |
 | | Tool/safe/skills（5 个） | `Tool/safe/skills/` | radare2 / reverse-engineering / mcp-js-reverse-playbook 等 |
-| **MCP** | **seep**（27 工具） | `seep_r2_*` / `seep_pe_*` / `seep_apk_*` / `seep_kb_*` | 二进制 + **PE 引擎** + APK + 知识库 |
+| **MCP** | **seep**（38 工具） | `seep_r2_*` / `seep_pe_*` / `seep_apk_*` / `seep_web_*` / `seep_hls_*` / `seep_cms_*` / `seep_kb_*` | 二进制 + **PE 引擎** + APK + **Web/流媒体** + 知识库 |
 | | **ida**（~243 工具） | `mcp_ida_*` | 深度反编译 / 交叉引用 |
 | | **playwright** | 浏览器工具 | Web / JS 审计 |
 | **脚本** | `Tool/scripts/` | `case-init.ps1` / `trigger_ida_mcp.ps1` / `refresh-tool-index.ps1` | 建档 / IDA 唤醒 / 自检 |

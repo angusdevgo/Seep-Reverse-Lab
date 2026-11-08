@@ -18,7 +18,7 @@
 
 ---
 
-## 二、Skill 溯源（10 个）
+## 二、Skill 溯源（11 个）
 
 | # | Skill | 本包位置 | 安装目标 | 文件数 | 体积 |
 | :--- | :--- | :--- | :--- | :---: | :--- |
@@ -32,6 +32,12 @@
 | 8 | **radare2** | `Tool/skill/safe-skills/radare2/` | 同上 | 3 | 20 KB |
 | 9 | **mcp-js-reverse-playbook** | `Tool/skill/safe-skills/mcp-js-reverse-playbook/` | 同上 | 13 | 24 KB |
 | 10 | **ida-reverse**（safe 版） | `Tool/skill/safe-skills/ida-reverse/` | 同上 | 3 | 28 KB |
+| 11 | **webseep** | `Tool/skill/webseep/` | `~/.pi/agent/skills/webseep/` | 17 | 144 KB |
+
+> **webseep 的素材来源**：Web/流媒体取证的 5 项素材（`sandbox-runner.js`、`protocol-analysis.md`、
+> `crypto-patterns.md`、`common-pitfalls.md`、`templates/python-request/`）源自
+> [WhiteNightShadow/hello_js_reverse_skill](https://github.com/WhiteNightShadow/hello_js_reverse_skill) v3.9.0
+> （commit `ec3cc38`，导入 2026-11-03）。其余为本地自研。逐项清单见 `Tool/skill/webseep/PROVENANCE.md`。
 
 ### ⚠ 上游开源归属与完整镜像（合规声明）
 
@@ -99,7 +105,7 @@ apkseep/
 | **自检脚本** | `Tool/mcp/test_seep_mcp.py` | 9 个测试套件 |
 | **启动器** | `Tool/mcp/run_seep_mcp.bat` | Windows 启动封装 |
 | **⭐ 运行时根目录** | **`Tool/mcp/Tool/`** | MCP 内部硬编码 `TOOL_DIR = <脚本目录>/Tool` |
-| **⭐ 知识库依赖** | `Tool/mcp/Tool/reverselab/kb/`（**289 篇 .md**） | `seep_kb_search` 等 4 个工具读这里 |
+| **⭐ 知识库依赖** | `Tool/mcp/Tool/reverselab/kb/`（**294 篇 .md**） | `seep_kb_search` 等 4 个工具读这里 |
 | **LLM 索引** | `Tool/mcp/Tool/reverselab/docs/llms.txt` | MCP 启动时读取 |
 | **外部工具依赖** | `Tool/mcp/Tool/safe/radare2/bin/`（脚本下载） | `seep_r2_*` 8 个工具 |
 | **外部工具依赖** | `Tool/mcp/Tool/safe/jadx/bin/` + `.../apktool/`（脚本下载） | `seep_apk_*` 5 个工具 |
@@ -177,7 +183,7 @@ Android(5)    seep_apk_info · _decompile · _unpack · _smali_search · _gen_ho
 
 | 组成 | 本包位置 | 说明 |
 | :--- | :--- | :--- |
-| **kb/** | `Tool/mcp/Tool/reverselab/kb/` | **289 篇 .md**（ctf-website / apk-reverse / pe-reverse / general） |
+| **kb/** | `Tool/mcp/Tool/reverselab/kb/` | **294 篇 .md**（ctf-website / apk-reverse / pe-reverse / general） |
 | **boards/** | `Tool/mcp/Tool/reverselab/boards/` | 攻击网（按信号路由到技术文件） |
 | **tools/skills/mcp/** | `Tool/mcp/Tool/reverselab/tools/skills/mcp/` | 3 个 MCP 源码 |
 | **docs/** | `Tool/mcp/Tool/reverselab/docs/` | 含 `llms.txt`（seep MCP 引用的 LLM 索引） |
@@ -189,6 +195,34 @@ Android(5)    seep_apk_info · _decompile · _unpack · _smali_search · _gen_ho
 ---
 
 ## 六、脚本溯源
+
+### Web / 流媒体取证脚本（`Tool/scripts/web/`，9 个 PowerShell 脚本）
+
+| 脚本 | 作用 |
+| :--- | :--- |
+| `web-pipeline.ps1` | 一键串联：授权 → 指纹 → 举证 → 复测 → 报告 |
+| `web-gate.ps1` | 阶段门，前置产物缺失直接 BLOCK |
+| `cms-fingerprint.ps1` | CMS 家族 / 采集接口 / 播放器链路 / 暴露面指纹（只发 GET、≤20 路径） |
+| `hls-analyze.ps1` | HLS 六类根因判定（防盗链 / 鉴权 / AES-128 / DRM / 源失效） |
+| `http-replay.ps1` | 头变体矩阵重放，定位门槛头 |
+| `spider-extract.ps1` | TVBox / CatVod spider 三入口提取 |
+| `web-report.ps1` | 生成 Web 源与暴露面安全评估报告 |
+| `install-web-toolbox.ps1` | 部署 ffmpeg / ffprobe 到 `D:\Tool\Web`（可用 `SEEP_WEB_TOOLBOX` 覆盖） |
+| `install-web-scanners.ps1` | 可选部署 nuclei / ffuf |
+
+### Android 外部工具箱脚本（`Tool/scripts/android/`，6 个）
+
+| 脚本 | 作用 |
+| :--- | :--- |
+| `install-android-toolbox.ps1` | 幂等部署 Frida / objection / frida-dexdump / APKiD / Aotopsy 与 `.cmd` 垫片 |
+| `android-recon.ps1` | 设备/包名/权限/组件侦察 |
+| `frida-dexdump-run.ps1` | 运行时脱壳 |
+| `objection-run.ps1` | objection 自动化探测 |
+| `apkid-scan.ps1` | 加固 / 混淆器指纹 |
+| `aotopsy-run.ps1` | Flutter / Dart AOT 静态分析 |
+
+公共库：`Tool/scripts/lib/WebToolbox.ps1`、`Tool/scripts/lib/AndroidToolbox.ps1`。
+
 
 | 脚本 | 本包位置 | 作用 |
 | :--- | :--- | :--- |
@@ -225,7 +259,7 @@ Android(5)    seep_apk_info · _decompile · _unpack · _smali_search · _gen_ho
 ## 八、依赖链速查（排障用）
 
 ```
-seep_kb_* 四个工具   →  Tool/mcp/Tool/reverselab/kb/（289 篇）
+seep_kb_* 四个工具   →  Tool/mcp/Tool/reverselab/kb/（294 篇）
 seep_r2_* 九个工具   →  Tool/mcp/Tool/safe/radare2/bin/
 seep_pe_* 四个工具   →  Tool/skill/exe-reverse/scripts/（纯标准库 PE 引擎）
 seep_apk_* 五个工具  →  Tool/mcp/Tool/safe/jadx/ + apktool/

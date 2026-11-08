@@ -24,19 +24,33 @@ MCP（工具层）           →  给 agent「实际干活的手」
 
 | MCP | 工具数 | 用途 | 依赖 | 安装方式 |
 | :--- | :---: | :--- | :--- | :--- |
-| **seep** ⭐ | **22** | 二进制逆向 + APK 逆向 + Frida 生成 + 知识库 | radare2 / jadx / apktool | 本包自带 + 脚本下载工具 |
+| **seep** ⭐ | **38** | 二进制逆向 + PE + APK + Web/流媒体 + 知识库 | radare2 / jadx / apktool / ffmpeg | 本包自带 + 工具箱脚本 |
 | **ida** | **~243** | IDA 全套分析链 | **你自备的 IDA Pro** | 脚本装 MCP + 你装 IDA |
 | **playwright** | — | 浏览器自动化 | npx | 自动（npx 按需拉取） |
 
-### seep MCP 的 22 个工具
+### seep MCP 的 38 个工具
 
 | 分组 | 工具 |
 | :--- | :--- |
 | 状态环境 (2) | `seep_status` · `seep_ida_status` |
 | 二进制 r2 (8) | `seep_r2_info` · `_cmd` · `_strings` · `_functions` · `_disasm` · `_decompile` · `_diff` · `_asm` |
+| Windows PE (4) | `seep_pe_triage` · `_aob_scan` · `_diff` · `_patch` |
 | Android (5) | `seep_apk_info` · `_decompile` · `_unpack` · `_smali_search` · `_gen_hook` |
+| Android 工具箱 (3) | `seep_android_toolbox` · `seep_apkid_scan` · `seep_aotopsy` |
+| Web / 流媒体 (8) | `seep_web_pipeline` · `_gate` · `_report` · `_toolbox` · `seep_cms_fingerprint` · `seep_hls_analyze` · `seep_http_replay` · `seep_spider_extract` |
 | 知识库 (4) | `seep_kb_search` · `_read` · `_checklist` · `_payloads` |
 | 流程编排 (3) | `seep_task_init` · `seep_auto_triage` · `seep_gen_security_report` |
+
+> **Android 工具箱依赖**：`seep_android_toolbox` / `seep_apkid_scan` / `seep_aotopsy` 调用本机
+> `D:\Tool\Android` 下的 Frida / objection / frida-dexdump / APKiD / Aotopsy（可用 `SEEP_ANDROID_TOOLBOX` 覆盖根目录）。
+> 未安装时这三个工具返回明确的修复指引，不会导致整个 MCP 服务不可用。
+> 一键补全：`powershell -ExecutionPolicy Bypass -File Tool\scripts\android\install-android-toolbox.ps1`
+
+> **Web / 流媒体依赖**：`seep_hls_analyze` / `seep_http_replay` / `seep_spider_extract` 等驱动
+> `Tool/scripts/web/` 下的 PowerShell 取证脚本，依赖本机 `D:\Tool\Web` 下的 ffmpeg / ffprobe
+> （可用 `SEEP_WEB_TOOLBOX` 覆盖）。
+> 一键补全：`powershell -ExecutionPolicy Bypass -File Tool\scripts\web\install-web-toolbox.ps1`
+> 详细能力见 `Tool/docs/WEB-TOOLBOX.md`，战术纪律见 Skill `webseep`。
 
 ---
 
@@ -208,7 +222,7 @@ python -c "import ast; ast.parse(open(r'C:\...\Seep\Tool\mcp\seep_mcp_server.py'
 | :--- | :--- |
 | pi 启动后 MCP 没加载 | **重启 pi**（MCP 在启动时注册） |
 | `seep` 工具全部不可用 | 检查 `mcp.json` 的 `seep.args[0]` 路径是否存在 |
-| `seep_kb_*` 报错 | 检查 `Tool/mcp/Tool/reverselab/kb/` 是否 ≥289 篇 |
+| `seep_kb_*` 报错 | 检查 `Tool/mcp/Tool/reverselab/kb/` 是否 ≥294 篇 |
 | `seep_r2_*` 报错 | 重跑 `setup\install-tools.ps1` |
 | `ida` 工具报错 | 确认 IDA 已装 + `mcp.json` 里 ida 路径正确 |
 | MCP 配置文件被我改坏了 | 重跑 `setup\install-pi.ps1`（会自动备份旧配置） |

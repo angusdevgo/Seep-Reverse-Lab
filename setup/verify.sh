@@ -106,7 +106,8 @@ check_item "提示词" "DeepSeek Harness 配置文件 (DSH-PROFILE.md)" test -f 
 check_item "扩展"   "底层安全放行与 Lab 状态机扩展 (.ts)" test -f "$TOOL_DIR/prompts/extensions/security-audit-interceptor.ts"
 
 # 4. 技能系统
-echo -e "\n${WHITE}[4/9] 🛠️ 逆向工程专业技能库 (Skills - 10大组件)${RESET}"
+SKILL_DIRS=$(find "$TOOL_DIR/skill" -maxdepth 1 -mindepth 1 -type d 2>/dev/null | wc -l)
+echo -e "\n${WHITE}[4/9] 🛠️ 逆向工程专业技能库 (Skills - $SKILL_DIRS 个技能目录)${RESET}"
 check_item "Skill" "核心总控调度器 (softseep 包含 10 大专题库)" test -f "$TOOL_DIR/skill/softseep/SKILL.md" -a -d "$TOOL_DIR/skill/softseep/references"
 check_item "Skill" "Windows PE 深水区 (exe-reverse)" test -f "$TOOL_DIR/skill/exe-reverse/SKILL.md" -a -d "$TOOL_DIR/skill/exe-reverse/references" -a -d "$TOOL_DIR/skill/exe-reverse/scripts"
 check_item "Skill" "移动端逆向全链路 (apkseep 包含 45 篇规范与 56 脚本)" test -f "$TOOL_DIR/skill/apkseep/SKILL.md" -a -d "$TOOL_DIR/skill/apkseep/references"

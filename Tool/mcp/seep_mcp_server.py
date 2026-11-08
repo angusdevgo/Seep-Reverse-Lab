@@ -16,7 +16,7 @@ import signal
 import zipfile
 import subprocess
 from pathlib import Path
-from typing import Optional, List, Dict, Any
+from typing import Optional, List, Dict, Any, Tuple
 
 try:
     from mcp.server.mcpserver import MCPServer
@@ -65,6 +65,98 @@ KB_DIR = os.path.join(TOOL_DIR, "reverselab", "kb")
 LLMS_TXT = os.path.join(TOOL_DIR, "reverselab", "docs", "llms.txt")
 HOOK_TEMPLATES_DIR = os.path.join(SAFE_DIR, "hook-mcp", "templates")
 
+# 外部 Android 工具箱（Frida/objection/frida-dexdump/APKiD/Aotopsy），
+# 由 Tool/scripts/android/install-android-toolbox.ps1 部署，默认落盘 D:\Tool\Android
+ANDROID_TOOLBOX_DIR = os.environ.get("SEEP_ANDROID_TOOLBOX", r"D:\Tool\Android")
+
+# 外部 Web / 流媒体工具箱（ffmpeg / ffprobe），
+# 由 Tool/scripts/web/install-web-toolbox.ps1 部署，默认落盘 D:\Tool\Web
+WEB_TOOLBOX_DIR = os.environ.get("SEEP_WEB_TOOLBOX", r"D:\Tool\Web")
+# 仓库内取证脚本位于 <repo>\Tool\scripts\web；BASE_DIR 是 <repo>\Tool\mcp
+WEB_SCRIPT_DIR = os.path.join(os.path.dirname(BASE_DIR), "scripts", "web")
+
+
+def _resolve_web_tool(name: str) -> Optional[str]:
+    """解析 Web 工具箱内工具路径（真实 exe 优先于 .cmd 垫片 → 系统 PATH）。"""
+    exe = f"{name}.exe"
+    candidates = [
+        os.path.join(WEB_TOOLBOX_DIR, "ffmpeg", "bin", exe),
+        os.path.join(WEB_TOOLBOX_DIR, "bin", exe),
+        os.path.join(WEB_TOOLBOX_DIR, "bin", f"{name}.cmd"),
+        os.path.join(WEB_TOOLBOX_DIR, exe),
+    ]
+    for c in candidates:
+        if os.path.isfile(c):
+            return c
+    return shutil.which(name)
+
+
+def _web_toolbox_status() -> Dict[str, Any]:
+    names = ["ffmpeg", "ffprobe", "nuclei", "ffuf", "whatweb", "node"]
+    return {n: (_resolve_web_tool(n) or None) for n in names}
+
+
+def _find_powershell() -> Optional[str]:
+    """优先 pwsh(7+)，回退 Windows PowerShell 5.1。"""
+    for cand in ("pwsh", "powershell"):
+        p = shutil.which(cand)
+        if p:
+            return p
+    for p in (r"C:\Program Files\PowerShell\7\pwsh.exe",
+              r"C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe"):
+        if os.path.isfile(p):
+            return p
+    return None
+
+
+def _run_web_script(script_name: str, args: List[str], timeout: int = 600) -> Tuple[bool, str, Optional[dict]]:
+    """调用 Tool/scripts/web 下的取证脚本（统一用 -Json 模式），返回 (ok, raw, parsed_json)。"""
+    ps = _find_powershell()
+    if not ps:
+        return False, "[ERROR]: 未找到 PowerShell（pwsh / powershell）", None
+    script_path = os.path.join(WEB_SCRIPT_DIR, script_name)
+    if not os.path.isfile(script_path):
+        return False, f"[ERROR]: 脚本不存在: {script_path}", None
+
+    cmd = [ps, "-NoProfile", "-ExecutionPolicy", "Bypass", "-File", script_path, "-Json"] + args
+    try:
+        proc = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8",
+                              errors="replace", timeout=timeout)
+    except subprocess.TimeoutExpired:
+        return False, f"[ERROR]: 脚本超时 (>{timeout}s): {script_name}", None
+
+    raw = (proc.stdout or "") + ("\n" + proc.stderr if proc.stderr else "")
+    payload = None
+    start = raw.find("{")
+    end = raw.rfind("}")
+    if start >= 0 and end > start:
+        try:
+            payload = json.loads(raw[start:end + 1])
+        except Exception:
+            payload = None
+    if payload is None:
+        return False, _clean_r2_output(raw), None
+    return True, raw, payload
+
+
+def _resolve_android_tool(name: str) -> Optional[str]:
+    """解析 Android 外部工具箱内工具路径（bin 垫片 → venv → aotopsy → platform-tools → 系统 PATH）。"""
+    candidates = [
+        os.path.join(ANDROID_TOOLBOX_DIR, "bin", f"{name}.cmd"),
+        os.path.join(ANDROID_TOOLBOX_DIR, "frida-env", "Scripts", f"{name}.exe"),
+        os.path.join(ANDROID_TOOLBOX_DIR, "aotopsy", f"{name}.exe"),
+        os.path.join(ANDROID_TOOLBOX_DIR, "platform-tools", f"{name}.exe"),
+    ]
+    for c in candidates:
+        if os.path.isfile(c):
+            return c
+    return shutil.which(name)
+
+
+def _android_toolbox_status() -> Dict[str, Any]:
+    names = ["frida", "frida-ps", "frida-trace", "objection", "frida-dexdump", "apkid", "aotopsy", "adb"]
+    return {n: (_resolve_android_tool(n) or None) for n in names}
+
 # 将 r2 bin 目录添加到 PATH 中，确保子进程加载依赖 dll
 if os.path.isdir(R2_BIN_DIR) and R2_BIN_DIR not in os.environ.get("PATH", ""):
     os.environ["PATH"] = R2_BIN_DIR + os.pathsep + os.environ.get("PATH", "")
@@ -78,8 +170,10 @@ server = MCPServer(
 能力包含：
 1. 二进制分析与逆向 (Radare2 / Rabin2 / Radiff2 / Rasm2)
 2. Android APK / DEX 反编译、解包与 Smali 检索 (JADX, Apktool)
-3. 动态 Hook 插件自动生成 (Frida JS, LSPilot / BeanShell)
-4. ReverseLab 183+ 逆向与 Web/PE/CVE 攻防战术知识库检索与即用 Payload
+3. Android 加固指纹与 Flutter AOT 分析 (APKiD, Aotopsy) 及动态工具链桥接 (Frida, objection, frida-dexdump)
+4. Web / 流媒体取证 (HLS 解密可行性 + DRM 判定 + 防盗链举证 + TVBox/CatVod spider 三入口提取)
+5. 动态 Hook 插件自动生成 (Frida JS, LSPilot / BeanShell)
+6. ReverseLab 289+ 逆向与 Web/PE/CVE 攻防战术知识库检索与即用 Payload
 """
 )
 
@@ -204,6 +298,17 @@ def seep_status() -> str:
                 "status": "Ready" if EXE_REV_SCRIPTS else "Missing",
                 "path": EXE_REV_SCRIPTS or "not found",
                 "tools": ["seep_pe_triage", "seep_pe_aob_scan", "seep_pe_diff", "seep_pe_patch"]
+            },
+            "android_toolbox": {
+                "status": f"Ready ({sum(1 for v in _android_toolbox_status().values() if v)}/{len(_android_toolbox_status())} tools)",
+                "path": ANDROID_TOOLBOX_DIR,
+                "detail": {k: (v or "MISSING") for k, v in _android_toolbox_status().items()}
+            },
+            "web_toolbox": {
+                "status": f"Ready ({sum(1 for v in _web_toolbox_status().values() if v)}/{len(_web_toolbox_status())} tools)",
+                "path": WEB_TOOLBOX_DIR,
+                "scripts": WEB_SCRIPT_DIR,
+                "detail": {k: (v or "MISSING") for k, v in _web_toolbox_status().items()}
             }
         }
     }
@@ -954,6 +1059,592 @@ Java.perform(function () {{
         content = content.replace("${PRE_FIND_METHOD}", pre_find)
         content = content.replace("${CALLBACK_CODE}", f'// TODO: Add custom manipulation for {method_name}')
         return content
+
+# ---------------------------------------------------------------------------
+# 4.5 外部 Android 工具箱桥接 (Frida / objection / frida-dexdump / APKiD / Aotopsy)
+# ---------------------------------------------------------------------------
+@server.tool()
+def seep_android_toolbox() -> str:
+    """检查 Android 外部动态/静态工具箱就绪状态（frida / objection / frida-dexdump / APKiD / Aotopsy / adb）。
+
+    返回每个工具的解析路径与缺失项。缺失时调用方应运行：
+    powershell -ExecutionPolicy Bypass -File Tool\\scripts\\android\\install-android-toolbox.ps1
+    """
+    status = _android_toolbox_status()
+    devices = ""
+    adb = status.get("adb")
+    if adb:
+        devices = _run_cmd([adb, "devices"], timeout=20)
+    payload = {
+        "toolbox_root": ANDROID_TOOLBOX_DIR,
+        "tools": {k: ({"ready": bool(v), "path": v or "—"}) for k, v in status.items()},
+        "ready_count": sum(1 for v in status.values() if v),
+        "total_count": len(status),
+        "devices": _clean_r2_output(devices) if devices else "(adb 不可用)",
+        "hint": "缺项请运行 Tool/scripts/android/install-android-toolbox.ps1 补全",
+    }
+    return json.dumps(payload, indent=2, ensure_ascii=False)
+
+
+@server.tool()
+def seep_apkid_scan(apk_path: str) -> str:
+    """用 APKiD 对 APK 做加固/对抗指纹识别：壳商(packer/protector)、反调试、反模拟器、混淆器、资源操纵。
+
+    这是 Android 逆向的第一道 Recon 门，结论直接决定路线：
+    - 命中 packer/protector → 先 frida-dexdump 内存脱壳，不要直接啃 JADX
+    - 命中 anti_vm/anti_debug → 先用 objection 伪装环境
+    - 命中 Flutter 特征 → 转 seep_aotopsy 分析 libapp.so
+
+    Args:
+        apk_path: 目标 APK 绝对路径
+    """
+    if not os.path.isfile(apk_path):
+        return f"[ERROR]: Target file does not exist: {apk_path}"
+    exe = _resolve_android_tool("apkid")
+    if not exe:
+        return "[ERROR]: APKiD 未安装。请运行 Tool/scripts/android/install-android-toolbox.ps1 -Only apkid"
+
+    raw = _run_cmd([exe, "-j", os.path.abspath(apk_path)], timeout=300)
+    start = raw.find("{")
+    if start < 0:
+        return _clean_r2_output(raw)
+    try:
+        doc = json.loads(raw[start:])
+    except Exception:
+        return _clean_r2_output(raw)
+
+    summary: Dict[str, List[str]] = {}
+    for f in doc.get("files", []):
+        matches = f.get("matches") or {}
+        fname = f.get("filename", "")
+        short = fname.split("!")[-1] if "!" in fname else os.path.basename(fname)
+        for k, v in matches.items():
+            vals = v if isinstance(v, list) else [str(v)]
+            summary.setdefault(k, []).append(f"{short} :: {', '.join(vals)}")
+
+    routes = []
+    if "packer" in summary or "protector" in summary:
+        routes.append("加壳 → 先内存脱壳：Tool/scripts/android/frida-dexdump-run.ps1 -Package <pkg> -Spawn -DeepSearch")
+    if "anti_vm" in summary or "anti_debug" in summary:
+        routes.append("反调试/反模拟器 → 先伪装：Tool/scripts/android/objection-run.ps1 -Package <pkg>")
+    if not routes:
+        routes.append("无壳无强对抗 → 可直接 JADX-GUI + seep_apk_decompile 静态推进")
+
+    payload = {
+        "apk": os.path.abspath(apk_path),
+        "apkid_version": doc.get("apkid_version"),
+        "findings": summary,
+        "route_advice": routes,
+    }
+    return json.dumps(payload, indent=2, ensure_ascii=False)
+
+
+@server.tool()
+def seep_aotopsy(target_path: str, action: str = "find-libapp", keyword: Optional[str] = None) -> str:
+    """Flutter / Dart AOT（libapp.so）静态分析：还原 Dart 函数名、类结构、字符串引用与调用图。
+
+    Flutter 应用的业务逻辑、网络签名密钥、API 路由全部编译进 libapp.so，JADX 只能看到引擎壳。
+    Aotopsy 直接解析 Dart Snapshot 二进制语法（不需要 Dart VM / SDK）。
+
+    Args:
+        target_path: APK 路径，或已抽出的 libapp.so 路径
+        action: find-libapp（定位并报告 Dart 版本，最快）
+                doctor（快诊支持度）
+                signal（全管线：反汇编 + 调用边 + 行为信号）
+                strings（需配合 keyword，检索字符串并反查引用函数 —— 找签名密钥的最短路径）
+                export-dart（重建整个 Dart 源码工程，最慢）
+        keyword: action=strings 时的检索关键词，例如 'X-Sign' / 'sign' / 'token'
+    """
+    if not os.path.isfile(target_path):
+        return f"[ERROR]: Target file does not exist: {target_path}"
+    exe = _resolve_android_tool("aotopsy")
+    if not exe:
+        return "[ERROR]: Aotopsy 未部署。请运行 Tool/scripts/android/install-android-toolbox.ps1 -Only aotopsy"
+
+    target = os.path.abspath(target_path)
+    out_dir = os.path.join(os.path.dirname(target), os.path.splitext(os.path.basename(target))[0] + ".aotopsy")
+    os.makedirs(out_dir, exist_ok=True)
+    is_apk = target.lower().endswith((".apk", ".aab", ".apks"))
+
+    lib_path = target
+    if is_apk:
+        _run_cmd([exe, "find-libapp", "-apk", target, "-out", out_dir], timeout=300)
+        json_candidates = glob.glob(os.path.join(out_dir, "*_find_libapp.json"))
+        if not json_candidates:
+            return "[ERROR]: Aotopsy 未生成 find_libapp.json（该 APK 可能不是 Flutter 应用）"
+        with open(json_candidates[0], "r", encoding="utf-8") as fh:
+            info = json.load(fh)
+        if not info.get("found"):
+            return f"[INFO]: 未检出 Dart AOT 快照，reason={info.get('reason')}（可能非 Flutter，或已被加固剥离）"
+        if action == "find-libapp":
+            return json.dumps({"apk": target, "best": info["best"], "candidates": len(info.get("candidates", []))}, indent=2, ensure_ascii=False)
+
+        lib_path = os.path.join(out_dir, "libapp.so")
+        if not os.path.isfile(lib_path) and is_apk:
+            try:
+                with zipfile.ZipFile(target) as zf:
+                    with zf.open(info["best"]["path_in_apk"]) as src, open(lib_path, "wb") as dst:
+                        shutil.copyfileobj(src, dst)
+            except Exception as e:
+                return f"[ERROR]: 抽取 libapp.so 失败: {e}"
+
+    if action == "doctor":
+        return _clean_r2_output(_run_cmd([exe, "doctor", lib_path], timeout=600))
+    if action == "signal":
+        out = _run_cmd([exe, "signal", lib_path, "--out", os.path.join(out_dir, "signal")], timeout=1800)
+        return _clean_r2_output(out) + f"\n[产物] {os.path.join(out_dir, 'signal')}"
+    if action == "strings":
+        if not keyword:
+            return "[ERROR]: action=strings 需要 keyword 参数"
+        return _clean_r2_output(_run_cmd([exe, "_debug", "strings", "--lib", lib_path, "--find", keyword, "--xref"], timeout=600))
+    if action == "export-dart":
+        out = _run_cmd([exe, "export-dart", "--lib", lib_path, "--out", os.path.join(out_dir, "dart_src")], timeout=3600)
+        return _clean_r2_output(out) + f"\n[产物] {os.path.join(out_dir, 'dart_src')}"
+
+    return f"[ERROR]: 未知 action: {action}（可选 find-libapp / doctor / signal / strings / export-dart）"
+
+
+# ---------------------------------------------------------------------------
+# 4.6 外部 Web / 流媒体取证桥接 (HLS / 防盗链 / Spider)
+# ---------------------------------------------------------------------------
+@server.tool()
+def seep_web_toolbox() -> str:
+    """检查 Web / 流媒体取证工具箱就绪状态（ffmpeg / ffprobe / node）。
+
+    ffmpeg 是 HLS 取证的核心：既能 -headers 携带防盗链头，也能直接解密 AES-128 分片。
+    缺失时调用方应运行：
+    powershell -ExecutionPolicy Bypass -File Tool\\scripts\\web\\install-web-toolbox.ps1
+    """
+    status = _web_toolbox_status()
+    payload = {
+        "toolbox_root": WEB_TOOLBOX_DIR,
+        "script_dir": WEB_SCRIPT_DIR,
+        "tools": {k: {"ready": bool(v), "path": v or "—"} for k, v in status.items()},
+        "ready_count": sum(1 for v in status.values() if v),
+        "total_count": len(status),
+        "capabilities": [
+            "seep_hls_analyze   : m3u8 解密可行性 + DRM 判定 + 防盗链 + 实解验证",
+            "seep_http_replay   : 头部变体矩阵重放，定位防盗链门槛头",
+            "seep_spider_extract: TVBox/CatVod spider 三入口与硬编码凭据提取",
+            "seep_cms_fingerprint: 影视站 CMS 家族 / 采集接口 / 播放器 / 暴露面指纹",
+            "nuclei / ffuf      : 模板化漏扫 / 目录爆破（需自行准备目标与字典）",
+        ],
+        "wordlists": os.path.join(WEB_TOOLBOX_DIR, "wordlists"),
+        "nuclei_templates": os.path.join(os.path.expanduser("~"), "nuclei-templates"),
+        "hint": "缺项请运行 Tool/scripts/web/install-web-toolbox.ps1 补全",
+    }
+    return json.dumps(payload, indent=2, ensure_ascii=False)
+
+
+@server.tool()
+def seep_hls_analyze(
+    url: Optional[str] = None,
+    playlist_path: Optional[str] = None,
+    referer: Optional[str] = None,
+    user_agent: Optional[str] = None,
+    cookie: Optional[str] = None,
+    headers: Optional[List[str]] = None,
+    variant: str = "best",
+    verify_seconds: int = 15,
+    no_verify: bool = False,
+    out_dir: Optional[str] = None,
+) -> str:
+    """HLS / m3u8 取证：一次性判定「为何播不出」的 6 种根因，并给出可取证结论。
+
+    影视源逆向的核心工具。它区分这些完全不同的情况：
+      ① 防盗链（缺 Referer / UA / Origin）② key 鉴权（需登录态或一次性 token）
+      ③ AES-128 可解  ④ SAMPLE-AES/fMP4 需专用解封装  ⑤ DRM（不可逆向，必须终止）
+      ⑥ 返回 HTML 错误页伪装成 m3u8
+
+    Args:
+        url: m3u8 地址（master 或 media 均可，自动下钻选最高码率）
+        playlist_path: 本地 playlist 文件路径（与 url 二选一）
+        referer: 防盗链 Referer（影视站最常见门槛）
+        user_agent: User-Agent（部分站点分片要求 UA 含 Mozilla）
+        cookie: Cookie（需登录态的源）
+        headers: 额外请求头，形如 ["X-Token: abc"]
+        variant: best(默认，最高码率) | all | 序号(0 起)
+        verify_seconds: ffmpeg 实解验证秒数，默认 15
+        no_verify: 跳过 ffmpeg 实解（只做静态判定）
+        out_dir: 证据输出目录（默认 D:\\Tool\\Web\\work\\hls-<时间戳>）
+    """
+    if not url and not playlist_path:
+        return "[ERROR]: 必须提供 url 或 playlist_path"
+
+    args: List[str] = []
+    if url:
+        args += ["-Url", url]
+    if playlist_path:
+        args += ["-Playlist", playlist_path]
+    if referer:
+        args += ["-Referer", referer]
+    if user_agent:
+        args += ["-UserAgent", user_agent]
+    if cookie:
+        args += ["-Cookie", cookie]
+    for h in (headers or []):
+        args += ["-Header", h]
+    args += ["-Variant", variant, "-VerifySeconds", str(verify_seconds)]
+    if no_verify:
+        args += ["-NoVerify"]
+    if out_dir:
+        args += ["-OutDir", out_dir]
+
+    ok, raw, payload = _run_web_script("hls-analyze.ps1", args, timeout=900)
+    if not ok:
+        return f"[ERROR]: HLS 取证失败\n{raw}"
+
+    media = payload.get("Media") or {}
+    verify = payload.get("Verify") or {}
+    summary = {
+        "verdict": payload.get("Verdict", {}).get("Text"),
+        "level": payload.get("Verdict", {}).get("Level"),
+        "fetch": payload.get("Fetch"),
+        "chosen_uri": payload.get("Chosen"),
+        "segment_count": media.get("SegmentCount"),
+        "total_duration": media.get("TotalDuration"),
+        "encryption": (payload.get("Decrypt") or {}).get("Scheme"),
+        "drm": (payload.get("Decrypt") or {}).get("Drm"),
+        "decryptable": (payload.get("Decrypt") or {}).get("Possible"),
+        "key_probes": payload.get("KeyProbes"),
+        "verify": {
+            "attempted": verify.get("Attempted"),
+            "ok": verify.get("Ok"),
+            "file": verify.get("File"),
+            "skipped": verify.get("Skipped"),
+            "error": verify.get("Error"),
+            "ffprobe": verify.get("Ffprobe"),
+        },
+        "diagnosis": payload.get("Diagnosis"),
+        "evidence_json": os.path.join(payload.get("OutDir", out_dir or ""), "evidence.json"),
+        "report_md": os.path.join(payload.get("OutDir", out_dir or ""), "report.md"),
+    }
+    return json.dumps(summary, indent=2, ensure_ascii=False)
+
+
+@server.tool()
+def seep_http_replay(
+    url: Optional[str] = None,
+    curl: Optional[str] = None,
+    referer: Optional[str] = None,
+    user_agent: Optional[str] = None,
+    cookie: Optional[str] = None,
+    headers: Optional[List[str]] = None,
+    method: str = "GET",
+    body: Optional[str] = None,
+    content_type: Optional[str] = None,
+    rate_test: int = 0,
+    out_dir: Optional[str] = None,
+) -> str:
+    """HTTP 重放与防盗链举证：把「能不能访问」变成一个可控实验，定位真正的门槛头。
+
+    做法：拿原始请求 → 生成头变体矩阵（全头 / 无头 / 只留 UA / 只留 Referer /
+    逐项剔除 / 移动端 UA）→ 逐条重放 → 对比状态码与正文指纹 → 出结论。
+
+    Args:
+        url: 目标 URL
+        curl: 从浏览器复制的 curl 命令（自动抽 URL、-H 与 --data；与 url 二选一）
+        referer: Referer
+        user_agent: User-Agent
+        cookie: Cookie
+        headers: 额外请求头，形如 ["X-Token: abc"]
+        method: GET | POST | PUT | DELETE
+        body: POST 体
+        content_type: 请求 Content-Type
+        rate_test: >0 时连续请求 N 次，检测 429 / 频控
+        out_dir: 证据输出目录
+    """
+    if not url and not curl:
+        return "[ERROR]: 必须提供 url 或 curl"
+
+    args: List[str] = []
+    if url:
+        args += ["-Url", url]
+    if curl:
+        args += ["-Curl", curl]
+    if referer:
+        args += ["-Referer", referer]
+    if user_agent:
+        args += ["-UserAgent", user_agent]
+    if cookie:
+        args += ["-Cookie", cookie]
+    for h in (headers or []):
+        args += ["-Header", h]
+    args += ["-Method", method]
+    if body:
+        args += ["-Body", body]
+    if content_type:
+        args += ["-ContentType", content_type]
+    if rate_test > 0:
+        args += ["-RateTest", str(rate_test)]
+    if out_dir:
+        args += ["-OutDir", out_dir]
+
+    ok, raw, payload = _run_web_script("http-replay.ps1", args, timeout=900)
+    if not ok:
+        return f"[ERROR]: 重放举证失败\n{raw}"
+
+    summary = {
+        "verdict": payload.get("Verdict", {}).get("Text"),
+        "level": payload.get("Verdict", {}).get("Level"),
+        "gate_headers": payload.get("Verdict", {}).get("GateHeaders"),
+        "semantic_diff": payload.get("Verdict", {}).get("SemanticDiff"),
+        "rate": payload.get("Verdict", {}).get("Rate"),
+        "matrix": [
+            {"variant": r.get("Variant"), "status": r.get("Status"),
+             "length": r.get("Length"), "msn": r.get("Msn"),
+             "body_hash": r.get("BodyHash"), "sketch": r.get("Sketch")}
+            for r in (payload.get("Results") or [])
+        ],
+        "evidence_json": os.path.join(payload.get("OutDir", out_dir or ""), "evidence.json"),
+        "report_md": os.path.join(payload.get("OutDir", out_dir or ""), "report.md"),
+    }
+    return json.dumps(summary, indent=2, ensure_ascii=False)
+
+
+@server.tool()
+def seep_spider_extract(
+    target_path: str,
+    out_dir: Optional[str] = None,
+    skip_decompile: bool = False,
+) -> str:
+    """TVBox / CatVod spider 提取：反编译 jar/dex/apk，定位三入口并抽出硬编码线索。
+
+    影视源聚合器的「源」就是一个 spider.jar。入口固定为：
+      homeContent / categoryContent / detailContent / playerContent
+    其中 detailContent（详情下发）与 playerContent（取流解析）就是核心链路。
+
+    Args:
+        target_path: spider.jar / .dex / .apk 路径
+        out_dir: 输出目录（默认 D:\\Tool\\Web\\work\\spider-<名称>-<时间戳>）
+        skip_decompile: 复用已有反编译产物（<out_dir>\\src 已存在时）
+    """
+    if not os.path.exists(target_path):
+        return f"[ERROR]: Target does not exist: {target_path}"
+
+    args: List[str] = ["-Path", target_path]
+    if out_dir:
+        args += ["-OutDir", out_dir]
+    if skip_decompile:
+        args += ["-SkipDecompile"]
+
+    ok, raw, payload = _run_web_script("spider-extract.ps1", args, timeout=1800)
+    if not ok:
+        return f"[ERROR]: Spider 提取失败\n{raw}"
+
+    summary = {
+        "verdict": payload.get("Verdict", {}).get("Text"),
+        "level": payload.get("Verdict", {}).get("Level"),
+        "risks": payload.get("Verdict", {}).get("Risks"),
+        "source_files": payload.get("SourceFiles"),
+        "entries": [
+            {"entry": e.get("Entry"), "found": e.get("Found"), "files": e.get("Files")}
+            for e in (payload.get("Entries") or [])
+        ],
+        "domains": payload.get("Domains"),
+        "api_paths": [p.get("Match") for p in (payload.get("ApiPaths") or [])],
+        "secrets": payload.get("Secrets"),
+        "header_sets": payload.get("HeaderSets"),
+        "crypto_kinds": payload.get("CryptoKinds"),
+        "obfuscation": payload.get("Obfuscation"),
+        "evidence_json": os.path.join(payload.get("OutDir", out_dir or ""), "evidence.json"),
+        "report_md": os.path.join(payload.get("OutDir", out_dir or ""), "report.md"),
+    }
+    return json.dumps(summary, indent=2, ensure_ascii=False)
+
+
+@server.tool()
+def seep_cms_fingerprint(
+    url: str,
+    referer: Optional[str] = None,
+    user_agent: Optional[str] = None,
+    cookie: Optional[str] = None,
+    headers: Optional[List[str]] = None,
+    deep: bool = False,
+    out_dir: Optional[str] = None,
+) -> str:
+    """影视站 CMS / 源站指纹识别：一次告知「对面是什么站、源能不能直取、哪里开着门」。
+
+    识别六个维度：
+      ① 服务栈（Server / X-Powered-By / CDN·WAF 特征）
+      ② CMS 家族（苹果CMS maccms10 / 海洋CMS seacms / 织梦 / WordPress / 自建）
+      ③ 采集接口（/api.php/provide/vod/ 是否可直连 —— 影视站核心资产）
+      ④ 播放器链路（MacPlayer / DPlayer / hls.js / aliplayer…）
+      ⑤ TVBox 源配置（/tvbox/config.json 类聚合配置）
+      ⑥ 暴露面（后台入口 / .env / .git / 备份文件 / install / phpinfo）
+
+    行为约束：只发 GET，固定小规模探测（≤20 个路径），默认 400ms 间隔；
+    不做字典爆破、不提交表单、不尝试登录。
+
+    Args:
+        url: 站点根地址（可省略协议，自动补 https://）
+        referer: Referer
+        user_agent: User-Agent（默认浏览器 UA）
+        cookie: Cookie（站点需登录态时）
+        headers: 额外请求头，形如 ["X-Token: abc"]
+        deep: 是否追加暴露面探测（.env / .git / 备份 / install / phpinfo）
+        out_dir: 证据输出目录
+    """
+    if not url:
+        return "[ERROR]: 必须提供 url"
+
+    args: List[str] = ["-Url", url]
+    if referer:
+        args += ["-Referer", referer]
+    if user_agent:
+        args += ["-UserAgent", user_agent]
+    if cookie:
+        args += ["-Cookie", cookie]
+    for h in (headers or []):
+        args += ["-Header", h]
+    if deep:
+        args += ["-Deep"]
+    if out_dir:
+        args += ["-OutDir", out_dir]
+
+    ok, raw, payload = _run_web_script("cms-fingerprint.ps1", args, timeout=900)
+    if not ok:
+        return f"[ERROR]: CMS 指纹识别失败\n{raw}"
+
+    summary = {
+        "verdict": payload.get("Verdict", {}).get("Text"),
+        "level": payload.get("Verdict", {}).get("Level"),
+        "advice": payload.get("Verdict", {}).get("Advice"),
+        "http": payload.get("Http"),
+        "cdn_waf": payload.get("Cdn"),
+        "cms_candidates": payload.get("Cms"),
+        "confidence": payload.get("Confidence"),
+        "players": payload.get("Players"),
+        "m3u8_in_html": payload.get("M3u8InHtml"),
+        "api_endpoint": payload.get("Api"),
+        "tvbox_config": payload.get("TvBox"),
+        "exposures": payload.get("Exposures"),
+        "evidence_json": os.path.join(payload.get("OutDir", out_dir or ""), "evidence.json"),
+        "report_md": os.path.join(payload.get("OutDir", out_dir or ""), "report.md"),
+    }
+    return json.dumps(summary, indent=2, ensure_ascii=False)
+
+
+@server.tool()
+def seep_web_pipeline(
+    url: str,
+    authorized: bool = False,
+    scope: str = "",
+    operator: str = "未填写",
+    nuclei: bool = False,
+    ffuf: bool = False,
+    delay_ms: int = 300,
+    out_dir: Optional[str] = None,
+    stop_after: int = 4,
+) -> str:
+    """【Web 自动逆向流程】一条命令跑完：授权 → 指纹 → 举证 → （可选）nuclei/ffuf → 复测 → 报告。
+
+    每一步都过硬阶段门（web-gate），跳步即停。这是「是否有泄露源风险」这类问题的标准入口：
+    - 先指纹（对面是什么站、采集接口是否裸奔、有哪些暴露面）
+    - 再逐条做可利用性举证（不是看到 200 就当漏洞）
+    - 再复测（确认漏洞仍在，而非缓存/瞬时）
+    - 最后出报告（专门针对源泄露，不是客户端 CWE-602 模板）
+
+    Args:
+        url: 目标站点根地址
+        authorized: **必须为 True**，表示已获授权（G-Auth 门）；否则直接返回 BLOCK
+        scope: 授权依据（如「站长自有站点全量授权」），必填
+        operator: 授权人
+        nuclei: 是否跑 nuclei 模板化漏扫（会慢 1-2 分钟）
+        ffuf: 是否跑 ffuf 目录探测
+        delay_ms: 请求间隔毫秒，默认 300
+        out_dir: 案件目录（默认 D:\\Tool\\Web\\work\\webcase-<target>-<时间戳>）
+        stop_after: 只跑到指定阶段（1-4），用于分次执行
+    """
+    if not authorized or not scope:
+        return json.dumps({
+            "status": "BLOCK",
+            "stage": 0,
+            "name": "AUTHORIZE",
+            "action": "G-Auth 门未过：请确认目标为自有或已书面授权站点，然后传 authorized=true 与 scope='<授权依据>'",
+        }, indent=2, ensure_ascii=False)
+
+    args: List[str] = ["-Url", url, "-Authorized", "-Scope", scope, "-Operator", operator,
+                       "-DelayMs", str(delay_ms), "-StopAfter", str(stop_after)]
+    if nuclei:
+        args += ["-Nuclei"]
+    if ffuf:
+        args += ["-Ffuf"]
+    if out_dir:
+        args += ["-OutDir", out_dir]
+
+    ok, raw, payload = _run_web_script("web-pipeline.ps1", args, timeout=3600)
+    if not ok:
+        return f"[ERROR]: Web 流程执行失败\n{raw}"
+    return json.dumps(payload, indent=2, ensure_ascii=False)
+
+
+@server.tool()
+def seep_web_gate(
+    action: str,
+    case_dir: str,
+    stage: int = 1,
+    source: Optional[str] = None,
+    scope: Optional[str] = None,
+    operator: Optional[str] = None,
+    target: Optional[str] = None,
+) -> str:
+    """Web 审计硬阶段门：查/写/验 4 段证据链（0 授权 → 1 指纹 → 2 举证 → 3 复测 → 4 报告）。
+
+    用途：手动分次执行时逐阶段推进；或审计他人产出的案件是否完整。
+
+    Args:
+        action: check（能不能进入某阶段）| record（收录某阶段产物）| status（全局状态）| init（建案）| authorize（登记授权）
+        case_dir: 案件目录
+        stage: 阶段号 0-4（check/record 必填）
+        source: record 时的源 JSON 路径（工具输出的 evidence.json / proof JSON）
+        scope: authorize 时的授权依据
+        operator: authorize 时的授权人
+        target: init 时的目标地址
+    """
+    args: List[str] = ["-Action", action, "-Dir", case_dir]
+    if action in ("check", "record"):
+        args += ["-Stage", str(stage)]
+    if source:
+        args += ["-Source", source]
+    if scope:
+        args += ["-Scope", scope]
+    if operator:
+        args += ["-Operator", operator]
+    if target:
+        args += ["-Target", target]
+
+    ok, raw, payload = _run_web_script("web-gate.ps1", args, timeout=300)
+    # BLOCK 也会返回合法 JSON，因此不能只看 ok
+    if payload is None:
+        return f"[ERROR]: gate 执行失败\n{raw}"
+    return json.dumps(payload, indent=2, ensure_ascii=False)
+
+
+@server.tool()
+def seep_web_report(case_dir: str, out_file: Optional[str] = None) -> str:
+    """从案件目录生成「Web 源与暴露面安全评估报告」（不重发请求，保证报告与证据一一对应）。
+
+    与 seep_gen_security_report 的区别：后者是客户端 CWE-602 模板（branch_location / 内存补丁话术），
+    对 .env / .git / 备份文件泄露是错的话术。本工具专适用源与暴露面场景，修复建议可执行（deny 规则/
+    密钥轮换/日志审计/备份外迁）。
+
+    stage 0/1 缺失时拒绕生成（证据链不完整不出报告）。
+
+    Args:
+        case_dir: 案件目录（由 web-pipeline 或 web-gate init 建立）
+        out_file: 报告输出路径（默认 <case_dir>\\report.md）
+    """
+    if not os.path.isdir(case_dir):
+        return f"[ERROR]: 案件目录不存在: {case_dir}"
+    args: List[str] = ["-Dir", case_dir]
+    if out_file:
+        args += ["-OutFile", out_file]
+    ok, raw, payload = _run_web_script("web-report.ps1", args, timeout=300)
+    if payload is None:
+        return f"[ERROR]: 报告生成失败\n{raw}"
+    return json.dumps(payload, indent=2, ensure_ascii=False)
+
 
 # ---------------------------------------------------------------------------
 # 5. ReverseLab 攻防战术知识库与 CTF Payload 库

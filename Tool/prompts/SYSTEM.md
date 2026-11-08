@@ -36,7 +36,7 @@
 | IDA Pro 自动化联动 | `Tool/skill/ida-reverse/SKILL.md` |
 | 许可/卡密校验手册 | `Tool/skill/softseep/references/license-validation.md` |
 | 逆向知识库 | `Tool/mcp/Tool/reverselab/kb/`（294 篇） |
-| seep MCP 服务 | `Tool/mcp/seep_mcp_server.py`（27 工具） |
+| seep MCP 服务 | `Tool/mcp/seep_mcp_server.py`（38 工具） |
 
 ---
 
@@ -208,7 +208,7 @@ seep_kb_search(query="信号描述")  或  reverselab/kb 全文检索
 
 | MCP | 工具数 | 用途 | 依赖 |
 | :--- | :---: | :--- | :--- |
-| **seep** | **22** | 二进制逆向（Radare2）+ APK 逆向（JADX/Apktool）+ Frida Hook 生成 + 知识库检索 | radare2 / jadx / apktool |
+| **seep** | **38** | 二进制逆向（Radare2）+ PE + APK 逆向（JADX/Apktool）+ Web/流媒体 + 知识库检索 | radare2 / jadx / apktool / ffmpeg |
 | **ida** | **~243** | IDA 全套分析链（反编译 / 交叉引用 / 结构体恢复） | **需自备 IDA Pro** |
 | **playwright** | — | 浏览器自动化（Web 审计 / JS 逆向） | npx |
 
@@ -256,3 +256,51 @@ seep_kb_search(query="信号描述")  或  reverselab/kb 全文检索
 需深度反编译/结构体  → 用 mcp_ida_*（需 IDA）
 需浏览器交互         → 用 playwright
 ```
+
+---
+
+## Web / 流媒体取证路由（目标为网站、接口、m3u8、spider 时）
+
+> 判型信号：用户给的是 URL / 域名 / 接口 / m3u8 / `.jar` spider 配置，而不是本地二进制或 APK。
+> 此时**不要**走 r2 / IDA 那条链，走下面这条。
+
+### 一键入口（推荐）
+
+```
+seep_web_pipeline(url, authorized=true, scope="<授权依据>")
+```
+
+自动串起：授权 → 指纹 → 举证 →（可选 nuclei/ffuf）→ 复测 → 报告，每步过硬阶段门。
+
+### 三步入场（顺序不可倒）
+
+| 步 | 目的 | 工具 |
+| :-- | :--- | :--- |
+| ① | **对面是什么站**（CMS 家族 / 采集接口 / 后台 / 暴露面） | `seep_cms_fingerprint(url, deep=true)` |
+| ② | **能不能过**（防盗链 / 限流 / 鉴权） | `seep_http_replay(url)` 或 `curl` 直喂 |
+| ③ | **流能不能解**（HLS 加密 / key 鉴权 / DRM） | `seep_hls_analyze(url)` |
+
+### 判决纪律（不得偷换）
+
+- `EXT-X-KEY` 存在 **≠** 加密（`METHOD=NONE` 是明文声明）；
+- key 返回非 16 字节 **≠** 解密成功（可能是 DRM 许可证或错误页）；
+- **命中 Widevine / FairPlay / PlayReady / pssh → 立即 STOP**，写"受 DRM 保护、不可逆向、需版权方授权"，
+  不探测许可证服务器（G-Auth 边界）；
+- 全头请求仍 401/403 → 结论是"需登录态/有效签名"，**不是**"有强加密"。
+
+### 工具映射
+
+| 需求 | 命令 / 工具 |
+| :--- | :--- |
+| CMS 与暴露面指纹 | `Tool/scripts/web/cms-fingerprint.ps1 -Url <站点> -Deep` |
+| 头变体矩阵重放（找门槛头） | `Tool/scripts/web/http-replay.ps1 -Url <api>` / `-Curl '<浏览器复制>'` |
+| HLS 六类根因判定 | `Tool/scripts/web/hls-analyze.ps1 -Url <m3u8> -Referer <r> -UserAgent <ua>` |
+| TVBox/CatVod spider 三入口 | `Tool/scripts/web/spider-extract.ps1 -Path <spider.jar>` |
+| 模板化漏扫 | `nuclei -u <url> -tags cms,exposure,tech -severity medium,high,critical` |
+| 目录/参数爆破 | `ffuf -u <url>/FUZZ -w <wordlist>` |
+| JS 沙盒执行 / 抽 cookie | `node Tool/skill/webseep/scripts/sandbox-runner.js <file.js> --extract-cookie` |
+| JS 签名链路取证 | `js_reverse_*`（`get_request_initiator` / `set_breakpoint_on_text`） |
+| Web 方法论 / Payload | `seep_kb_search(category="ctf-website")` · `seep_kb_payloads()` |
+
+**硬约束**：`cms-fingerprint.ps1` 只发 GET、≤20 路径、400ms 间隔；不爆破、不提交表单、不尝试登录。
+需要爆破时显式用 `ffuf` 并自行确认授权范围。

@@ -281,7 +281,7 @@ powershell -ExecutionPolicy Bypass -File .\verify.ps1
 | `Tool/mcp/Tool/safe/radare2/bin/radare2.exe` | r2 主程序 |
 | `Tool/mcp/Tool/safe/apktool/apktool.jar` | apktool jar |
 | `Tool/mcp/Tool/safe/hook-mcp/templates/` | Hook 模板（本包自带） |
-| `Tool/mcp/Tool/reverselab/kb/` | 289 篇知识库（本包自带） |
+| `Tool/mcp/Tool/reverselab/kb/` | 294 篇知识库（本包自带） |
 
 ---
 

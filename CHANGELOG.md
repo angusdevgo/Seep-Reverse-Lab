@@ -12,6 +12,62 @@
 
 ## [Unreleased]
 
+## [1.9.0] - 2026-11-08
+
+### 新增能力域：Web / 流媒体取证
+
+- **第 11 个技能 `webseep`**（`Tool/skill/webseep/`，17 文件）——Web 源与接口取证方法论：
+  HLS 六类根因判定（防盗链 / key 鉴权 / AES-128 / SAMPLE-AES / DRM / 源失效）、
+  CMS 家族与采集接口指纹、TVBox / CatVod spider 三入口、头变体矩阵重放。
+  素材来源已在 `Tool/skill/webseep/PROVENANCE.md` 与 `Tool/docs/PROVENANCE.md` 完整标注。
+- **8 个 Web MCP 工具**：`seep_web_pipeline`（一键总入口）、`seep_web_gate`（阶段门，缺前置产物直接 BLOCK）、
+  `seep_cms_fingerprint`、`seep_hls_analyze`、`seep_http_replay`、`seep_spider_extract`、
+  `seep_web_report`、`seep_web_toolbox`。
+- **9 个 PowerShell 取证脚本**（`Tool/scripts/web/`）+ 自测夹具（`_test/`，含本地 CMS / 门槛服务器与假 HLS 样本）。
+- 判决纪律写进提示词：`EXT-X-KEY` 存在 ≠ 加密；key 非 16 字节 ≠ 解密成功；
+  命中 Widevine / FairPlay / PlayReady / pssh → 立即 STOP，不探测许可证服务器。
+- 硬约束写进脚本：`cms-fingerprint.ps1` 只发 GET、≤20 路径、400ms 间隔，不爆破、不提交表单、不尝试登录。
+
+### 新增能力域：Android 外部工具箱
+
+- **3 个 MCP 工具**：`seep_android_toolbox`（就绪检查）、`seep_apkid_scan`（加固 / 混淆器指纹）、
+  `seep_aotopsy`（Flutter / Dart AOT `libapp.so` 静态分析与符号还原）。
+- **6 个 PowerShell 脚本**（`Tool/scripts/android/`）：幂等安装 Frida / objection / frida-dexdump / APKiD / Aotopsy
+  并生成 `.cmd` 垫片，另有 recon / dexdump / objection / apkid / aotopsy 五个作战脚本。
+- **Aotopsy 安装载荷**（`Tool/aotopsy/`，11 MB，MIT）随仓库分发，`install-android-toolbox.ps1` 直接复制，无需构建。
+- 公共库：`Tool/scripts/lib/WebToolbox.ps1`、`Tool/scripts/lib/AndroidToolbox.ps1`。
+
+### MCP 工具数 27 → 38
+
+与原 PE 四件套（`seep_pe_triage` / `_aob_scan` / `_diff` / `_patch`）合并，工具分组扩为**八大类**。
+`seep_status()` 现在同时报告 `pe_engine_exe_reverse`、`android_toolbox`、`web_toolbox` 三块就绪度。
+
+### 体检改动态断言（修复「体检假红 / 假绿」）
+
+- `setup/verify.ps1` 不再写死「27 个原生工具定义」，改为从 `seep_mcp_server.py` 源码统计 `def seep_*`。
+- 技能数改为遍历 `Tool/skill/` 目录统计，不再写死「10 大组件」。
+- 新增 `webseep` 完整性检查（SKILL.md + ≥3 refs + 模板）。
+
+### 文档
+
+- `README.md` / `README.zh.md`：工具矩阵新增「Android 工具箱」「Web / 流媒体」两组，计数 27 → 38。
+- `Tool/docs/MCP-SETUP.md`：工具清单刷新为 38，补充两段外部依赖说明与一键补全命令。
+- 新增 `Tool/docs/WEB-TOOLBOX.md`、`Tool/docs/ANDROID-TOOLBOX.md`、`Tool/docs/SKILL-ROUTING.md`。
+- `Tool/docs/TOOLKIT_GUIDE.md` 升级为六章版（新增 Android 工具箱、Web 取证工具箱两章）。
+- `Tool/docs/PROVENANCE.md`：Skill 溯源扩至 11 个，新增 web/android 脚本溯源与第三方素材归属。
+- `Tool/prompts/SYSTEM.md`：新增「Web / 流媒体取证路由」章节（三步入场 + 判决纪律 + 工具映射）。
+- `Tool/skill/softseep/SKILL.md`：MCP 路由表补 `seep_web_*` / `seep_hls_*` / `seep_cms_*`。
+
+### 已部署用户注意
+
+1. 更新后**必须完全重启 Agent 会话**（MCP 工具在启动时握手，`/reload` 不够），否则看不到新增的 11 个工具。
+2. 新增 11 个工具里有 4 个依赖外部工具箱：`seep_hls_analyze` 需 ffmpeg/ffprobe，
+   `seep_apkid_scan` 需 APKiD，`seep_aotopsy` 需 Aotopsy，`seep_android_toolbox` 只做就绪检查。
+   未安装时这些工具返回明确的修复指引，**不会**导致整个 MCP 服务不可用。
+   补全命令见 `Tool/docs/WEB-TOOLBOX.md` 与 `Tool/docs/ANDROID-TOOLBOX.md`。
+3. `Tool/aotopsy/`（11 MB）随仓库分发，`git pull` 会一并拉取，无需另行下载。
+
+
 ### 案例库：项目D 合并原地演进至 v1.6.1（build 16 支持）
 
 - `Tool/cases/项目D/docs/reverse-engineering.md` 新增 §10：build 16 代码重排迁移（.text +245 KB、段内位移非均匀、capstone 局部定向反汇编、操作数补丁识别）

@@ -22,7 +22,7 @@
 
 ## 二、 官方部署资产核验基准表 (Baseline Manifests)
 
-### 1. 🛠️ 技能系统基准表 (Skills System - 10 大组件)
+### 1. 🛠️ 技能系统基准表 (Skills System - 11 个技能 / 7 个目录)
 
 目标安装路径以 Pi Agent 规范为例（`~/.pi/agent/skills/`，Windows 下为 `$env:USERPROFILE\.pi\agent\skills\`）：
 
@@ -87,10 +87,10 @@ MCP 配置文件所在位置：
 
 | # | 模块名 | 所在相对目录 | 官方预期数量 | 作用与覆盖面 |
 |---|---|---|---|---|
-| **K1** | **战术实战笔记 (KB)** | `Tool/mcp/Tool/reverselab/kb/` | **≥289 篇** Markdown 文件 | `ctf-website`、`pe-reverse`、`apk-reverse`、`windows`、`general` 全量攻防笔记 |
+| **K1** | **战术实战笔记 (KB)** | `Tool/mcp/Tool/reverselab/kb/` | **≥294 篇** Markdown 文件 | `ctf-website`、`pe-reverse`、`apk-reverse`、`windows`、`general` 全量攻防笔记 |
 | **K2** | **攻击网图谱 (Boards)** | `Tool/mcp/Tool/reverselab/boards/` | 多平台拓扑文件 | 信号到战术文档的拓扑路由关系 |
 | **K3** | **脱敏实战案例库** | `Tool/cases/` | **14 个项目工程** (项目A ~ 项目N) | 覆盖单进程、多进程、VM、.NET算号、RSA、Java/install4j 双层鉴权、.NET VM 混淆加固等架构 |
-| **K4** | **上游开源完整镜像** | `Tool/upstream/` | **3 大开源项目** | `apk-reverse`、`open-tgtylab`、`open-reverselab` 完整单测与镜像 |
+| **K4** | **上游开源完整镜像** | `Tool/upstream/` | **4 大开源项目** | `apk-reverse`、`open-tgtylab`、`open-reverselab`、`exe-reverse` 完整单测与镜像 |
 | **K5** | **MANUAL 专项手册** | `MANUAL/` | **8 份核心手册** | `DEPLOYMENT` (部署)、`DEPLOYMENT-CHECKLIST` (基准清单)、`CROSS-PLATFORM` (跨平台)、`COMPLIANCE-RELAY` (合规中继与防拒)、`ANTI-DEBUG` (反调试)、`UNPACKING` (脱壳)、`POC-VALIDATION` (PoC自愈)、`IDA-PRO` (IDA接入) |
 
 ---
@@ -150,7 +150,7 @@ MCP 配置文件所在位置：
 #### 2. 🔌 MCP 服务引擎 (4项)
 | 服务名 | 配置文件载体 | 期望工具数 | 实际状态 | 状态判定 | 降级/处置说明 |
 |---|---|---|---|---|---|
-| seep (自研) | ~/.pi/agent/mcp.json | 23 工具 | Connected (23) | 🟢 READY | 核心二进制/安卓/知识库能力完备 |
+| seep (自研) | ~/.pi/agent/mcp.json | 38 工具 | Connected (38) | 🟢 READY | 二进制 / PE / 安卓 / Web 流媒体 / 知识库能力完备 |
 | ida (商业) | ~/.pi/agent/mcp.json | ~243 工具 | 未监听 (13337) | 🟡 DEGRADED | 已自动降级为内置 Radare2，主链路 100% 可用 |
 | js-reverse | ~/.pi/agent/mcp.json | 12 工具 | 可用 (npx) | 🟢 READY | JS 逆向引擎就绪 |
 | playwright | ~/.pi/agent/mcp.json | 18 工具 | Token待配置 | 🟡 DEGRADED | 无头浏览器可选，不影响二进制逆向 |
@@ -161,7 +161,7 @@ MCP 配置文件所在位置：
 | Radare2 | v6.2.2 (radare2.exe) | 物理就绪 | 🟢 READY | 二进制反编译/反汇编引擎正常 |
 | Jadx | v1.5.6 (jadx.bat) | 物理就绪 | 🟢 READY | Java 源码反编译引擎正常 |
 | Apktool | v3.0.3 (apktool.jar) | 物理就绪 | 🟢 READY | 资源解包与重打包正常 |
-| 攻防知识库 | ≥289 篇笔记 | 物理就绪 (318 篇) | 🟢 READY | seep_kb_* 检索后端就绪 |
+| 攻防知识库 | ≥294 篇笔记 | 物理就绪 (318 篇) | 🟢 READY | seep_kb_* 检索后端就绪 |
 
 #### 4. 🚀 总结与开工建议
 - **系统评估**：核心组件与 9 大 Skill 100% 部署成功，工作台处于 **[READY / 完备就绪]** 状态；

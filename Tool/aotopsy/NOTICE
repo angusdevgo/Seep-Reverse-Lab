@@ -1,0 +1,29 @@
+AOTopsy
+
+A fork of unflutter (https://github.com/zboralski/unflutter)
+Copyright 2024 Anthony Zboralski
+
+Fork modifications Copyright 2024 The AOTopsy Authors.
+
+This project derives data tables from the Dart SDK source code,
+which is licensed under the BSD 3-Clause License. Specifically:
+
+- CID (Class ID) tables in internal/snapshot/version.go are derived
+  from dart-lang/sdk's runtime/vm/class_id.h
+- Thread (THR) field offsets in internal/vmtables/thrfields.go and
+  internal/vmtables/thrfieldsx64.go are derived from
+  dart-lang/sdk's runtime/runtime_offsets_extracted.h
+- Thread stub entry-point names in internal/vmtables/stubnames.go and
+  internal/vmtables/threadstubs.go are derived from
+  dart-lang/sdk's runtime/vm/stub_code_list.h and runtime_entry_list.h
+- Snapshot format constants in internal/snapshot/version.go are derived
+  from dart-lang/sdk's runtime/vm/snapshot.h
+
+The Dart SDK is Copyright The Dart Project Authors and is licensed
+under the BSD 3-Clause License. See:
+  https://github.com/dart-lang/sdk/blob/main/LICENSE
+
+This project's BSD-3-Clause license is compatible with the Dart SDK's
+license. The derived data tables are factual (offset values, enum
+names, constant values) and are used for interoperability with the
+Dart AOT snapshot format.

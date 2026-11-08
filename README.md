@@ -9,7 +9,7 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/angusdevgo/seep-reverse-lab"><img src="https://img.shields.io/badge/Release-v1.6.1-brightgreen.svg?style=for-the-badge&logo=github" alt="Release"></a>
+  <a href="https://github.com/angusdevgo/seep-reverse-lab"><img src="https://img.shields.io/badge/Release-v1.9.0-brightgreen.svg?style=for-the-badge&logo=github" alt="Release"></a>
   <a href="https://github.com/angusdevgo/seep-reverse-lab/blob/main/LICENSE"><img src="https://img.shields.io/badge/License-GPL--3.0-blue.svg?style=for-the-badge" alt="License"></a>
   <img src="https://img.shields.io/badge/Platform-Windows%20%7C%20Android%20%7C%20Linux-0078D6?style=for-the-badge&logo=windows" alt="Platform">
   <img src="https://img.shields.io/badge/Architecture-x86%20%7C%20x64%20%7C%20ARM64-orange?style=for-the-badge" alt="Architecture">
@@ -60,10 +60,10 @@ Users provide plain-language technical goals; the agent autonomously performs pl
 
 | Pain Point | Solution |
 |---|---|
-| 🔧 **Toolchain Fragmentation** | 27 MCP tools wrapping Radare2, JADX, Apktool, Frida and a PE engine — unified API, zero manual switching |
+| 🔧 **Toolchain Fragmentation** | 38 MCP tools wrapping Radare2, JADX, Apktool, Frida and a PE engine — unified API, zero manual switching |
 | 🧠 **Agent Decision Drift** | `softseep` orchestrator: two-stage auto-classification (Platform × 9 Task Types) + 7-gate decision tree |
 | 🛡️ **Model Refusal in Security Audits** | Three-tier mitigation: `BLOCK_NONE` injection + transparent terminology mapping + cognitive redirection |
-| 📚 **Ephemeral Knowledge** | 289 technical field journals + 14 desensitized paradigms + "search KB before executing" enforced discipline |
+| 📚 **Ephemeral Knowledge** | 294 technical field journals + 14 desensitized paradigms + "search KB before executing" enforced discipline |
 | 📦 **Setup Friction** | One-click `install.ps1` → supports Pi Agent, Claude Code, DeepSeek Harness (DSH), Codex / OpenCode |
 
 ---
@@ -91,7 +91,7 @@ User Input (plain language — "bypass the premium check in FooBar.apk")
          │                  │                    │
          ▼                  ▼                    ▼
    seep MCP            IDA Pro MCP         KB Search
-   27 tools            (optional)          289 journals
+   38 tools            (optional)          294 journals
    (Radare2/JADX/                          (Zero-Waste Recon)
     Apktool/Frida)
          │
@@ -182,7 +182,7 @@ Seep\ (251 MB)
 │   │   └── safe-skills\           ← 5 standalone tool packages
 │   │
 │   ├── mcp\                       ← MCP Engine
-│   │   ├── seep_mcp_server.py     ← Core server: 27 native reversing & KB tools
+│   │   ├── seep_mcp_server.py     ← Core server: 38 native reversing, PE, Web, Android & KB tools
 │   │   ├── mcp.json.template      ← Global MCP client configuration template
 │   │   └── Tool\                  ← ⚠️ Hardcoded relative runtime path (do not rename)
 │   │       ├── safe\              ← Pre-bundled cross-platform toolchains
@@ -193,7 +193,7 @@ Seep\ (251 MB)
 │   │       │   ├── ida-pro-mcp\   ← IDA bridge adapter
 │   │       │   ├── js-reverse-mcp\← Web / JS debugging engine
 │   │       │   └── playwright-mcp\← Headless browser automation
-│   │       └── reverselab\        ← 289 field journals + attack chains
+│   │       └── reverselab\        ← 294 field journals + attack chains
 │   │
 │   ├── prompts\                   ← Agent coordination specs & runtime extensions
 │   │   ├── SYSTEM.md              ← Pi Agent system instructions
@@ -230,7 +230,7 @@ Seep\ (251 MB)
 
 ## 🛠️ MCP Tool Matrix
 
-The bundled `seep` MCP server exposes **27 native tools** across six functional groups:
+The bundled `seep` MCP server exposes **38 native tools** across eight functional groups:
 
 | Category | Tool | Functionality | Token Mode |
 |---|---|---|---|
@@ -249,12 +249,23 @@ The bundled `seep` MCP server exposes **27 native tools** across six functional 
 | | `seep_pe_aob_scan` | AOB signature lookup with `unique` / `ambiguous` / `pervasive` verdict | `limit=` |
 | | `seep_pe_diff` | Build-to-build diff with volatile header fields normalised, mapped back to RVA | — |
 | | `seep_pe_patch` | Verified equal-length patch: checksum recompute + post-write byte re-read | `dry_run=` |
+| **Android toolbox** | `seep_android_toolbox` | Readiness check for external Frida / objection / APKiD / Aotopsy toolchain | — |
+| | `seep_apkid_scan` | APKiD packing & anti-analysis fingerprint (protector vendor, obfuscator) | — |
+| | `seep_aotopsy` | Flutter / Dart AOT (`libapp.so`) static analysis, Dart symbol recovery | `keyword=` |
+| **Web & streaming** | `seep_web_pipeline` | One-shot chain: auth gate → fingerprint → evidence → retest → report | `authorized=` |
+| | `seep_web_gate` | Web stage gate with hard BLOCK on missing prior artefacts | — |
+| | `seep_cms_fingerprint` | CMS family, collection API, player chain, exposure-surface fingerprint | `deep=` |
+| | `seep_hls_analyze` | HLS six-root-cause verdict: referer / auth / AES-128 / DRM / source death | — |
+| | `seep_http_replay` | Header-variant matrix replay to isolate the gating header | — |
+| | `seep_spider_extract` | TVBox / CatVod spider three-entry extraction | — |
+| | `seep_web_report` | Generate the web source & exposure-surface assessment report | — |
+| | `seep_web_toolbox` | Readiness check for the Web toolbox (ffmpeg / nuclei / ffuf) | — |
 | **Android** | `seep_apk_info` | APK manifest, permissions, signatures (no Java) | — |
 | | `seep_apk_decompile` | JADX full Java source decompilation | — |
 | | `seep_apk_unpack` | Apktool resource + Smali disassembly | — |
 | | `seep_apk_smali_search` | Smali pattern search (crypto keys, auth gates) | `limit=` |
 | | `seep_apk_gen_hook` | Ready-to-run Frida hooks with stack traces | — |
-| **Knowledge Base** | `seep_kb_search` | Full-text search across 289 field journals | `limit=` |
+| **Knowledge Base** | `seep_kb_search` | Full-text search across 294 field journals | `limit=` |
 | | `seep_kb_read` | Full technical reference retrieval by topic | — |
 | | `seep_kb_checklist` | Emergency triage checklists & attack matrices | — |
 | | `seep_kb_payloads` | Security test seeds (JWT, SSRF, SSTI, SQLi) | — |

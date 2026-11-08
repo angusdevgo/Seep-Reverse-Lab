@@ -58,7 +58,7 @@ Pi Agent 是原生支持 Skill 渐进式披露、拦截扩展与 `lab：` 状态
    powershell -ExecutionPolicy Bypass -File .\setup\install.ps1
    ```
 2. **确认写入目录**：
-   - 技能包写入至：`~/.pi/agent/skills/`（包含 `softseep`、`exe-reverse`、`apkseep` 等 10 个技能）；
+   - 技能包写入至：`~/.pi/agent/skills/`（包含 `softseep`、`exe-reverse`、`apkseep`、`webseep` 等 11 个技能）；
    - 系统提示词写入至：`~/.pi/agent/SYSTEM.md` 与 `AGENTS.md`；
    - 安全放行扩展写入至：`~/.pi/agent/extensions/security-audit-interceptor.ts`；
    - MCP 服务注册至：`~/.pi/agent/mcp.json`（其中已将 `<SEEP_ROOT>` 自动替换为当前工作台绝对路径）。
@@ -100,7 +100,7 @@ Claude Code 原生支持项目级上下文（`CLAUDE.md`）与项目级 MCP 注�
    ```text
    /mcp
    ```
-   检查 `seep` 服务是否显示为绿色 `connected`，且暴露出 27 个工具。
+   检查 `seep` 服务是否显示为绿色 `connected`，且暴露出 38 个工具。
 5. **执行一键校验**：
    在 Claude 对话框直接发送：
    ```text

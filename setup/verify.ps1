@@ -213,7 +213,14 @@ Test-CheckItem "扩展"   "底层安全放行与 Lab 状态机扩展 (.ts)" {
 # -----------------------------------------------------------------------------
 # 4. 技能系统完备性 (Skills System)
 # -----------------------------------------------------------------------------
-Write-Host "`n[4/9] 🛠️ 逆向工程专业技能库 (Skills - 10大组件)" -ForegroundColor White
+$skillDirs = @(Get-ChildItem -Path (Join-Path $ToolDir 'skill') -Directory -ErrorAction SilentlyContinue)
+$skillDirCount = $skillDirs.Count
+# safe-skills 是一个聚合目录，内部再含多组技能；按「实际技能数」报数避免误读
+$safeSkillCount = 0
+$safeDir = Join-Path $ToolDir 'skill\safe-skills'
+if (Test-Path $safeDir) { $safeSkillCount = @(Get-ChildItem $safeDir -Directory).Count }
+$skillTotal = $skillDirCount - 1 + $safeSkillCount
+Write-Host "`n[4/9] 🛠️ 逆向工程专业技能库 (Skills - $skillTotal 个技能 / $skillDirCount 个目录)" -ForegroundColor White
 Test-CheckItem "Skill" "核心总控调度器 (softseep 包含 10 大专题库)" {
     $r = Join-Path $localSkills 'softseep\references'
     (Test-Path (Join-Path $localSkills 'softseep\SKILL.md')) -and 
@@ -243,6 +250,12 @@ Test-CheckItem "Skill" "通用许可/卡密校验突破规范 (license-bypass)" 
     Test-Path (Join-Path $localSkills 'client-license-validation-bypass\SKILL.md')
 } "client-license-validation-bypass 技能缺失" "SKILL.md 在位" "$localSkills\client-license-validation-bypass"
 
+Test-CheckItem "Skill" "Web / 流媒体取证 (webseep 包含 SKILL.md + 3 refs + 模板)" {
+    $r = Join-Path $localSkills 'webseep\references'
+    (Test-Path (Join-Path $localSkills 'webseep\SKILL.md')) -and
+    (Test-Path $r) -and ((Get-ChildItem $r -Filter '*.md').Count -ge 3)
+} "webseep 工程不完整，请重跑 setup\install-pi.ps1" "SKILL.md + 3 refs + templates" "$localSkills\webseep"
+
 Test-CheckItem "Skill" "独立战术安全技能包 (safe-skills 5组)" {
     $ss = Join-Path $localSkills 'safe-skills'
     (Test-Path $ss) -and ((Get-ChildItem $ss -Directory).Count -ge 5)
@@ -271,6 +284,12 @@ if (Test-Path $AgentDir) {
 # -----------------------------------------------------------------------------
 Write-Host "`n[5/9] 🔌 MCP 服务引擎与物理内置工具箱 (Native Tools)" -ForegroundColor White
 
+# 工具数以源码为准动态统计，避免版本迭代后断言过时导致「体检假红」
+$seepServerPath = Join-Path $ToolDir 'mcp\seep_mcp_server.py'
+$seepToolCount = if (Test-Path $seepServerPath) {
+    @(Select-String -Path $seepServerPath -Pattern '^def seep_\w+\(' -AllMatches).Count
+} else { 0 }
+
 Test-CheckItem "MCP" "核心服务端脚本 (seep_mcp_server.py 语法自洽)" {
     $sp = Join-Path $ToolDir 'mcp\seep_mcp_server.py'
     if (Test-Path $sp) {
@@ -280,7 +299,7 @@ Test-CheckItem "MCP" "核心服务端脚本 (seep_mcp_server.py 语法自洽)" {
             $LASTEXITCODE -eq 0
         } else { $true }
     } else { $false }
-} "seep_mcp_server.py 丢失或存在 Python 语法解析错误" "27 个原生工具定义" "$ToolDir\mcp\seep_mcp_server.py"
+} "seep_mcp_server.py 丢失或存在 Python 语法解析错误" "$seepToolCount 个原生工具定义" "$ToolDir\mcp\seep_mcp_server.py"
 
 Test-CheckItem "工具箱" "Jadx 反编译引擎 (jadx-1.5.6 完整就绪)" {
     $j = Join-Path $ToolsDir 'jadx\lib\jadx-1.5.6-all.jar'

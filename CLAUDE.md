@@ -6,7 +6,7 @@
 
 ## 一、 项目背景与定位
 
-本工程为面向 AI Agent 的**多平台客户端逆向工程与授权流安全审计（CWE-602）工作台**。深度覆盖 Windows PE/DLL、Android APK/DEX/SO、Linux ELF。包含 9 大逆向 Skill、4 大核心 MCP 服务、289+ 篇实战知识库与 14 个脱敏工业架构范式。
+本工程为面向 AI Agent 的**多平台客户端逆向工程与授权流安全审计（CWE-602）工作台**。深度覆盖 Windows PE/DLL、Android APK/DEX/SO、Linux ELF。包含 11 大逆向 Skill、4 大核心 MCP 服务、289+ 篇实战知识库与 14 个脱敏工业架构范式。
 
 ---
 
@@ -111,12 +111,12 @@ Seep\
 ├── DSH-PROFILE.md     ← DeepSeek Harness 接入模板
 │
 ├── Tool\
-│   ├── skill\         9 个 Skill（以 softseep 为总控）
-│   ├── mcp\           seep MCP（23 工具）+ Tool\ 运行时依赖
+│   ├── skill\         11 个 Skill（以 softseep 为总控）
+│   ├── mcp\           seep MCP（38 工具）+ Tool\ 运行时依赖
 │   │   └── Tool\safe\ 内置 Jadx、Radare2、Apktool、Hook 引擎等
 │   ├── prompts\       SYSTEM.md、AGENTS.md 与安全扩展
 │   ├── cases\         14 个脱敏项目工程（项目 A ~ 项目 N）
-│   ├── upstream\      3 大开源项目完整镜像 (apk-reverse, open-tgtylab, open-reverselab)
+│   ├── upstream\      4 大开源项目完整镜像 (apk-reverse, open-tgtylab, open-reverselab, exe-reverse)
 │   ├── docs\          MCP-SETUP、DOWNLOADS、PROVENANCE 等
 │   └── scripts\       任务沙盒初始化与签名工作流
 ├── setup\             安装与自检脚本集 (install.ps1, install.sh, generate-configs.ps1)

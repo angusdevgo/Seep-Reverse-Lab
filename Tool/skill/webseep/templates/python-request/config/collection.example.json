@@ -1,0 +1,12 @@
+{
+  "url": "https://example.test/api/items",
+  "method": "GET",
+  "items_path": "data.items",
+  "success_path": "code",
+  "success_value": 0,
+  "item_key": "id",
+  "params": {"page_size": 20},
+  "pagination": {"mode": "page", "param": "page", "start": 1},
+  "max_pages": 100,
+  "timeout": 30
+}
