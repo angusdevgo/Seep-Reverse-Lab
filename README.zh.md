@@ -9,7 +9,7 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/angusdevgo/seep-reverse-lab"><img src="https://img.shields.io/badge/Release-v1.10.0-brightgreen.svg?style=for-the-badge&logo=github" alt="Release"></a>
+  <a href="https://github.com/angusdevgo/seep-reverse-lab"><img src="https://img.shields.io/badge/Release-v1.10.1-brightgreen.svg?style=for-the-badge&logo=github" alt="Release"></a>
   <a href="https://github.com/angusdevgo/seep-reverse-lab/blob/main/LICENSE"><img src="https://img.shields.io/badge/License-GPL--3.0-blue.svg?style=for-the-badge" alt="License"></a>
   <img src="https://img.shields.io/badge/Platform-Windows%20%7C%20Android%20%7C%20Linux-0078D6?style=for-the-badge&logo=windows" alt="Platform">
   <img src="https://img.shields.io/badge/Architecture-x86%20%7C%20x64%20%7C%20ARM64-orange?style=for-the-badge" alt="Architecture">
@@ -145,7 +145,7 @@ Agent 自主完成：
 - 🔄 **PoC 自愈循环**：Frida 报错 → 根因映射 → 自动修正代码 → 重跑（最多 3 次，超限后结构化移交人工）
 - 💎 **14 大工业级脱敏范式**：单进程离线 → 多进程 IPC → VM 集中判定 → .NET 算号 → 弱模 RSA 旁路 → Java 动态插桩 → .NET VM 逆向，全覆盖（项目 A ~ 项目 N）
 - 🌐 **链路层合规转译中继与自动重试**：纯标准库实现的本地中继，支持流式拒答自动重试级联（`S1 评审清单` → `S2 架构走查` → `S3 英文重塑`），100% 保留目标参数不漂移，84 项单元测试全绿
-- ⚡ **DeepSeek Harness (DSH) 秒级自愈套件**：解决官方与插件在 Windows 上的扫描超时与端口冲突，4 秒极速冷启动，自动提取 Token URL 与 MCP 在线核验 (`start-dsh.ps1` / `stop-dsh.ps1`)
+- ⚡ **DeepSeek Harness (DSH) 接入**：一条命令幂等挂载进 `$DSH_HOME/profiles/<p>/cordis.patch.yml`（`setup/dsh-merge.py`，写前备份、你自己的条目原样保留），并显式设置 `toolCallTimeoutMs`（DSH 默认 60 秒会掐断长任务）；配套端到端校验 `setup/test_dsh_mount.py` 会按 DSH 自己合成的配置真启动一次并数工具
 - 🛡️ **实测抗拒答综合防线**：Gemini-Safe 提示词语义重塑（`gemini-safe.flag`，377 token 拒答 → 3300 字深度分析）、L1 拦截器动态可观测日志（`l1-log.flag`）、底座级 `BLOCK_NONE` 注入
 - 🔌 **离线预置全量内置**：所有工具链物理打包（251 MB），部署后零外网依赖
 - 🪟 **Windows PE 深水区引擎（`exe-reverse`）**：41 篇带门禁的参考文档 + **16 个零依赖 Python 引擎** —— `peutil`（RVA↔偏移、导入导出/TLS/重定位、微软校验和、逐节熵）、`pe_triage`、`pepatch`（等长补丁 + 校验和重算 + **写盘后逐字节回读**）、`aob_scan`（unique/ambiguous/pervasive 裁决）、`pe_diff`、`hwprobe`、`trace_reduce`（可选 SMT 证明）、`fold`。覆盖保护壳、虚拟化/控制流平坦化、.NET、Unity IL2CPP、打包 Python、内核驱动、硬件追踪与 Hypervisor 观测
@@ -163,7 +163,7 @@ Seep\ (251 MB)
 ├── README.zh.md                   ← 本文件（中文文档）
 ├── CLAUDE.md                      ← Claude Code 项目级原生指令
 ├── .mcp.json                      ← 项目级 MCP 注册文件（Claude Code / OpenCode）
-├── DSH-PROFILE.md                 ← DeepSeek Harness Cordis 插件配置模板
+├── DSH-PROFILE.md                 ← DeepSeek Harness 接入：字段表 / 挂载方式 / 校验
 ├── check.bat                      ← ⭐ 双击一键体检入口（Windows）
 ├── check.ps1                      ← PowerShell 体检入口
 ├── VERSION                        ← 当前版本标识
@@ -325,7 +325,7 @@ powershell -File setup\install-capabilities.ps1 -CheckOnly  # 只看现状
 |---|---|---|---|
 | **Pi Agent** | `Tool/prompts/SYSTEM.md` | `~/.pi/agent/mcp.json` | 运行 `install.ps1` 自动写入，完成后**必须重启当前终端与 Pi 会话**。 |
 | **Claude Code** | 项目根 `CLAUDE.md` | 项目根 `.mcp.json` | 运行 `powershell .\setup\generate-configs.ps1` 自愈绝对路径后，在项目根执行 `claude`。 |
-| **DeepSeek Harness** | `Tool/prompts/AGENTS.md` | `DSH-PROFILE.md` | 运行 `setup\generate-configs.ps1` 生成官方 `- insert:` 语法的 `cordis.generated.yml`，使用 `dsh web --patch ...` 或粘贴进 Profile。 |
+| **DeepSeek Harness** | 项目根 `AGENTS.md`（自动生成） | `DSH-PROFILE.md` | `python setup/dsh-merge.py` 幂等挂载进 `cordis.patch.yml`；也可 `dsh web --patch ...` 临时挂载。校验：`python setup/test_dsh_mount.py`。 |
 | **OpenCode / Codex** | 项目根 `AGENTS.md` | `opencode.jsonc` | 运行 `setup\generate-configs.ps1` 生成符合 OpenCode 官方标准的 `opencode.jsonc`，在项目根直接启动 `opencode`。 |
 
 > 📖 **咨询级部署与全套排障手册**：关于四大 Agent 的具体配置细则、常见报错（`No module named mcp`、执行策略受限、Java环境缺省等）的解决方案，请详阅 [**MANUAL/DEPLOYMENT.md**](MANUAL/DEPLOYMENT.md)。

@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+﻿#!/usr/bin/env bash
 # ==============================================================================
 # Seep Reverse Lab — Linux / macOS 原生全彩自检与部署核验脚本 (Verifier)
 # 对应 Windows check.ps1 / verify.ps1，输出结构化 ANSI 彩色报告
@@ -120,6 +120,76 @@ check_item "提示词" "通用跨 Agent 规范 (AGENTS.md)" test -f "$TOOL_DIR/p
 check_item "提示词" "Claude Code 项目级规范 (CLAUDE.md 在项目根)" test -f "$ROOT/CLAUDE.md"
 check_item "提示词" "DeepSeek Harness 配置文件 (DSH-PROFILE.md)" test -f "$ROOT/DSH-PROFILE.md"
 check_item "扩展"   "底层安全放行与 Lab 状态机扩展 (.ts)" test -f "$TOOL_DIR/prompts/extensions/security-audit-interceptor.ts"
+
+# 项目根 AGENTS.md：DSH / Codex 的指令入口，由 generate-configs 从 Tool/prompts 复制生成
+test_root_agents_sync() {
+    local a b
+    [ -f "$TOOL_DIR/prompts/AGENTS.md" ] || return 1
+    [ -f "$ROOT/AGENTS.md" ] || return 1
+    a=$(tr -d '\r' < "$ROOT/AGENTS.md")
+    b=$(tr -d '\r' < "$TOOL_DIR/prompts/AGENTS.md")
+    [ "$a" = "$b" ]
+}
+check_item "Agent" "项目根 AGENTS.md 与源同步 (DSH / Codex 指令入口)" test_root_agents_sync
+
+# DSH Cordis 补丁生成物结构
+test_cordis_patch() {
+    local c="$SCRIPT_DIR/cordis.generated.yml"
+    [ -f "$c" ] || return 1
+    grep -qE '^- insert:' "$c" || return 1
+    grep -q 'serverName: seep' "$c" || return 1
+    grep -q 'toolCallTimeoutMs:' "$c" || return 1
+    grep -q '@deepseek-ai/dsh-mcp-client' "$c" || return 1
+    return 0
+}
+check_item "Agent" "DSH Cordis 补丁生成物合法 (insert + timeout)" test_cordis_patch
+
+# DSH 已安装但未挂载 → OPTN（不阻塞）
+DSH_HOME_DIR="${DSH_HOME:-$HOME/.dsh}"
+if [ -d "$DSH_HOME_DIR" ]; then
+    test_dsh_mounted() {
+        [ -f "$SCRIPT_DIR/dsh-merge.py" ] || return 1
+        [ -n "$PY_BIN" ] || return 1
+        "$PY_BIN" "$SCRIPT_DIR/dsh-merge.py" --root "$ROOT" --dsh-home "$DSH_HOME_DIR" --check >/dev/null 2>&1
+    }
+    check_optn "Agent" "DeepSeek Harness 已挂载 seep MCP (cordis.patch.yml)" \
+        "运行 python setup/dsh-merge.py 完成挂载" test_dsh_mounted
+fi
+
+# 项目根 AGENTS.md：DSH / Codex 的指令入口，由 generate-configs 从 Tool/prompts 复制生成
+test_root_agents_sync() {
+    local a b
+    [ -f "$TOOL_DIR/prompts/AGENTS.md" ] || return 1
+    [ -f "$ROOT/AGENTS.md" ] || return 1
+    a=$(tr -d '\r' < "$ROOT/AGENTS.md")
+    b=$(tr -d '\r' < "$TOOL_DIR/prompts/AGENTS.md")
+    [ "$a" = "$b" ]
+}
+check_item "Agent" "项目根 AGENTS.md 与源同步 (DSH / Codex 指令入口)" test_root_agents_sync
+
+# DSH Cordis 补丁生成物结构
+test_cordis_patch() {
+    local c="$SCRIPT_DIR/cordis.generated.yml"
+    [ -f "$c" ] || return 1
+    grep -qE '^- insert:' "$c" || return 1
+    grep -q 'serverName: seep' "$c" || return 1
+    grep -q 'toolCallTimeoutMs:' "$c" || return 1
+    grep -q '@deepseek-ai/dsh-mcp-client' "$c" || return 1
+    return 0
+}
+check_item "Agent" "DSH Cordis 补丁生成物合法 (insert + timeout)" test_cordis_patch
+
+# DSH 已安装但未挂载 → OPTN（不阻塞）
+DSH_HOME_DIR="${DSH_HOME:-$HOME/.dsh}"
+if [ -d "$DSH_HOME_DIR" ]; then
+    test_dsh_mounted() {
+        [ -f "$SCRIPT_DIR/dsh-merge.py" ] || return 1
+        [ -n "$PY_BIN" ] || return 1
+        "$PY_BIN" "$SCRIPT_DIR/dsh-merge.py" --root "$ROOT" --dsh-home "$DSH_HOME_DIR" --check >/dev/null 2>&1
+    }
+    check_optn "Agent" "DeepSeek Harness 已挂载 seep MCP (cordis.patch.yml)" \
+        "运行 python setup/dsh-merge.py 完成挂载" test_dsh_mounted
+fi
 
 # 4. 技能系统
 SKILL_DIRS=$(find "$TOOL_DIR/skill" -maxdepth 1 -mindepth 1 -type d 2>/dev/null | wc -l)

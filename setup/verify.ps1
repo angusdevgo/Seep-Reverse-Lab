@@ -66,6 +66,9 @@ function Resolve-VerifyPython {
     return $null
 }
 
+# 解析一次并缓存 —— 第 3 节的 DSH 挂载检查也要用，不能等到第 5 节才算
+$script:VerifyPython = Resolve-VerifyPython
+
 function Test-CheckItem {
     param(
         [string]$Category,
@@ -246,6 +249,43 @@ Test-CheckItem "扩展"   "底层安全放行与 Lab 状态机扩展 (.ts)" {
     Test-Path (Join-Path $ToolDir 'prompts\extensions\security-audit-interceptor.ts')
 } "安全拦截扩展缺失，无法实现 lab: 状态机与防拒功能" "扩展文件在位" "$ToolDir\prompts\extensions\security-audit-interceptor.ts"
 
+# 项目根 AGENTS.md：DSH 与 Codex 都从项目根读 AGENTS.md / CLAUDE.md 作为指令来源。
+# 它由 setup/generate-configs 从 Tool/prompts/AGENTS.md 复制生成，这里防漂移。
+Test-CheckItem "Agent" "项目根 AGENTS.md 与源同步 (DSH / Codex 指令入口)" {
+    $rootAgents = Join-Path $Root 'AGENTS.md'
+    $srcAgents  = Join-Path $ToolDir 'prompts\AGENTS.md'
+    if (-not (Test-Path $srcAgents)) { return $false }
+    if (-not (Test-Path $rootAgents)) { return $false }
+    $a = ([System.IO.File]::ReadAllText($rootAgents, [System.Text.Encoding]::UTF8)) -replace "`r`n", "`n"
+    $b = ([System.IO.File]::ReadAllText($srcAgents, [System.Text.Encoding]::UTF8)) -replace "`r`n", "`n"
+    $a -eq $b
+} "项目根 AGENTS.md 缺失或与 Tool/prompts/AGENTS.md 不一致；运行 setup/generate-configs.ps1 重新生成" "与源逐字节一致" "$Root\AGENTS.md"
+
+# DSH Cordis 补丁生成物：必须是官方 - insert: 结构，且显式设置 toolCallTimeoutMs。
+# 不设超时会被 DSH 的默认 60s 掐断（HLS 取证 / Flutter AOT / jadx 全量反编译都远超 60s）。
+Test-CheckItem "Agent" "DSH Cordis 补丁生成物合法 (insert + timeout)" {
+    $c = Join-Path $ScriptDir 'cordis.generated.yml'
+    if (-not (Test-Path $c)) { return $false }
+    $t = [System.IO.File]::ReadAllText($c, [System.Text.Encoding]::UTF8)
+    ($t -match '(?m)^- insert:') -and
+    ($t -match 'serverName: seep') -and
+    ($t -match 'toolCallTimeoutMs:') -and
+    ($t -match '@deepseek-ai/dsh-mcp-client')
+} "cordis.generated.yml 缺失或结构不完整；运行 setup/generate-configs.ps1 重新生成" "- insert: + serverName: seep + toolCallTimeoutMs" "$ScriptDir\cordis.generated.yml"
+
+# DSH 已安装但未挂载 → DEGRADED（不阻塞；DSH 是可选的第四种 Agent 接入）
+$dshHomeDir = if ($env:DSH_HOME) { $env:DSH_HOME } else { Join-Path $env:USERPROFILE '.dsh' }
+if (Test-Path $dshHomeDir) {
+    Test-ManualItem "Agent" "DeepSeek Harness 已挂载 seep MCP (cordis.patch.yml)" {
+        $merge = Join-Path $ScriptDir 'dsh-merge.py'
+        if (-not (Test-Path $merge)) { return $false }
+        $py = if ($env:SEEP_PYTHON) { $env:SEEP_PYTHON } else { $script:VerifyPython }
+        if (-not $py) { return $false }
+        & $py $merge --root $Root --dsh-home $dshHomeDir --check 2>$null | Out-Null
+        ($LASTEXITCODE -eq 0)
+    } "运行 python setup/dsh-merge.py 完成挂载（或 python setup/dsh-merge.py --global）" "已写入 cordis.patch.yml" "$dshHomeDir\profiles\web\cordis.patch.yml"
+}
+
 # -----------------------------------------------------------------------------
 # 4. 技能系统完备性 (Skills System)
 # -----------------------------------------------------------------------------
@@ -320,8 +360,7 @@ if (Test-Path $AgentDir) {
 # -----------------------------------------------------------------------------
 Write-Host "`n[5/10] 🔌 MCP 服务引擎与物理内置工具箱 (Native Tools)" -ForegroundColor White
 
-# 只解析一次，后续所有需要跑 Python 的检查点统一复用它
-$script:VerifyPython = Resolve-VerifyPython
+# 解析一次，后续所有需要跑 Python 的检查点统一复用（含第 3 节的 DSH 检查）
 
 # 工具数以源码为准动态统计，避免版本迭代后断言过时导致「体检假红」
 $seepServerPath = Join-Path $ToolDir 'mcp\seep_mcp_server.py'

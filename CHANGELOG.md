@@ -12,6 +12,103 @@
 
 ## [Unreleased]
 
+## [1.10.1] - 2026-11-08
+
+### 修复（会让长任务全部失败）：DSH 补丁没设 `toolCallTimeoutMs`
+
+按 DSH 0.2.2 的 `@deepseek-ai/dsh-mcp-client` 类型定义，单次 `tools/call` 的默认超时是
+**60 秒**。而本工作台的长任务远超这个量级 —— HLS 取证（ffmpeg 解密分片）、Flutter AOT 分析、
+jadx 全量反编译都要跑几分钟。之前的 `cordis.generated.yml` 没写这个字段，于是在 DSH 里
+这些工具会跑到一半被 DSH 掐断，而日志里看不出是 DSH 干的。
+
+现在生成器显式写入：`seep` 为 `900000`（15 分钟），`js-reverse` 为 `600000`。
+
+### 修复：DSH 挂载以前只能手工粘贴
+
+`cordis.generated.yml` 只适合 `dsh web --patch` 临时挂载；要长期生效必须人工把条目合并进
+`cordis.patch.yml` —— 而那个文件里通常已有用户的模型/provider/插件配置，手改风险高。
+
+新增 `setup/dsh-merge.py`：
+
+| 条目 | 行为 |
+| :--- | :--- |
+| 你自己的既有配置 | **一律原样保留**（实测 7 条 `llm-pi-ai` / `agent-default-model` 等全部留下） |
+| seep 补丁块 | 用注释标记包裹，已存在则**整块替换**，不存在则追加 |
+| `command: python` | 落盘时替换为**真的能 `import mcp`** 的解释器绝对路径 |
+| 写盘 | 先备份到 `backup-<时间戳>/`；内容一致则不写 |
+
+`cordis.patch.yml` 顶层本身是补丁条目数组，而生成物也是数组，因此追加即合法合并 ——
+不需要 YAML 解析器（Python 标准库没有），也不会碰用户条目。
+支持 `--profile` / `--global` / `--check` / `--dry-run` / `--remove`。
+
+`install.ps1` / `install.sh` 自动检测 `$DSH_HOME`（默认 `~/.dsh`）：存在则自动挂载，
+不存在则跳过；可 `-SkipDsh` / `--skip-dsh` 关闭。
+
+### 新增：Cordis 补丁多挂一个 `js-reverse`
+
+与 `.mcp.json`（Claude Code）对齐，DSH 现在同时挂 `seep` 与 `js-reverse` 两条服务。
+
+### 新增：项目根 `AGENTS.md`
+
+`dsh-agent-instructions` 从项目根读 `AGENTS.md` / `CLAUDE.md` 作为指令来源。此前 DSH 用户
+需要手工 `cp Tool/prompts/AGENTS.md ./AGENTS.md`。现在 `setup/generate-configs`（`.ps1` 与
+`.py` 两版，输出逐字节一致）会生成一份同内容副本到项目根，`verify` 会检查漂移。
+
+### 新增：DSH 端到端校验 `setup/test_dsh_mount.py`
+
+不只看 YAML 长得对不对，而是：
+
+1. 让 DSH 自己合成配置树（`dsh --profile web --dump-config`）；
+2. 从合成结果里取出 `serverName: seep` 的 `command` / `args` / `cwd`；
+3. 用这份**合成后的**配置真的 spawn 一次，走 `initialize` → `tools/list`；
+4. 断言工具数 ≥30 且包含 `seep_pe_triage`。
+
+本机实测：**38 个工具**。`dsh` 未安装时 SKIP 而非失败。
+
+> 顺带记一个坑：Windows 上的 `dsh` 是 `.CMD` 垫片，`subprocess` 不做 PATHEXT 查找，
+> 直接传 `"dsh"` 会 `WinError 2`，必须先用 `shutil.which` 解析成完整路径。
+
+### 体检新增三项
+
+`verify.ps1` / `verify.sh` 现在检查：项目根 `AGENTS.md` 与源同步、Cordis 生成物结构合法
+（`- insert:` + `serverName: seep` + `toolCallTimeoutMs`）、DSH 已安装时是否已挂载
+（未挂载判 🟡 DEGRADED，不阻塞）。核心检查项 61 → **63**。
+
+### 文档
+
+`DSH-PROFILE.md` 按官方类型定义重写：完整字段表（含默认值）、超时说明、三种挂载方式、
+工具命名形态 `mcp__seep__seep_pe_triage`、校验命令、与其它 Agent 的对照。
+`MANUAL/DEPLOYMENT.md` 的 DSH 章节同步重写。
+
+一并**删除 README 里一条不实的宣称**：此前写着 DSH 有 `start-dsh.ps1` / `stop-dsh.ps1`
+（"4 秒冷启动 / 僵尸清理 / Token URL 提取"），但这两个脚本在仓库里并不存在。
+改为如实描述现有的自动挂载与端到端校验。
+
+### 验证记录（本机实跑，DSH 0.2.2-rc.1）
+
+```
+python setup/dsh-merge.py --root .
+  target : ~/.dsh/profiles/web/cordis.patch.yml
+  python : <工作台 venv 解释器绝对路径>
+  mode   : 追加（首次挂载）
+  backup : ~/.dsh/profiles/web/backup-<时间戳>/cordis.patch.yml
+  result : 已写入
+
+node -e 用 DSH 自带 yaml 库解析合并结果：
+  顶层条目: 8 -> ui-settings-general, agent-default-model, permission,
+              session-log-deepseek, agent-preset-registry, llm-pi-ai,
+              llm-deepseek, (insert)
+  insert  : seep-mcp/seep, seep-js-reverse-mcp/js-reverse
+  timeout : 900000, 600000
+
+dsh --profile web --dump-config  -> loader 接受补丁，seep 条目正确合成
+python setup/test_dsh_mount.py   -> 38 个工具，含 seep_pe_triage
+```
+
+`clean-format.py` 零问题；`test_config_parity.py` 四份产物字节一致（新增 `AGENTS.md`）；
+`verify.ps1` 63 项全绿。
+
+
 ## [1.10.0] - 2026-11-08
 
 ### 修复（数据丢失级）：Unix 部署会整体覆盖 `mcp.json`，且没有备份

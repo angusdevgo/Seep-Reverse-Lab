@@ -19,6 +19,7 @@ param(
     [switch]$WithWeb,             # 顺带装 Web 取证（ffmpeg，约 80 MB 下载）
     [switch]$WithAndroid,         # 顺带装 Android 动态（frida / APKiD，需 pip）
     [switch]$WithScanners,        # 顺带装 nuclei / ffuf
+    [switch]$SkipDsh,             # 跳过 DeepSeek Harness 补丁挂载
     [switch]$OnlyVerify,          # 仅跑自检
     [switch]$NonInteractive       # 非交互静默模式
 )
@@ -44,6 +45,10 @@ function Write-Warn($msg) {
 
 function Write-Err($msg) {
     Write-Host "    [FAIL] $msg" -ForegroundColor Red
+}
+
+function Write-Info($msg) {
+    Write-Host "    [..] $msg" -ForegroundColor DarkGray
 }
 
 function Test-Environment {
@@ -153,6 +158,30 @@ if (-not $SkipPi) {
 # 自动生成 Claude / OpenCode / DSH 配置文件
 Write-Step '生成多 Agent 配置文件 (.mcp.json / opencode.jsonc / cordis.generated.yml)'
 & (Join-Path $ScriptDir 'generate-configs.ps1')
+
+# -----------------------------------------------------------------------------
+# DeepSeek Harness：~/.dsh 存在时才挂载，避免给没装 DSH 的用户制造无关步骤
+# -----------------------------------------------------------------------------
+if (-not $SkipDsh) {
+    $dshHome = if ($env:DSH_HOME) { $env:DSH_HOME } else { Join-Path $env:USERPROFILE '.dsh' }
+    if (Test-Path $dshHome) {
+        Write-Step '挂载 DeepSeek Harness MCP 补丁'
+        $dshMerge = Join-Path $ScriptDir 'dsh-merge.py'
+        $dshPy = if ($env:SEEP_PYTHON) { $env:SEEP_PYTHON } else { 'python' }
+        if (Test-Path $dshMerge) {
+            try {
+                & $dshPy $dshMerge --root $Root 2>&1 | ForEach-Object { Write-Host "    $_" -ForegroundColor DarkGray }
+                if ($LASTEXITCODE -eq 0) { Write-Ok 'DSH cordis.patch.yml 已挂载（自定义配置保留）' }
+                else { Write-Warn "DSH 挂载返回码 $LASTEXITCODE（不影响其他 Agent）" }
+            }
+            catch { Write-Warn "DSH 挂载失败：$($_.Exception.Message)（不影响其他 Agent）" }
+        }
+        else { Write-Warn '缺少 setup\dsh-merge.py，跳过 DSH 挂载' }
+    }
+    else {
+        Write-Info "未检测到 DSH（$dshHome），跳过；装了 DSH 后重跑本脚本即可自动挂载"
+    }
+}
 
 # -----------------------------------------------------------------------------
 # 外部能力包：MCP 有 38 个工具，其中一部分算力来自仓库外的程序

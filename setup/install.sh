@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+﻿#!/usr/bin/env bash
 # ==============================================================================
 # Seep Reverse Lab — Linux / macOS 一键部署（Installer）
 # ==============================================================================
@@ -37,7 +37,7 @@ AGENT_DIR="${SEEP_AGENT_DIR:-$HOME/.pi/agent}"
 GREEN="\033[1;32m"; RED="\033[1;31m"; YELLOW="\033[1;33m"
 CYAN="\033[1;36m"; WHITE="\033[1;37m"; GRAY="\033[0;37m"; RESET="\033[0m"
 
-SKIP_PYTHON=0; SKIP_PI=0; SKIP_CAPABILITIES=0; WITH_TOOLS=0; NON_INTERACTIVE=0
+SKIP_PYTHON=0; SKIP_PI=0; SKIP_CAPABILITIES=0; WITH_TOOLS=0; NON_INTERACTIVE=0; SKIP_DSH=0
 
 while [ $# -gt 0 ]; do
     case "$1" in
@@ -46,6 +46,7 @@ while [ $# -gt 0 ]; do
         --skip-capabilities) SKIP_CAPABILITIES=1; shift ;;
         --with-tools)        WITH_TOOLS=1; shift ;;
         --non-interactive)   NON_INTERACTIVE=1; shift ;;
+        --skip-dsh)          SKIP_DSH=1; shift ;;
         -h|--help)           sed -n '2,32p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
         *) echo "未知参数: $1" >&2; exit 2 ;;
     esac
@@ -227,6 +228,27 @@ if [ -f "$gen_py" ]; then
     fi
 else
     warn "缺少 setup/generate-configs.py，跳过"
+fi
+
+# ---------------------------------------------------------------- 6b. DSH
+if [ "$SKIP_DSH" = 0 ]; then
+    DSH_HOME_DIR="${DSH_HOME:-$HOME/.dsh}"
+    if [ -d "$DSH_HOME_DIR" ]; then
+        step "6b/7  挂载 DeepSeek Harness MCP 补丁"
+        if [ -f "$SCRIPT_DIR/dsh-merge.py" ]; then
+            if "$PY_BIN" "$SCRIPT_DIR/dsh-merge.py" --root "$ROOT" 2>&1 | sed 's/^/    /'; then
+                ok "DSH cordis.patch.yml 已挂载（自定义配置保留）"
+            else
+                warn "DSH 挂载失败（不影响其他 Agent）"
+            fi
+        else
+            warn "缺少 setup/dsh-merge.py，跳过 DSH 挂载"
+        fi
+    else
+        info "未检测到 DSH（$DSH_HOME_DIR），跳过"
+    fi
+else
+    step "6b/7  挂载 DeepSeek Harness MCP 补丁（已跳过 --skip-dsh）"
 fi
 
 # ---------------------------------------------------------------- 7. 能力包

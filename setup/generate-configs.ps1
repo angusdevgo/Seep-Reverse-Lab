@@ -54,7 +54,7 @@ Write-Host "  标准化 POSIX 路径表示: $NormalizedRoot" -ForegroundColor Gr
 # -----------------------------------------------------------------------------
 # 1. 生成 Claude Code 项目级 .mcp.json
 # -----------------------------------------------------------------------------
-Write-Host "`n[1/3] 正在生成 Claude Code 项目级配置 (.mcp.json)..." -ForegroundColor White
+Write-Host "`n[1/4] 正在生成 Claude Code 项目级配置 (.mcp.json)..." -ForegroundColor White
 $claudeMcpJson = @"
 {
   "mcpServers": {
@@ -88,7 +88,7 @@ if (-not $PrintOnly) {
 # -----------------------------------------------------------------------------
 # 2. 生成 OpenCode 官方标准工作区配置 (opencode.jsonc)
 # -----------------------------------------------------------------------------
-Write-Host "`n[2/3] 正在生成 OpenCode 官方标准配置 (opencode.jsonc)..." -ForegroundColor White
+Write-Host "`n[2/4] 正在生成 OpenCode 官方标准配置 (opencode.jsonc)..." -ForegroundColor White
 $openCodeJsonc = @"
 {
   "`$schema": "https://opencode.ai/config.json",
@@ -116,14 +116,21 @@ if (-not $PrintOnly) {
 # -----------------------------------------------------------------------------
 # 3. 生成 DeepSeek Harness 官方 Cordis Overlay 补丁 (cordis.generated.yml)
 # -----------------------------------------------------------------------------
-Write-Host "`n[3/3] 正在生成 DeepSeek Harness (DSH) 官方补丁 (cordis.generated.yml)..." -ForegroundColor White
+Write-Host "`n[3/4] 正在生成 DeepSeek Harness (DSH) 官方补丁 (cordis.generated.yml)..." -ForegroundColor White
 $dshYaml = @"
 # ==============================================================================
 # DeepSeek Harness (Cordis) Overlay 补丁 — 遵循 DSH 官方 - insert: 规范
 # 生成基准目录: $NormalizedRoot
-# 使用方法:
-#   1. 命令行启动: dsh web --patch "$NormalizedRoot/setup/cordis.generated.yml"
-#   2. 配置文件合并: 写入 `$DSH_HOME/profiles/<name>/cordis.patch.yml 或 `$DSH_HOME/cordis.patch.yml
+#
+# 挂载方式（二选一）:
+#   1. 临时挂载: dsh web --patch "$NormalizedRoot/setup/cordis.generated.yml"
+#   2. 持久挂载: python setup/dsh-merge.py --profile web
+#      幂等写入 `$DSH_HOME/profiles/<profile>/cordis.patch.yml，
+#      只替换标注块，你自己的模型/插件配置原样保留。
+#
+# 关于 toolCallTimeoutMs：必须显式设置。DSH 的默认值是 60000（60 秒），
+# 而工作台的长任务远超这个量级 —— HLS 取证（ffmpeg 解密分片）、Flutter AOT
+# 分析、jadx 全量反编译都可能跑几分钟。不设就必然被 DSH 按超时中断。
 # ==============================================================================
 - insert:
     - id: seep-mcp
@@ -136,7 +143,22 @@ $dshYaml = @"
           - '$McpServerPy'
         env:
           PYTHONIOENCODING: utf-8
-        cwd: !!js process.cwd()
+        cwd: '$NormalizedRoot'
+        toolCallTimeoutMs: 900000
+        failOnStartupError: false
+
+    - id: seep-js-reverse-mcp
+      name: '@deepseek-ai/dsh-mcp-client'
+      config:
+        serverName: js-reverse
+        transport: stdio
+        command: npx
+        args:
+          - '-y'
+          - 'js-reverse-mcp'
+        cwd: '$NormalizedRoot'
+        toolCallTimeoutMs: 600000
+        failOnStartupError: false
 "@
 $dshDest = Join-Path (Join-Path $Root 'setup') 'cordis.generated.yml'
 if (-not $PrintOnly) {
@@ -144,8 +166,26 @@ if (-not $PrintOnly) {
     Write-Host "  [√] 已生成: $dshDest (顶层采用官方 - insert: 语法)" -ForegroundColor Green
 }
 
+# -----------------------------------------------------------------------------
+# 4. 项目根 AGENTS.md
+# DeepSeek Harness 与 Codex 都在「项目根目录」寻找 AGENTS.md / CLAUDE.md 作为指令来源。
+# 本仓库的中性底座在 Tool/prompts/AGENTS.md，这里生成一份同内容副本到根目录，
+# 让 DSH / Codex 无需手工 cp 就能读到（Claude 仍走 CLAUDE.md，pi 走 ~/.pi/agent/AGENTS.md）。
+# -----------------------------------------------------------------------------
+Write-Host "`n[4/4] 在项目根生成 AGENTS.md（供 DSH / Codex 自动读取）..." -ForegroundColor White
+$agentsSrc = Join-Path $ToolDir 'prompts\AGENTS.md'
+$agentsDest = Join-Path $Root 'AGENTS.md'
+if (Test-Path $agentsSrc) {
+    $agentsBody = [System.IO.File]::ReadAllText($agentsSrc, [System.Text.Encoding]::UTF8)
+    Write-IfChanged -Path $agentsDest -Content $agentsBody
+    Write-Host "  [√] 已生成: $agentsDest" -ForegroundColor Green
+}
+else {
+    Write-Host "  [!!] 缺少 Tool/prompts/AGENTS.md，跳过" -ForegroundColor Yellow
+}
+
 Write-Host "`n================================================================================" -ForegroundColor Cyan
 Write-Host "  🎉 所有 Agent 配置文件生成完毕！" -ForegroundColor Green
 Write-Host "  - OpenCode: 直接启动 opencode，自动识别根目录 opencode.jsonc" -ForegroundColor White
-Write-Host "  - DSH: 可执行 dsh web --patch `"$NormalizedRoot/setup/cordis.generated.yml`"" -ForegroundColor White
+Write-Host "  - DSH: 持久挂载 python setup/dsh-merge.py --profile web  或临时 dsh web --patch `"$NormalizedRoot/setup/cordis.generated.yml`"" -ForegroundColor White
 Write-Host "================================================================================" -ForegroundColor Cyan

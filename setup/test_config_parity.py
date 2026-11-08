@@ -30,7 +30,12 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 GEN_PY = os.path.join(HERE, "generate-configs.py")
 GEN_PS1 = os.path.join(HERE, "generate-configs.ps1")
 
-PRODUCTS = (".mcp.json", "opencode.jsonc", os.path.join("setup", "cordis.generated.yml"))
+PRODUCTS = (
+    ".mcp.json",
+    "opencode.jsonc",
+    os.path.join("setup", "cordis.generated.yml"),
+    "AGENTS.md",
+)
 FAILS = []
 
 
@@ -79,7 +84,12 @@ def main() -> int:
     root_b = os.path.join(base, "b")
     for r in (root_a, root_b):
         os.makedirs(os.path.join(r, "Tool", "mcp"), exist_ok=True)
+        os.makedirs(os.path.join(r, "Tool", "prompts"), exist_ok=True)
         os.makedirs(os.path.join(r, "setup"), exist_ok=True)
+        # AGENTS.md 的源文件：从真实仓库复制，保证两边拿到同一份输入
+        src_agents = os.path.join(os.path.dirname(HERE), "Tool", "prompts", "AGENTS.md")
+        if os.path.isfile(src_agents):
+            shutil.copy2(src_agents, os.path.join(r, "Tool", "prompts", "AGENTS.md"))
 
     # 1) Python 生成器
     proc = subprocess.run([sys.executable, GEN_PY, "--root", root_a],

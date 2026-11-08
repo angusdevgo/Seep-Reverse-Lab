@@ -112,26 +112,44 @@ Claude Code 原生支持项目级上下文（`CLAUDE.md`）与项目级 MCP 注�
 
 ### 3. 🔵 DeepSeek Harness (DSH) 专属接入流程
 
-DeepSeek Harness 采用基于 Cordis 插件协议的 YAML 配置。根据 [DSH 官方规范](https://deepseek-harness.github.io/deepseek-harness/guide/mcp-memory)，其补丁机制采用 `- insert:` 语法。
+DSH 通过 `@deepseek-ai/dsh-mcp-client` 桥接外部 MCP，配置以 **Cordis Overlay 补丁**形式挂载
+（顶层 `- insert:` 语法）。适配基准：DSH 0.2.2-rc.1。
 
-1. **自动生成官方标准 Cordis Overlay 补丁**：
-   在项目根目录下执行：
+1. **生成补丁**（`install.ps1` / `install.sh` 已自动执行，也可单独跑）：
    ```powershell
    powershell -ExecutionPolicy Bypass -File .\setup\generate-configs.ps1
    ```
-   脚本将自动读取当前物理路径并生成已填好真实路径的 `setup/cordis.generated.yml`（采用官方标准的 `- insert:` 顶层语法）。
-2. **挂载运行（两种官方方式二选一）**：
-   - **方式 A（命令行启动热挂载 · 最推荐）**：
-     ```bash
-     dsh web --patch "<SEEP_ROOT>/setup/cordis.generated.yml"
-     ```
-   - **方式 B（写入用户 Profile 持久生效）**：
-     - 若针对单一 profile：将 `setup/cordis.generated.yml` 内容追加合并至 `$DSH_HOME/profiles/<name>/cordis.patch.yml`；
-     - 若针对本机所有 profile：合并至 `$DSH_HOME/cordis.patch.yml`。
-3. **加载核心指令**：
-   将 `Tool/prompts/AGENTS.md` 复制或软链至 DSH 工作目录根路径。
-4. **启动会话并开工**：
-   在 DSH 中启动会话，发送 `check` 确认环境连通。
+   产物：`setup/cordis.generated.yml`，含 `seep` 与 `js-reverse` 两条服务，
+   并**显式写入 `toolCallTimeoutMs`**（DSH 默认 60 秒，本工作台的长任务远超此值）。
+
+2. **挂载（三选一）**：
+   ```bash
+   # A. 持久挂载（推荐）—— 幂等，只替换标注块，你自己的模型/插件配置原样保留，写前自动备份
+   python setup/dsh-merge.py
+
+   # B. 全局挂载 —— 本机所有 profile 生效
+   python setup/dsh-merge.py --global
+
+   # C. 临时挂载 —— 不落盘
+   dsh web --patch "<工作台绝对路径>/setup/cordis.generated.yml"
+   ```
+
+3. **指令来源**：项目根 `AGENTS.md` 由 `generate-configs` 从 `Tool/prompts/AGENTS.md`
+   复制生成，DSH 会自动读取，无需手工 `cp`。
+
+4. **校验**：
+   ```bash
+   python setup/dsh-merge.py --check         # 0=已挂载
+   dsh --profile web --dump-config | grep -A12 "serverName: seep"
+   python setup/test_dsh_mount.py            # 端到端：按 DSH 合成配置启动 MCP，数工具
+   ```
+
+5. **使用**：在 DSH 里工具名为 `mcp__seep__seep_pe_triage` 这种形式
+   （`mcp__<serverName>__<原始工具名>`）。发送 `check` 确认连通，再发 `lab：` 开工。
+
+> 卸载：`python setup/dsh-merge.py --remove`（只移除标注块，其余配置不动）。
+
+详见 [DSH-PROFILE.md](../DSH-PROFILE.md)。
 
 ---
 

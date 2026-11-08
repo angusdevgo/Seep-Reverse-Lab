@@ -24,6 +24,7 @@
 from __future__ import annotations
 
 import argparse
+import io
 import os
 import sys
 
@@ -74,9 +75,16 @@ OPENCODE_JSONC = """{
 CORDIS_YAML = """# ==============================================================================
 # DeepSeek Harness (Cordis) Overlay 补丁 — 遵循 DSH 官方 - insert: 规范
 # 生成基准目录: {root}
-# 使用方法:
-#   1. 命令行启动: dsh web --patch "{root}/setup/cordis.generated.yml"
-#   2. 配置文件合并: 写入 $DSH_HOME/profiles/<name>/cordis.patch.yml 或 $DSH_HOME/cordis.patch.yml
+#
+# 挂载方式（二选一）:
+#   1. 临时挂载: dsh web --patch "{root}/setup/cordis.generated.yml"
+#   2. 持久挂载: python setup/dsh-merge.py --profile web
+#      幂等写入 $DSH_HOME/profiles/<profile>/cordis.patch.yml，
+#      只替换标注块，你自己的模型/插件配置原样保留。
+#
+# 关于 toolCallTimeoutMs：必须显式设置。DSH 的默认值是 60000（60 秒），
+# 而工作台的长任务远超这个量级 —— HLS 取证（ffmpeg 解密分片）、Flutter AOT
+# 分析、jadx 全量反编译都可能跑几分钟。不设就必然被 DSH 按超时中断。
 # ==============================================================================
 - insert:
     - id: seep-mcp
@@ -89,7 +97,22 @@ CORDIS_YAML = """# =============================================================
           - '{server_py}'
         env:
           PYTHONIOENCODING: utf-8
-        cwd: !!js process.cwd()"""
+        cwd: '{root}'
+        toolCallTimeoutMs: 900000
+        failOnStartupError: false
+
+    - id: seep-js-reverse-mcp
+      name: '@deepseek-ai/dsh-mcp-client'
+      config:
+        serverName: js-reverse
+        transport: stdio
+        command: npx
+        args:
+          - '-y'
+          - 'js-reverse-mcp'
+        cwd: '{root}'
+        toolCallTimeoutMs: 600000
+        failOnStartupError: false"""
 
 
 def normalize_root(path: str) -> str:
@@ -128,25 +151,37 @@ def generate(root: str, print_only: bool = False) -> dict:
     print("  \u68c0\u6d4b\u5230\u5de5\u4f5c\u53f0\u7269\u7406\u6839\u76ee\u5f55: %s" % root)
     print("  \u6807\u51c6\u5316 POSIX \u8def\u5f84\u8868\u793a: %s" % root)
 
-    print("\n[1/3] \u6b63\u5728\u751f\u6210 Claude Code \u9879\u76ee\u7ea7\u914d\u7f6e (.mcp.json)...")
+    print("\n[1/4] \u6b63\u5728\u751f\u6210 Claude Code \u9879\u76ee\u7ea7\u914d\u7f6e (.mcp.json)...")
     claude_dest = os.path.join(root, ".mcp.json")
     if print_only or write_if_changed(claude_dest, CLAUDE_MCP_JSON, print_only):
         if not print_only:
             print("  [\u221a] \u5df2\u66f4\u65b0: %s" % claude_dest)
 
-    print("\n[2/3] \u6b63\u5728\u751f\u6210 OpenCode \u5b98\u65b9\u6807\u51c6\u914d\u7f6e (opencode.jsonc)...")
+    print("\n[2/4] \u6b63\u5728\u751f\u6210 OpenCode \u5b98\u65b9\u6807\u51c6\u914d\u7f6e (opencode.jsonc)...")
     opencode_dest = os.path.join(root, "opencode.jsonc")
     opencode_content = OPENCODE_JSONC.replace("{server_py}", server_py)
     if print_only or write_if_changed(opencode_dest, opencode_content, print_only):
         if not print_only:
             print("  [\u221a] \u5df2\u66f4\u65b0: %s (\u7b26\u5408 OpenCode \u5b98\u65b9 mcp \u9876\u5c42\u4e0e\u6570\u7ec4 command \u6807\u51c6)" % opencode_dest)
 
-    print("\n[3/3] \u6b63\u5728\u751f\u6210 DeepSeek Harness (DSH) \u5b98\u65b9\u8865\u4e01 (cordis.generated.yml)...")
+    print("\n[3/4] \u6b63\u5728\u751f\u6210 DeepSeek Harness (DSH) \u5b98\u65b9\u8865\u4e01 (cordis.generated.yml)...")
     cordis_dest = os.path.join(root, "setup", "cordis.generated.yml")
     cordis_content = CORDIS_YAML.replace("{root}", root).replace("{server_py}", server_py)
     if print_only or write_if_changed(cordis_dest, cordis_content, print_only):
         if not print_only:
             print("  [\u221a] \u5df2\u751f\u6210: %s (\u9876\u5c42\u91c7\u7528\u5b98\u65b9 - insert: \u8bed\u6cd5)" % cordis_dest)
+
+    print("\n[4/4] \u5728\u9879\u76ee\u6839\u751f\u6210 AGENTS.md\uff08\u4f9b DSH / Codex \u81ea\u52a8\u8bfb\u53d6\uff09...")
+    agents_src = os.path.join(root, "Tool", "prompts", "AGENTS.md")
+    agents_dest = os.path.join(root, "AGENTS.md")
+    if os.path.isfile(agents_src):
+        with io.open(agents_src, "r", encoding="utf-8-sig", newline="") as f:
+            agents_body = f.read()
+        if print_only or write_if_changed(agents_dest, agents_body, print_only):
+            if not print_only:
+                print("  [\u221a] \u5df2\u751f\u6210: %s" % agents_dest)
+    else:
+        print("  [!!] \u7f3a\u5c11 Tool/prompts/AGENTS.md\uff0c\u8df3\u8fc7")
 
     if not print_only:
         print("\n" + "=" * 80)
@@ -159,6 +194,7 @@ def generate(root: str, print_only: bool = False) -> dict:
         "claude": claude_dest,
         "opencode": opencode_dest,
         "cordis": cordis_dest,
+        "agents": agents_dest,
     }
 
 
