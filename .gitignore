@@ -62,3 +62,12 @@ $RECYCLE.BIN/
 # Note: Root level node_modules should not exist, and safe/ modules are already compressed to .zip
 # ---------------------------------------------------------------------------
 node_modules/
+
+# -----------------------------------------------------------------------------
+# 部署测试副产物
+# 在 HOME / LOCALAPPDATA 不可解析的环境里（沙盒测试、精简容器），pip 与 PowerShell
+# 会把缓存以相对路径落在当前工作目录，即仓库根，产生 /pip 与 /Microsoft。
+# 它们与工作台无关，绝不应入库。
+# -----------------------------------------------------------------------------
+/pip/
+/Microsoft/
