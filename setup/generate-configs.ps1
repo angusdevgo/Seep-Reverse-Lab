@@ -20,6 +20,30 @@ $NormalizedRoot = $Root.Replace('\', '/')
 $ToolDir   = Join-Path $Root 'Tool'
 $McpServerPy = "$NormalizedRoot/Tool/mcp/seep_mcp_server.py"
 
+# 内容不变就不写盘。
+# 为什么重要：重写同一份字节会让 mtime 变化，git 的 stat 缓存随之失效，
+# `git status` 会把一个「内容完全相同」的文件报成已修改 —— 于是 update.ps1
+# 每次更新都弹一次「本地改动已 stash」的警告，用户以为自己的文件被动过。
+function Write-IfChanged {
+    param(
+        [Parameter(Mandatory = $true)][string]$Path,
+        [Parameter(Mandatory = $true)][string]$Content
+    )
+    # .gitattributes 规定 *.json / *.yaml 以 LF 归档；here-string 自带 CRLF，先归一化
+    $normalized = $Content -replace "`r`n", "`n"
+    if (Test-Path -LiteralPath $Path) {
+        try {
+            $existing = [System.IO.File]::ReadAllText($Path, [System.Text.Encoding]::UTF8)
+            if (($existing -replace "`r`n", "`n") -eq $normalized) {
+                Write-Host "  [=] 内容未变化，跳过写入: $Path" -ForegroundColor DarkGray
+                return
+            }
+        }
+        catch { }
+    }
+    [System.IO.File]::WriteAllText($Path, $normalized, (New-Object System.Text.UTF8Encoding $false))
+}
+
 Write-Host "================================================================================" -ForegroundColor Cyan
 Write-Host "          Seep Reverse Lab — 多 Agent 配置文件生成与自愈器" -ForegroundColor Cyan
 Write-Host "================================================================================" -ForegroundColor Cyan
@@ -56,7 +80,7 @@ $claudeMcpJson = @"
 "@
 $claudeDest = Join-Path $Root '.mcp.json'
 if (-not $PrintOnly) {
-    [System.IO.File]::WriteAllText($claudeDest, $claudeMcpJson, (New-Object System.Text.UTF8Encoding $false))
+    Write-IfChanged -Path $claudeDest -Content $claudeMcpJson
     Write-Host "  [√] 已更新: $claudeDest" -ForegroundColor Green
 }
 
@@ -84,7 +108,7 @@ $openCodeJsonc = @"
 "@
 $openCodeDest = Join-Path $Root 'opencode.jsonc'
 if (-not $PrintOnly) {
-    [System.IO.File]::WriteAllText($openCodeDest, $openCodeJsonc, (New-Object System.Text.UTF8Encoding $false))
+    Write-IfChanged -Path $openCodeDest -Content $openCodeJsonc
     Write-Host "  [√] 已更新: $openCodeDest (符合 OpenCode 官方 mcp 顶层与数组 command 标准)" -ForegroundColor Green
 }
 
@@ -115,7 +139,7 @@ $dshYaml = @"
 "@
 $dshDest = Join-Path $ScriptDir 'cordis.generated.yml'
 if (-not $PrintOnly) {
-    [System.IO.File]::WriteAllText($dshDest, $dshYaml, (New-Object System.Text.UTF8Encoding $false))
+    Write-IfChanged -Path $dshDest -Content $dshYaml
     Write-Host "  [√] 已生成: $dshDest (顶层采用官方 - insert: 语法)" -ForegroundColor Green
 }
 
