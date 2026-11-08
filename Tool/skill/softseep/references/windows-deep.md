@@ -96,7 +96,7 @@ python scripts/pepatch.py target.exe --at-rva 0x1010 --expect "48 8B 05" --bytes
 | :--- | :--- |
 | 静态读代码 | `exe-reverse` 定路线 → `ida-reverse` / `seep_r2_*` MCP 执行 |
 | 动态定位 | `exe-reverse/references/dynamic-debugging.md` → x64dbg / Frida |
-| 知识库检索 | `seep_kb_search`（reverselab 289 篇）先查方法论 |
+| 知识库检索 | `seep_kb_search`（reverselab 294 篇）先查方法论 |
 | 授权定性 | 先 `softseep` 的 `AUTH-G0…G4`，再进本技能 |
 | 补丁交付验收 | `MANUAL/POC-VALIDATION.md` 三阶段闭环 |
 

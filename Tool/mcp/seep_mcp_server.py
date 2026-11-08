@@ -59,19 +59,31 @@ def _resolve_jadx() -> str:
 
 JADX_BAT = _resolve_jadx()
 APKTOOL_JAR = os.path.join(SAFE_DIR, "apktool", "apktool.jar")
-APKTOOL_BAT = os.path.join(SAFE_DIR, "apktool", "apktool.bat" if sys.platform == "win32" else "apktool")
+# 注意：apktool 一律以 `java -jar apktool.jar` 调用（见 seep_apk_unpack），
+# 不存在跨平台启动脚本；早期这里还定义过一个 APKTOOL_BAT，在 Unix 上恒指向不存在的
+# 文件，容易让人误判 "apktool 缺失"，已移除。
 
 KB_DIR = os.path.join(TOOL_DIR, "reverselab", "kb")
 LLMS_TXT = os.path.join(TOOL_DIR, "reverselab", "docs", "llms.txt")
 HOOK_TEMPLATES_DIR = os.path.join(SAFE_DIR, "hook-mcp", "templates")
 
-# 外部 Android 工具箱（Frida/objection/frida-dexdump/APKiD/Aotopsy），
-# 由 Tool/scripts/android/install-android-toolbox.ps1 部署，默认落盘 D:\Tool\Android
-ANDROID_TOOLBOX_DIR = os.environ.get("SEEP_ANDROID_TOOLBOX", r"D:\Tool\Android")
+# 外部 Android 工具箱（Frida/objection/frida-dexdump/APKiD/Aotopsy）。
+# 默认根目录按平台区分 —— 在 Linux/macOS 上沿用 "D:\Tool\Android" 是无意义的，
+# 而且会让 seep_status 报出一个根本不存在的路径。
+#   Windows : D:\Tool\Android      （Tool/scripts/android/install-android-toolbox.ps1）
+#   Unix    : ~/.seep/android        （setup/install-capabilities.sh）
+ANDROID_TOOLBOX_DIR = os.environ.get(
+    "SEEP_ANDROID_TOOLBOX",
+    r"D:\Tool\Android" if sys.platform == "win32" else os.path.join(os.path.expanduser("~"), ".seep", "android"),
+)
 
-# 外部 Web / 流媒体工具箱（ffmpeg / ffprobe），
-# 由 Tool/scripts/web/install-web-toolbox.ps1 部署，默认落盘 D:\Tool\Web
-WEB_TOOLBOX_DIR = os.environ.get("SEEP_WEB_TOOLBOX", r"D:\Tool\Web")
+# 外部 Web / 流媒体工具箱（ffmpeg / ffprobe）。
+#   Windows : D:\Tool\Web          （Tool/scripts/web/install-web-toolbox.ps1）
+#   Unix    : ~/.seep/web            （setup/install-capabilities.sh）
+WEB_TOOLBOX_DIR = os.environ.get(
+    "SEEP_WEB_TOOLBOX",
+    r"D:\Tool\Web" if sys.platform == "win32" else os.path.join(os.path.expanduser("~"), ".seep", "web"),
+)
 # 仓库内取证脚本位于 <repo>\Tool\scripts\web；BASE_DIR 是 <repo>\Tool\mcp
 WEB_SCRIPT_DIR = os.path.join(os.path.dirname(BASE_DIR), "scripts", "web")
 
@@ -113,7 +125,15 @@ def _run_web_script(script_name: str, args: List[str], timeout: int = 600) -> Tu
     """调用 Tool/scripts/web 下的取证脚本（统一用 -Json 模式），返回 (ok, raw, parsed_json)。"""
     ps = _find_powershell()
     if not ps:
-        return False, "[ERROR]: 未找到 PowerShell（pwsh / powershell）", None
+        if sys.platform == "win32":
+            hint = "请确认 PowerShell 未被禁用，或用 Setup/repair-tools.ps1 修复"
+        else:
+            hint = ("Web 取证脚本是 PowerShell 实现，Unix 需自行安装 PowerShell 7：\n"
+                    "  macOS : brew install --cask powershell\n"
+                    "  Debian: sudo apt-get install -y powershell\n"
+                    "  Fedora: sudo dnf install -y powershell\n"
+                    "（Windows-only 的能力；详见 MANUAL/CROSS-PLATFORM.md）")
+        return False, "[ERROR]: 未找到 PowerShell（pwsh / powershell）—— " + hint, None
     script_path = os.path.join(WEB_SCRIPT_DIR, script_name)
     if not os.path.isfile(script_path):
         return False, f"[ERROR]: 脚本不存在: {script_path}", None
@@ -269,10 +289,35 @@ def seep_status() -> str:
     apktool_status = "Ready (Jar present)" if os.path.isfile(APKTOOL_JAR) else "Missing"
     kb_status = f"Ready ({len(glob.glob(os.path.join(KB_DIR, '**', '*.md'), recursive=True))} documents)" if os.path.isdir(KB_DIR) else "Missing"
 
+    # 平台边界：如实上报哪些能力在当前系统上根本不成立，
+    # 避免 Unix 用户看着 38 个工具却不知道其中 8 个（Web 取证）与 1 个（Flutter AOT）用不了。
+    _win = sys.platform == "win32"
+    _has_pwsh = _find_powershell() is not None
+    platform_boundaries = {
+        "platform": sys.platform,
+        "web_forensics": {
+            "status": "ready" if (_win and _has_pwsh) or _has_pwsh else "windows-only",
+            "requires": "PowerShell 7 + ffmpeg/ffprobe",
+            "tools": [
+                "seep_web_pipeline", "seep_web_gate", "seep_cms_fingerprint",
+                "seep_hls_analyze", "seep_http_replay", "seep_spider_extract",
+                "seep_web_report", "seep_web_toolbox",
+            ],
+            "note": "取证脚本为 PowerShell 实现；Unix 需安装 pwsh 才能驱动。",
+        },
+        "flutter_aot": {
+            "status": "ready" if _win else "windows-only",
+            "requires": "aotopsy.exe（Windows PE 单文件）",
+            "tools": ["seep_aotopsy"],
+            "note": "Unix 上请用 apktool 解包后把 libapp.so 交给 radare2 / IDA。",
+        },
+    }
+
     status = {
         "name": "seep",
         "description": "AI-Native Reverse Engineering Toolkit MCP Server",
         "base_directory": BASE_DIR,
+        "platform_boundaries": platform_boundaries,
         "components": {
             "radare2_suite": {
                 "status": "Ready" if os.path.isfile(R2_EXE) else "Missing",
@@ -1221,9 +1266,19 @@ def seep_web_toolbox() -> str:
     powershell -ExecutionPolicy Bypass -File Tool\\scripts\\web\\install-web-toolbox.ps1
     """
     status = _web_toolbox_status()
+    _ps = _find_powershell()
+    _supported = _ps is not None
     payload = {
         "toolbox_root": WEB_TOOLBOX_DIR,
         "script_dir": WEB_SCRIPT_DIR,
+        # 平台可用性必须显式上报：8 个 Web 工具都靠 PowerShell 脚本驱动，
+        # 在未装 pwsh 的 Linux/macOS 上它们一律不可用。此前只报「缺 ffmpeg」，
+        # 会让人误以为装上 ffmpeg 就能跑。
+        "platform_supported": _supported,
+        "required_runtime": {
+            "powershell": _ps or "未找到（Unix 需安装 PowerShell 7）",
+            "platform": sys.platform,
+        },
         "tools": {k: {"ready": bool(v), "path": v or "—"} for k, v in status.items()},
         "ready_count": sum(1 for v in status.values() if v),
         "total_count": len(status),

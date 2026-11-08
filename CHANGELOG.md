@@ -12,6 +12,103 @@
 
 ## [Unreleased]
 
+## [1.10.0] - 2026-11-08
+
+### 修复（数据丢失级）：Unix 部署会整体覆盖 `mcp.json`，且没有备份
+
+`setup/install.sh` 原来用一行 `sed "s|<SEEP_ROOT>|$ROOT|g" template > mcp.json`：
+
+- **整体覆盖**，用户自己加的 MCP 服务（x64dbg / 自建网关）被直接抹掉；
+- **零备份** —— 而 `setup/update.sh` 头部一直写着"覆盖前自动备份到 `backup-<时间戳>/`"，
+  那句承诺此前**没有任何代码实现**；
+- 模板里 `"command": "python"` 是未经校验的解释器名，路径还是 Windows 反斜杠，
+  在 Unix 上替换出来就是坏路径。
+
+现在改走 `setup/mcp-merge.py`（纯标准库，跨平台）：
+
+| 条目 | 行为 |
+| :--- | :--- |
+| `seep` / `js-reverse` | 总是 upsert（工作台托管） |
+| `playwright` | 仅当不存在时新增；已存在则保留用户 token |
+| `ida` | 仅在显式给 `--ida-root` 时接管；否则保留、不新增坏条目 |
+| 其它任意用户条目 | **一律原样保留** |
+
+写盘前备份到 `<agent>/backup-<时间戳>/`；输入容忍 UTF-8 BOM；输出 UTF-8 无 BOM + LF；
+内容一致时不写盘。契约由 `setup/test_mcp_merge.py` 守住（11 条断言，含「损坏 JSON 默认拒绝写盘」）。
+
+### 新增：Unix 外部能力层
+
+`setup/install-capabilities.sh`，与 Windows 的 `install-capabilities.ps1` 对齐：
+
+| 组件 | Unix 行为 |
+| :--- | :--- |
+| `web` | ffmpeg/ffprobe，按 brew → apt → dnf → pacman 顺序安装；都失败只警告 |
+| `android` | `~/.seep/android/frida-env` venv + pip 安装 frida / objection / frida-dexdump / APKiD |
+| `scanners` | nuclei / ffuf（brew 优先，其余给手动指引） |
+| `aotopsy` | 显式跳过并说明原因（Windows PE 单文件） |
+
+`install.sh` 重写为 7 步（备份+安全合并、generate-configs、可选能力包、技能先删后拷）；
+`update.sh` 新增 `--with-tools` / `--check-capabilities` / `--skip-capabilities`，
+报告改为动态统计并新增能力看板。
+
+### 新增：跨平台配置生成
+
+`setup/generate-configs.py`，与 `generate-configs.ps1` 输出**逐字节一致**（由
+`setup/test_config_parity.py` 对跑两份生成器后逐字节比对守住）。两份生成器都支持
+`-Root` / `--root`，`.mcp.json` 用相对路径保持可移植。
+
+### 行为变更：平台边界如实上报
+
+- `ANDROID_TOOLBOX_DIR` / `WEB_TOOLBOX_DIR` 默认根目录按平台区分：
+  Windows 仍为 `D:\Tool\Android` / `D:\Tool\Web`，Unix 改为 `~/.seep/android` / `~/.seep/web`。
+  此前 Unix 上会报出一个根本不存在的 `D:\Tool\...` 路径。
+- `seep_status()` 新增 `platform_boundaries`：如实标注 `web_forensics` 与 `flutter_aot`
+  在当前平台是 `ready` 还是 `windows-only`。
+- `seep_web_toolbox` 新增 `platform_supported` / `required_runtime`，不再只报「缺 ffmpeg」
+  让人误以为装上 ffmpeg 就能跑。
+- `_find_powershell()` 失败时给出可执行指引（macOS/Linux 的 pwsh 安装命令）。
+- 删除 `APKTOOL_BAT` 死常量：apktool 一律走 `java -jar`，该常量在 Unix 上恒指向不存在文件。
+
+### `verify.sh` 补齐到与 `verify.ps1` 等价
+
+新增：webseep 完整性、stdio 冒烟（issue #13 回归）、动态工具数、`[6/10]` 能力可用性小节
+（`aotopsy` 在 Unix 固定判为「不适用」不计失败）、隐私扫描非 git 分支排除安装生成物
+（`opencode.jsonc` / `cordis.generated.yml` / `relay-config.json` / `tool-index.*`）——
+后者与 `.ps1` 同源的误报，ZIP 部署的 Unix 用户此前每次体检都会踩到。
+
+一并修正两处既有缺陷：`Radare2` 检查把 `command -v x &>/dev/null || test -f ...` 直接当参数传，
+末尾重定向把汇报行整个吞掉（该行此前完全不显示）；Python 解析改为「真的能执行」的探测
+（`SEEP_PYTHON` → `python3`/`python` → `py -3` → `~/.pi/agent/seep-venv`），解释器不可用时
+依赖它的检查项 SKIP 而不是报红。
+
+`verify.ps1` / `verify.sh` 小节编号统一为 `[N/10]`（此前插了 `[5b]` 但总数仍写 9）。
+
+### 清理
+
+- 删除工作台旁残留的 v1.6.0 旧树（661 MB）。它自带一份 `Tool/mcp/seep_mcp_server.py`（27 工具）
+  与指向它的 `.mcp.json`，是"改对了仓库、跑的还是旧代码"这类问题的直接来源。
+
+### 文档
+
+`CROSS-PLATFORM.md` 把「CTF Web 攻防 🟢 原生最佳环境（macOS/Linux）」改成如实的平台矩阵，
+并新增「外部能力包（Unix）」章节；`DEPLOYMENT.md` 能力表补 Unix 列与新参数；
+`DEPLOYMENT-CHECKLIST.md` 新增「3b. 外部能力包」基准表；README 双版补平台边界说明；
+`windows-deep.md` 的 KB 计数 289 → 294。
+
+### 验证记录
+
+**Windows（实跑）**：`verify.ps1 -Detailed` 全绿；干净树全新安装与 v1.8.2 → 1.10.0 升级
+两条路径复跑，0 条 `[!!]`、0 条 stash；`test_stdio_smoke.py` 38 工具；
+`test_mcp_merge.py` 11/11；`test_config_parity.py` 三份产物字节一致。
+
+**Unix（静态 + Git Bash 模拟）**：全部 `.sh` 过 `bash -n`；沙盒 `HOME` + `SEEP_AGENT_DIR`
+下跑 `install.sh`，确认备份生成、用户自定义条目（`x64dbg`）保留、`mcp.json` 为 LF；
+`verify.sh` 跑完后 55 项通过 / 0 项失败 / 6 项关注，结论 READY。
+
+> **如实声明**：本机只有 Windows。Unix 侧是在 Git Bash 下验证逻辑与路径处理，
+> **不等于**在真 Linux/macOS 上验证过；仍需一块真实 Unix 机器复核。
+
+
 ### 项目D 案例演进：build 18 零改动吸收（工具 v1.6.2）
 
 **新增素材**：项目D（客户端授权校验链）扩展至**七个版本**，

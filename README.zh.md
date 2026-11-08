@@ -9,7 +9,7 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/angusdevgo/seep-reverse-lab"><img src="https://img.shields.io/badge/Release-v1.9.2-brightgreen.svg?style=for-the-badge&logo=github" alt="Release"></a>
+  <a href="https://github.com/angusdevgo/seep-reverse-lab"><img src="https://img.shields.io/badge/Release-v1.10.0-brightgreen.svg?style=for-the-badge&logo=github" alt="Release"></a>
   <a href="https://github.com/angusdevgo/seep-reverse-lab/blob/main/LICENSE"><img src="https://img.shields.io/badge/License-GPL--3.0-blue.svg?style=for-the-badge" alt="License"></a>
   <img src="https://img.shields.io/badge/Platform-Windows%20%7C%20Android%20%7C%20Linux-0078D6?style=for-the-badge&logo=windows" alt="Platform">
   <img src="https://img.shields.io/badge/Architecture-x86%20%7C%20x64%20%7C%20ARM64-orange?style=for-the-badge" alt="Architecture">
@@ -308,7 +308,15 @@ powershell -File setup\install-capabilities.ps1 -Only all   # 全补：ffmpeg / 
 powershell -File setup\install-capabilities.ps1 -CheckOnly  # 只看现状
 ```
 
-> 缺件不会让 MCP 起不来：相关工具会返回明确的修复指引，`check.ps1` 以 🟡 DEGRADED 标出，不判失败。
+**Linux / macOS**：
+
+```bash
+./setup/install-capabilities.sh --only all
+```
+
+> 缺件不会让 MCP 起不来：相关工具会返回明确的修复指引，`check.ps1` / `verify.sh` 以 🟡 DEGRADED 标出，不判失败。
+> **平台边界**：`aotopsy`（Flutter AOT）为 Windows-only；8 个 `seep_web_*` 工具依赖 PowerShell 脚本，
+> Unix 需先装 PowerShell 7。详见 [CROSS-PLATFORM.md](MANUAL/CROSS-PLATFORM.md)。
 > 详见 [MANUAL/DEPLOYMENT.md — 外部能力包](MANUAL/DEPLOYMENT.md#5-外部能力包为什么需要单独一步)。
 
 ### 3. 多 Agent 接入方式

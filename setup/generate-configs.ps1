@@ -8,14 +8,15 @@
 #>
 [CmdletBinding()]
 param(
-    [switch]$PrintOnly
+    [switch]$PrintOnly,
+    [string]$Root = ''      # 仅供测试：指定工作台根目录（默认由脚本位置推导）
 )
 
 [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
 $OutputEncoding = [System.Text.Encoding]::UTF8
 
 $ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
-$Root      = Split-Path -Parent $ScriptDir
+if ([string]::IsNullOrWhiteSpace($Root)) { $Root = Split-Path -Parent $ScriptDir }
 $NormalizedRoot = $Root.Replace('\', '/')
 $ToolDir   = Join-Path $Root 'Tool'
 $McpServerPy = "$NormalizedRoot/Tool/mcp/seep_mcp_server.py"
@@ -137,7 +138,7 @@ $dshYaml = @"
           PYTHONIOENCODING: utf-8
         cwd: !!js process.cwd()
 "@
-$dshDest = Join-Path $ScriptDir 'cordis.generated.yml'
+$dshDest = Join-Path (Join-Path $Root 'setup') 'cordis.generated.yml'
 if (-not $PrintOnly) {
     Write-IfChanged -Path $dshDest -Content $dshYaml
     Write-Host "  [√] 已生成: $dshDest (顶层采用官方 - insert: 语法)" -ForegroundColor Green

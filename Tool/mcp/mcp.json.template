@@ -1,9 +1,9 @@
 {
   "mcpServers": {
     "seep": {
-      "command": "python",
+      "command": "<SEEP_PYTHON>",
       "args": [
-        "<SEEP_ROOT>\\Tool\\mcp\\seep_mcp_server.py"
+        "<SEEP_ROOT>/Tool/mcp/seep_mcp_server.py"
       ],
       "env": {
         "PYTHONIOENCODING": "utf-8"
@@ -13,7 +13,7 @@
     "ida": {
       "command": "<IDA_PYTHON>",
       "args": [
-        "<IDA_ROOT>\\Lib\\site-packages\\ida_pro_mcp\\server.py"
+        "<IDA_ROOT>/Lib/site-packages/ida_pro_mcp/server.py"
       ],
       "env": {
         "PYTHONIOENCODING": "utf-8"
@@ -44,7 +44,5 @@
       "transport": "stdio",
       "lifecycle": "lazy"
     }
-  },
-  "_comment_optional": "reverselab 自带 3 个 MCP（可选注册）：ReverseLabToolsMCP / JSHookLocal / GhidraMCP，源码见 share/mcp/Tool/reverselab/tools/skills/mcp/",
-  "_comment_downloads": "各 MCP 依赖的工具来源见 share/docs/DOWNLOADS.md"
+  }
 }

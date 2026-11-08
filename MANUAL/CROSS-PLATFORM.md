@@ -11,11 +11,43 @@ Seep 工作台经过跨平台路径与工具抽象后，对不同操作系统具
 | 战术能力板块 | macOS (Darwin) | Linux (Ubuntu/Debian) | Windows 10/11 | 跨平台替代与支撑技术 |
 |---|---|---|---|---|
 | **Android 逆向 (apkseep)** | 🟢 **原生完美支持** | 🟢 **原生完美支持** | 🟢 原生支持 | JADX + Apktool (Java跨平台) + ADB + Frida |
-| **CTF Web 攻防与爬虫** | 🟢 **原生完美支持** | 🟢 **原生最佳环境** | 🟢 原生支持 | Python + Playwright + cURL + 知识库 |
+| **Web 方法论 / JS 签名取证** | 🟢 原生支持 | 🟢 原生支持 | 🟢 原生支持 | Playwright + `js_reverse_*` + 知识库（与平台无关） |
+| **Web / 流媒体取证工具链**（8 个 `seep_web_*`） | 🟡 **需 PowerShell 7** | 🟡 **需 PowerShell 7** | 🟢 原生支持 | 取证脚本为 PowerShell 实现；另需自装 ffmpeg/ffprobe |
+| **Flutter / Dart AOT**（`seep_aotopsy`） | 🔴 **不支持** | 🔴 **不支持** | 🟢 原生支持 | `aotopsy.exe` 是 Windows PE 单文件；Unix 请用 apktool 解包后交给 r2/IDA |
 | **跨平台二进制分析 (seep)** | 🟢 **原生支持** (系统r2) | 🟢 **原生支持** (系统r2) | 🟢 内置r2.exe | Radare2 自动探测系统 `radare2` / `rabin2` / `rasm2` |
 | **IDA Pro 自动化联动** | 🟡 **需本地 Mac 版 IDA** | 🟡 **需本地 Linux 版 IDA** | 🟢 内置脚本探测 | 均通过 13337 端口 MCP 通用协议直连 |
 | **Windows PE 客户端逆向** | 🟡 **交叉静态分析** | 🟡 **交叉静态分析** | 🟢 本地动态执行 | 在 Mac/Linux 下使用 R2/Ghidra 提取逻辑，或使用 Wine/虚拟机 |
 | **Linux ELF / macOS Mach-O** | 🟢 **Mach-O 专属** | 🟢 **ELF 原生专属** | 🟡 交叉静态 | 支持本地无缝调试、动态 Hook 与符号导出 |
+
+---
+
+## 一之二、 外部能力包（Unix）
+
+工作台的 `seep` MCP 有 38 个工具，其中一部分算力来自**仓库之外**的程序。
+这些程序体积大、平台相关、版本还要和目标对齐，所以不进 git 仓库，
+由独立的能力层补齐 —— 与代码更新解耦。
+
+| 组件 | 谁在用 | Unix 是否支持 | 补全方式 |
+|---|---|---|---|
+| `ffmpeg` + `ffprobe` | `seep_hls_analyze`（HLS 六类根因判定） | 🟢 支持（走包管理器） | `./setup/install-capabilities.sh --only web` |
+| `frida` / `objection` | `seep_android_toolbox`、动态插桩与脱壳 | 🟢 支持（独立 venv） | `./setup/install-capabilities.sh --only android` |
+| `apkid` | `seep_apkid_scan`（加固/混淆器指纹） | 🟢 支持（独立 venv） | `./setup/install-capabilities.sh --only android` |
+| `nuclei` / `ffuf` | `seep_web_report` 的可选漏扫环节 | 🟡 优先 brew，其余需手动 | `./setup/install-capabilities.sh --only scanners` |
+| `aotopsy` | `seep_aotopsy`（Flutter AOT） | 🔴 不支持（Windows PE） | 不适用；改用 apktool + r2/IDA |
+
+```bash
+./setup/install-capabilities.sh                  # 默认：检测/安装 ffmpeg
+./setup/install-capabilities.sh --only all       # 一次补齐（缺什么补什么，可重复执行）
+./setup/install-capabilities.sh --check-only     # 只报表，不动磁盘
+```
+
+> **缺件不会导致 MCP 服务起不来。** 相关工具会返回明确的修复指引
+> （例如 `[ERROR]: Aotopsy 未部署…`），其余工具照常工作。
+> `./setup/verify.sh` 会以 `[! OPTN]`（DEGRADED）如实标出，**不会**因此判失败。
+
+**装在哪里 / 怎么改位置**：Unix 默认 `~/.seep/android` 与 `~/.seep/web`，
+可用环境变量 `SEEP_ANDROID_TOOLBOX` / `SEEP_WEB_TOOLBOX` 覆盖，
+或用 `--root <路径>` 一次性改根目录（此时落在 `<路径>/android` 与 `<路径>/web`）。
 
 ---
 

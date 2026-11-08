@@ -226,6 +226,9 @@ cd <你的工作台目录>
 | 参数 | 作用 |
 |---|---|
 | `-DryRun`（Windows）/ `--dry-run` | 只显示将要做什么，**不修改任何文件** |
+| `--with-tools`（Unix） | 顺带补齐外部能力包（ffmpeg + frida + APKiD） |
+| `--check-capabilities`（Unix） | 只补外部能力、不动代码 |
+| `--skip-capabilities`（Unix） | 跳过能力包步骤 |
 | `-NoPull` / `--no-pull` | 跳过 `git pull`（适用于手动下载压缩包覆盖的场景） |
 | `-WithTools` | **顺带补齐外部能力包**（ffmpeg + frida + APKiD），首次更新推荐 |
 | `-CheckCapabilities` | **只补外部能力、不动代码**（网络拉不动代码时用） |
@@ -237,13 +240,13 @@ cd <你的工作台目录>
 
 工作台的 `seep` MCP 有 **38 个工具**，其中一部分真正的算力来自**仓库之外的独立程序**：
 
-| 组件 | 谁在用 | 体积 / 成本 |
-|---|---|---|
-| `ffmpeg` + `ffprobe` | `seep_hls_analyze`（HLS 六类根因判定） | 约 80 MB 下载 |
-| `aotopsy` | `seep_aotopsy`（Flutter / Dart AOT 分析） | **仓库自带，零网络** |
-| `frida` / `objection` | `seep_android_toolbox`、动态插桩与脱壳 | pip + 独立 venv |
-| `apkid` | `seep_apkid_scan`（加固 / 混淆器指纹） | pip |
-| `nuclei` / `ffuf` | `seep_web_report` 的可选漏扫环节 | 约 40 MB 下载 |
+| 组件 | 谁在用 | Windows | Unix |
+|---|---|---|---|
+| `ffmpeg` + `ffprobe` | `seep_hls_analyze`（HLS 六类根因判定） | 约 80 MB 下载 | 包管理器安装（brew/apt/dnf/pacman） |
+| `aotopsy` | `seep_aotopsy`（Flutter / Dart AOT 分析） | **仓库自带，零网络** | 🔴 不支持（Windows PE） |
+| `frida` / `objection` | `seep_android_toolbox`、动态插桩与脱壳 | pip + 独立 venv | pip + 独立 venv（`~/.seep/android`） |
+| `apkid` | `seep_apkid_scan`（加固 / 混淆器指纹） | pip | pip（同上 venv） |
+| `nuclei` / `ffuf` | `seep_web_report` 的可选漏扫环节 | 约 40 MB 下载 | brew 优先，其余需手动 |
 
 这些不在 git 仓库里，也不该塞进去（体积大、平台相关、版本要和设备对齐）。
 所以部署链路分两层：**代码层**（`git pull`）与**能力层**（本步骤）。
@@ -263,9 +266,21 @@ powershell -File setup\install-capabilities.ps1 -Only scanners
 powershell -File setup\install-capabilities.ps1 -CheckOnly
 ```
 
+**Unix（Linux / macOS）**：
+
+```bash
+./setup/install-capabilities.sh                  # 默认：检测/安装 ffmpeg
+./setup/install-capabilities.sh --only all       # 一次补齐
+./setup/install-capabilities.sh --check-only     # 只报表
+```
+
 > **缺件不会导致 MCP 服务起不来。** 相关工具会返回明确的修复指引（例如
 > `[ERROR]: Aotopsy 未部署。请运行 ...install-android-toolbox.ps1 -Only aotopsy`），
-> 其余工具照常工作。`check.ps1` 会以 🟡 DEGRADED 如实标出，**不会**因此判失败。
+> 其余工具照常工作。`check.ps1` / `verify.sh` 会以 🟡 DEGRADED 如实标出，**不会**因此判失败。
+>
+> **平台边界**：`aotopsy` 是 Windows PE 单文件，Unix 不支持；8 个 `seep_web_*` 工具依赖
+> PowerShell 脚本，Unix 需先安装 PowerShell 7 才能驱动。详见
+> [CROSS-PLATFORM.md](CROSS-PLATFORM.md)。
 
 **装在哪里 / 怎么改位置**：默认 `D:\Tool\Web` 与 `D:\Tool\Android`，
 可用环境变量 `SEEP_WEB_TOOLBOX` / `SEEP_ANDROID_TOOLBOX` 覆盖，

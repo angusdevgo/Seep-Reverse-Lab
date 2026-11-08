@@ -24,7 +24,7 @@ set -u
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
-AGENT_DIR="$HOME/.pi/agent"
+AGENT_DIR="${SEEP_AGENT_DIR:-$HOME/.pi/agent}"
 VERSION_FILE="$ROOT/VERSION"
 CHANGELOG_FILE="$ROOT/CHANGELOG.md"
 MCP_JSON="$AGENT_DIR/mcp.json"
@@ -33,16 +33,25 @@ GREEN="\033[1;32m"; RED="\033[1;31m"; YELLOW="\033[1;33m"
 CYAN="\033[1;36m"; WHITE="\033[1;37m"; GRAY="\033[0;37m"; RESET="\033[0m"
 
 DRY_RUN=0; NO_PULL=0; SKIP_VERIFY=0; STASHED=0; CHECK_ONLY=0
+WITH_TOOLS=0; SKIP_CAPABILITIES=0; CAP_ONLY=0
 WARNINGS=()
 
 for arg in "$@"; do
     case "$arg" in
-        --dry-run)     DRY_RUN=1 ;;
-        --no-pull)     NO_PULL=1 ;;
-        --check)       CHECK_ONLY=1 ;;
-        --skip-verify) SKIP_VERIFY=1 ;;
+        --dry-run)           DRY_RUN=1 ;;
+        --no-pull)           NO_PULL=1 ;;
+        --check)             CHECK_ONLY=1 ;;
+        --skip-verify)       SKIP_VERIFY=1 ;;
+        --with-tools)        WITH_TOOLS=1 ;;
+        --skip-capabilities) SKIP_CAPABILITIES=1 ;;
+        --check-capabilities) CAP_ONLY=1 ;;
         -h|--help)
             echo "用法: $0 [--dry-run] [--no-pull] [--check] [--skip-verify]"
+            echo "          [--with-tools] [--check-capabilities] [--skip-capabilities]"
+            echo ""
+            echo "  --with-tools         顺带补齐外部能力包（ffmpeg / frida / APKiD）"
+            echo "  --check-capabilities 只补外部能力、不动代码（网络拉不动代码时用）"
+            echo "  --skip-capabilities  跳过能力包步骤（用你已装好的外部工具）"
             exit 0 ;;
         *) echo "未知参数: $arg" >&2; exit 2 ;;
     esac
@@ -139,7 +148,20 @@ IS_GIT=0; [ -d "$ROOT/.git" ] && IS_GIT=1
 
 echo -e "  当前版本    : v$OLD_VERSION"
 echo -e "  Git 仓库    : $([ "$IS_GIT" = 1 ] && echo '是（支持 git pull）' || echo '否（压缩包部署）')"
-echo -e "  运行模式    : $([ "$DRY_RUN" = 1 ] && echo 'DRY RUN（不修改任何文件）' || echo '正常更新')"
+echo -e "  运行模式    : $([ "$DRY_RUN" = 1 ] && echo 'DRY RUN（不修改任何文件）' || $([ "$CAP_ONLY" = 1 ] && echo '仅补外部能力包（不动代码）' || echo '正常更新'))"
+
+# --check-capabilities 短路：不动代码、不重装配置，只补能力包
+# 适合「网络拉不动代码但缺 ffmpeg/frida」的场景
+if [ "$CAP_ONLY" = 1 ]; then
+    if [ ! -f "$SCRIPT_DIR/install-capabilities.sh" ]; then
+        fail "缺少 setup/install-capabilities.sh"; exit 1
+    fi
+    step "补齐外部能力包"
+    bash "$SCRIPT_DIR/install-capabilities.sh" --only all || true
+    echo ""
+    echo -e "  完成。若本次新装了 ffmpeg / frida，请完全重启 Agent 会话让 PATH 生效。"
+    exit 0
+fi
 
 BEFORE_KEYS="$(mcp_keys)"
 info "更新前 mcp.json 中的 MCP 服务: $(if [ -n "$BEFORE_KEYS" ]; then echo "$BEFORE_KEYS" | tr '\n' ' '; else echo '（无）'; fi)"
@@ -149,7 +171,8 @@ if [ "$DRY_RUN" = 1 ]; then
     echo -e "\n  ${YELLOW}[DRY RUN] 将要执行的步骤：${RESET}"
     echo -e "    1. $([ "$NO_PULL" = 1 ] && echo '跳过 git pull（--no-pull）' || echo '自动探测代理并 git pull 拉取最新代码')"
     echo -e "    2. 打印 CHANGELOG 版本变更说明"
-    echo -e "    3. 调用 setup/install.sh 做幂等增量同步（自动备份 + 保护自定义 MCP）"
+    echo -e "    3. 调用 setup/install.sh 做幂等增量同步（自动备份 + 安全合并 mcp.json）"
+    echo -e "       外部能力包: $([ "$WITH_TOOLS" = 1 ] && echo '补齐（--with-tools）' || echo '默认只装 ffmpeg')"
     echo -e "    4. 校验用户自有数据未被覆盖"
     echo -e "    5. 跑 setup/verify.sh 官方基准自检"
     echo -e "\n  未修改任何文件。去掉 --dry-run 即执行真实更新。\n"
@@ -223,7 +246,10 @@ fi
 # ------------------------------------------------------------------ 3. 同步
 step "3/6  执行幂等增量同步（自动备份 + 保护自定义配置）"
 
-if bash "$SCRIPT_DIR/install.sh"; then
+INSTALL_ARGS=()
+[ "$WITH_TOOLS" = 1 ] && INSTALL_ARGS+=("--with-tools")
+[ "$SKIP_CAPABILITIES" = 1 ] && INSTALL_ARGS+=("--skip-capabilities")
+if bash "$SCRIPT_DIR/install.sh" "${INSTALL_ARGS[@]:-}"; then
     ok "增量同步完成"
 else
     warn "install.sh 返回非零，部分步骤可能未完成，请查看上方输出"
@@ -273,25 +299,52 @@ echo -e "\n${WHITE}=============================================================
 echo -e "  ${GREEN}Seep 工作台更新完成:  v$OLD_VERSION  ->  v$NEW_VERSION${RESET}"
 echo -e "${WHITE}================================================================================${RESET}"
 
-cat <<EOF
+# 动态统计，避免版本迭代后报告里的数字过时
+SKILL_DIRS=$(find "$TOOL_DIR/skill" -maxdepth 1 -mindepth 1 -type d 2>/dev/null | wc -l | tr -d ' ')
+SAFE_SKILLS=$(find "$TOOL_DIR/skill/safe-skills" -maxdepth 1 -mindepth 1 -type d 2>/dev/null | wc -l | tr -d ' ')
+SKILL_TOTAL=$((SKILL_DIRS - 1 + SAFE_SKILLS))
+TOOL_TOTAL=$(grep -c '^def seep_' "$TOOL_DIR/mcp/seep_mcp_server.py" 2>/dev/null || echo 0)
 
-  更新内容:
-    · 9 大逆向 Skill 已同步到最新
-    · 提示词 (SYSTEM.md / AGENTS.md) 与安全扩展已同步
-    · mcp.json 已增量合并（自定义 MCP 完整保留）
-    · 内置工具箱与知识库已校验
+echo -e ""
+echo -e "  ${WHITE}本次同步:${RESET}"
+echo -e "    · 逆向技能 ${SKILL_TOTAL} 个（Tool/skill 下 ${SKILL_DIRS} 个目录）"
+echo -e "    · MCP 工具定义 ${TOOL_TOTAL} 个"
+echo -e "    · 提示词 (seep-system.md / AGENTS.md) 与安全扩展"
+echo -e "    · mcp.json 已安全合并（自定义 MCP 条目完整保留，已自动备份）"
+echo -e "    · 内置工具箱与知识库已校验"
 
-  下一步:
-    1) 完全关闭并重新打开 Agent 会话（Pi / Claude Code / DSH / OpenCode）
-       —— 这一步是必须的，新 Skill 与扩展需要重新加载
-    2) 在对话框中发送:  lab：
-       即可继续开工
+# 外部能力看板
+echo -e ""
+echo -e "  ${WHITE}外部能力:${RESET}"
+for n in ffmpeg ffprobe frida objection apkid nuclei ffuf; do
+    p="$(command -v "$n" 2>/dev/null || true)"
+    [ -z "$p" ] && [ -x "$HOME/.seep/web/bin/$n" ] && p="$HOME/.seep/web/bin/$n"
+    [ -z "$p" ] && [ -x "$HOME/.seep/android/bin/$n" ] && p="$HOME/.seep/android/bin/$n"
+    if [ -n "$p" ]; then
+        echo -e "    ${GREEN}[READY]${RESET}   $(printf '%-10s' "$n") $p"
+    else
+        echo -e "    ${YELLOW}[MISSING]${RESET} $(printf '%-10s' "$n")"
+    fi
+done
+echo -e "    ${YELLOW}[N/A]${RESET}     $(printf '%-10s' aotopsy) Windows-only"
+echo -e ""
+echo -e "  缺件不影响 MCP 启动：相关工具会返回明确的修复指引，其余工具照常工作。"
+echo -e "  ${YELLOW}一条命令全补: ./setup/install-capabilities.sh --only all${RESET}"
 
-  如需回滚:
-    · 配置备份位于: $AGENT_DIR/backup-<时间戳>/
-    · 代码回滚:     git -C "$ROOT" log --oneline -10  然后 git reset --hard <commit>
+echo -e ""
+echo -e "  ${WHITE}下一步（顺序不能跳）:${RESET}"
+echo -e "    1) 完全关闭并重新打开 Agent 会话"
+echo -e "       Pi / Claude Code / DSH / OpenCode 都要整个进程退出重开。"
+echo -e "       仅刷新或 re-load 不够 —— MCP 工具是启动时握手的，"
+echo -e "       不重开就看不到新工具，也读不到新 Skill。"
+echo -e "    2) 在对话框中发送:  lab："
+echo -e "       即可继续开工"
+echo -e ""
+echo -e "  如需回滚:"
+echo -e "    · 配置备份位于: $AGENT_DIR/backup-<时间戳>/"
+echo -e "    · 代码回滚:     git -C \"$ROOT\" log --oneline -10  然后 git reset --hard <commit>"
+echo -e ""
 
-EOF
 
 if [ "$STASHED" = 1 ]; then
     echo -e "  ${YELLOW}[!!] 你之前的本地改动已自动 stash 保存，恢复命令:${RESET}"

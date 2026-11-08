@@ -9,7 +9,7 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/angusdevgo/seep-reverse-lab"><img src="https://img.shields.io/badge/Release-v1.9.2-brightgreen.svg?style=for-the-badge&logo=github" alt="Release"></a>
+  <a href="https://github.com/angusdevgo/seep-reverse-lab"><img src="https://img.shields.io/badge/Release-v1.10.0-brightgreen.svg?style=for-the-badge&logo=github" alt="Release"></a>
   <a href="https://github.com/angusdevgo/seep-reverse-lab/blob/main/LICENSE"><img src="https://img.shields.io/badge/License-GPL--3.0-blue.svg?style=for-the-badge" alt="License"></a>
   <img src="https://img.shields.io/badge/Platform-Windows%20%7C%20Android%20%7C%20Linux-0078D6?style=for-the-badge&logo=windows" alt="Platform">
   <img src="https://img.shields.io/badge/Architecture-x86%20%7C%20x64%20%7C%20ARM64-orange?style=for-the-badge" alt="Architecture">
@@ -313,8 +313,17 @@ powershell -File setup\install-capabilities.ps1 -Only all   # ffmpeg / frida / A
 powershell -File setup\install-capabilities.ps1 -CheckOnly  # report only, no disk changes
 ```
 
+**Linux / macOS**:
+
+```bash
+./setup/install-capabilities.sh --only all
+```
+
 > A missing component never blocks the MCP server: the affected tool returns an explicit fix hint,
-> and `check.ps1` reports it as 🟡 DEGRADED rather than a failure.
+> and `check.ps1` / `verify.sh` reports it as 🟡 DEGRADED rather than a failure.
+> **Platform limits**: `aotopsy` (Flutter AOT) is Windows-only, and the eight `seep_web_*` tools
+> drive PowerShell scripts, so Unix needs PowerShell 7 installed first.
+> See [CROSS-PLATFORM.md](MANUAL/CROSS-PLATFORM.md).
 > See [MANUAL/DEPLOYMENT.md — external capability packages](MANUAL/DEPLOYMENT.md#5-外部能力包为什么需要单独一步).
 
 ### 3. Multi-Agent Setup

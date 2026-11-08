@@ -163,7 +163,22 @@ MCP 配置文件所在位置：
 | Apktool | v3.0.3 (apktool.jar) | 物理就绪 | 🟢 READY | 资源解包与重打包正常 |
 | 攻防知识库 | ≥294 篇笔记 | 物理就绪 (318 篇) | 🟢 READY | seep_kb_* 检索后端就绪 |
 
+#### 3b. 🧰 外部能力包 (External Capabilities)
+| 组件 | 谁在用 | 期望 | Windows 补全 | Unix 补全 | 缺失判定 |
+|---|---|---|---|---|---|
+| ffmpeg + ffprobe | `seep_hls_analyze` | 可执行且在 PATH / 工具箱内 | `setup\install-capabilities.ps1 -Only web` | `./setup/install-capabilities.sh --only web` | 🟡 DEGRADED |
+| frida + objection | `seep_android_toolbox`、动态插桩 | 可执行 | `-Only android` | `--only android` | 🟡 DEGRADED |
+| apkid | `seep_apkid_scan` | 可执行 | `-Only android` | `--only android` | 🟡 DEGRADED |
+| nuclei + ffuf | `seep_web_report`（可选） | 可执行 | `-Only scanners` | `--only scanners` | 🟡 DEGRADED |
+| aotopsy | `seep_aotopsy`（Flutter AOT） | Windows PE | `-Only aotopsy`（仓库自带，零网络） | 🔴 不支持 | 🟡 DEGRADED / N/A |
+
+> **判定原则**：外部程序不在仓库里（体积 / 平台 / 版本耦合），缺失**不阻塞 MCP 启动**。
+> 相关工具会返回明确的修复指引，其余工具照常工作 —— 所以统一归 `🟡 DEGRADED`，不判 `🔴 MISSING`。
+>
+> **平台边界**：`aotopsy` 是 Windows PE 单文件，Unix 不适用；8 个 `seep_web_*` 工具依赖
+> PowerShell 取证脚本，Unix 需先安装 PowerShell 7。详见 [CROSS-PLATFORM.md](CROSS-PLATFORM.md)。
+
 #### 4. 🚀 总结与开工建议
-- **系统评估**：核心组件与 9 大 Skill 100% 部署成功，工作台处于 **[READY / 完备就绪]** 状态；
+- **系统评估**：核心组件与 11 个 Skill 100% 部署成功，工作台处于 **[READY / 完备就绪]** 状态；
 - **操作指令**：请退出并重启当前终端与 Agent 会话，在对话框中输入 **`lab：`** 开启白盒测试！
 ```
