@@ -1,0 +1,295 @@
+{
+  "samples_dir": "../../../../../IDM/samples",
+  "_comment": "samples_dir 指向本地归档的原版样本目录；案例库不随包分发二进制样本。本配置覆盖七个版本；build 18 的位点由现有签名精确命中（汉明 0），无需重新收窄。",
+  "versions": [
+    {
+      "tag": "b10",
+      "file": "IDMan_643b10_original.exe"
+    },
+    {
+      "tag": "b11.2",
+      "file": "IDMan_643b11_original.exe"
+    },
+    {
+      "tag": "b11.3",
+      "file": "IDMan_643b11b3_original.exe"
+    },
+    {
+      "tag": "b12.3",
+      "file": "IDMan_643b12_original.exe"
+    },
+    {
+      "tag": "b15.3",
+      "file": "IDMan_643b15_original.exe"
+    },
+    {
+      "tag": "b16.3",
+      "file": "IDMan_643b16_original.exe"
+    },
+    {
+      "tag": "b18.3",
+      "file": "IDMan_643b18_original.exe"
+    }
+  ],
+  "sig_cap": 48,
+  "hamming_win": 64,
+  "hamming_limit": 12,
+  "points": [
+    {
+      "id": 1,
+      "name": "授权分支检测 (test eax->xor eax)",
+      "offsets": {
+        "b10": "0x2D7BD",
+        "b11.2": "0x2D45D",
+        "b11.3": "0x2D3FD",
+        "b12.3": "0x2D3FD",
+        "b15.3": "0x2D71D",
+        "b16.3": "0x2D8ED",
+        "b18.3": "0x2D58D"
+      },
+      "expected": "85",
+      "patch": "33",
+      "optional": false
+    },
+    {
+      "id": 2,
+      "name": "试用期最大值 (->mov eax,7FFFFFFF+nop)",
+      "offsets": {
+        "b10": "0x4C100",
+        "b11.2": "0x4BF60",
+        "b11.3": "0x4BF10",
+        "b12.3": "0x4BF10",
+        "b15.3": "0x4C100",
+        "b16.3": "0x4C650",
+        "b18.3": "0x4C020"
+      },
+      "expected": "83E00F83C00F",
+      "patch": "B8FFFFFF7F90",
+      "optional": false
+    },
+    {
+      "id": 3,
+      "name": "假序列号弹窗 A (jz->jmp)",
+      "offsets": {
+        "b10": "0x53F78",
+        "b11.2": "0x53DF8",
+        "b11.3": "0x53DA8",
+        "b12.3": "0x53DA8",
+        "b15.3": "0x54178",
+        "b16.3": "0x54758",
+        "b18.3": "0x54098"
+      },
+      "expected": "74",
+      "patch": "EB",
+      "optional": false
+    },
+    {
+      "id": 4,
+      "name": "守护线程 A",
+      "offsets": {
+        "b10": "0x74920",
+        "b11.2": "0x745A0",
+        "b11.3": "0x74550",
+        "b12.3": "0x74550",
+        "b15.3": "0x74A10",
+        "b16.3": "0x74FA0",
+        "b18.3": "0x74600"
+      },
+      "expected": "6A",
+      "patch": "C3",
+      "optional": false
+    },
+    {
+      "id": 5,
+      "name": "守护线程 B",
+      "offsets": {
+        "b10": "0x753C0",
+        "b11.2": "0x75040",
+        "b11.3": "0x74FF0",
+        "b12.3": "0x74FF0",
+        "b15.3": "0x754B0",
+        "b16.3": "0x75A40",
+        "b18.3": "0x750A0"
+      },
+      "expected": "6A",
+      "patch": "C3",
+      "optional": false
+    },
+    {
+      "id": 6,
+      "name": "守护线程 C",
+      "offsets": {
+        "b10": "0x7BC00",
+        "b11.2": "0x7B890",
+        "b11.3": "0x7B830",
+        "b12.3": "0x7B830",
+        "b15.3": "0x7BAD0",
+        "b16.3": "0x7C050",
+        "b18.3": "0x7B890"
+      },
+      "expected": "6A",
+      "patch": "C3",
+      "optional": false
+    },
+    {
+      "id": 7,
+      "name": "守护线程 D",
+      "offsets": {
+        "b10": "0x7CA50",
+        "b11.2": "0x7C6E0",
+        "b11.3": "0x7C680",
+        "b12.3": "0x7C680",
+        "b15.3": "0x7C920",
+        "b16.3": "0x7CEA0",
+        "b18.3": "0x7C6E0"
+      },
+      "expected": "6A",
+      "patch": "C3",
+      "optional": false
+    },
+    {
+      "id": 8,
+      "name": "看门狗关联函数",
+      "offsets": {
+        "b10": "0x834E0",
+        "b11.2": "0x83170",
+        "b11.3": "0x83120",
+        "b12.3": "0x83120",
+        "b15.3": "0x833B0",
+        "b16.3": "0x83930",
+        "b18.3": "0x83170"
+      },
+      "expected": "6A",
+      "patch": "C3",
+      "optional": false
+    },
+    {
+      "id": 9,
+      "name": "守护线程 E (push ebp->ret)",
+      "offsets": {
+        "b10": "0x842E0",
+        "b11.2": "0x83F70",
+        "b11.3": "0x83F20",
+        "b12.3": "0x83F20",
+        "b15.3": "0x841B0",
+        "b16.3": "0x84730",
+        "b18.3": "0x83F70"
+      },
+      "expected": "55",
+      "patch": "C3",
+      "optional": false
+    },
+    {
+      "id": 10,
+      "name": "守护线程 F",
+      "offsets": {
+        "b10": "0x131C60",
+        "b11.2": "0x131A60",
+        "b11.3": "0x131A30",
+        "b12.3": "0x131A30",
+        "b15.3": "0x131F20",
+        "b16.3": "0x1321D0",
+        "b18.3": "0x131EB0"
+      },
+      "expected": "6A",
+      "patch": "C3",
+      "optional": false
+    },
+    {
+      "id": 11,
+      "name": "过期强退逻辑 (0F85->90E9)",
+      "offsets": {
+        "b10": "0x91ABC",
+        "b11.2": "0x9173C",
+        "b11.3": "0x9170C",
+        "b12.3": "0x9170C",
+        "b15.3": "0x9194C",
+        "b16.3": "0x91EBC",
+        "b18.3": "0x916FC"
+      },
+      "expected": "0F85",
+      "patch": "90E9",
+      "optional": false
+    },
+    {
+      "id": 12,
+      "name": "联网验证标志位",
+      "offsets": {
+        "b10": "0x99A6D",
+        "b11.2": "0x996ED",
+        "b11.3": "0x996BD",
+        "b12.3": "0x996BD",
+        "b15.3": "0x99841",
+        "b16.3": "0x99DB1",
+        "b18.3": "0x995F1"
+      },
+      "expected": "01",
+      "patch": "00",
+      "optional": false
+    },
+    {
+      "id": 13,
+      "name": "假序列号弹窗 B (jz->jmp)",
+      "offsets": {
+        "b10": "0xF710E",
+        "b11.2": "0xF6EDE",
+        "b11.3": "0xF6E8E",
+        "b12.3": "0xF6E8E",
+        "b15.3": "0xF71AE",
+        "b16.3": "0xF751E",
+        "b18.3": "0xF70BE"
+      },
+      "expected": "74",
+      "patch": "EB",
+      "optional": false
+    },
+    {
+      "id": 14,
+      "name": "试用状态标志 + 天数限制常量",
+      "offsets": {
+        "b10": "0x378CDC",
+        "b11.2": "0x378EDC",
+        "b11.3": "0x378EDC",
+        "b12.3": "0x378EDC",
+        "b15.3": "0x379524",
+        "b16.3": "0x3BCF24",
+        "b18.3": "0x3C3524"
+      },
+      "expected": "010000001E000000",
+      "patch": "00000000FFFFFF7F",
+      "optional": false
+    },
+    {
+      "id": 15,
+      "name": "注册对话框抑制 (Serial缺失分支, 可选)",
+      "offsets": {
+        "b10": null,
+        "b11.2": null,
+        "b11.3": "0x8D66D",
+        "b12.3": "0x8D66D",
+        "b15.3": "0x8D8EE",
+        "b16.3": "0x8DE5E",
+        "b18.3": "0x8D69E"
+      },
+      "expected": "74",
+      "patch": "EB",
+      "optional": true
+    },
+    {
+      "id": 16,
+      "name": "启动自动更新定时器切断 (jne->jmp, 彻底杜绝后台更新)",
+      "offsets": {
+        "b10": "0x76C0D",
+        "b11.2": "0x7689D",
+        "b11.3": "0x7683D",
+        "b12.3": "0x7683D",
+        "b15.3": "0x76B2D",
+        "b16.3": "0x770BD",
+        "b18.3": "0x768ED"
+      },
+      "expected": "75",
+      "patch": "EB",
+      "optional": false
+    }
+  ]
+}
