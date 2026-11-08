@@ -33,7 +33,7 @@
 | Windows 总控与战术 | `Tool/skill/softseep/SKILL.md` |
 | Windows PE 深水区 | `Tool/skill/exe-reverse/SKILL.md`（41 refs + 16 引擎） |
 | Android 逆向全链路 | `Tool/skill/apkseep/SKILL.md` |
-| IDA Pro 自动化联动 | `Tool/skill/ida-reverse/SKILL.md` |
+| IDA Pro 自动化联动 | `Tool/skill/safe-skills/ida-reverse/SKILL.md` |
 | 许可/卡密校验手册 | `Tool/skill/softseep/references/license-validation.md` |
 | 逆向知识库 | `Tool/mcp/Tool/reverselab/kb/`（294 篇） |
 | seep MCP 服务 | `Tool/mcp/seep_mcp_server.py`（38 工具） |

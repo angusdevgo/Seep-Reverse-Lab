@@ -174,7 +174,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\setup\verify.ps1 -Detailed
 
 读取输出后，按 `MANUAL/DEPLOYMENT-CHECKLIST.md` 输出四栏 Markdown 看板：
 
-1. **🛠️ 技能系统 (Skills - 11 项)**：逐项列出【技能名】|【目标路径】|【期望文件数】|【实际状态 (🟢 READY / 🔴 MISSING)】；
+1. **🛠️ 技能系统 (Skills - 10 项)**：逐项列出【技能名】|【目标路径】|【期望文件数】|【实际状态 (🟢 READY / 🔴 MISSING)】；
 2. **🔌 MCP 服务引擎**：逐项列出【服务名】|【期望工具数】|【实际连通性】|【状态 (🟢 READY / 🟡 DEGRADED)】
    （未装 IDA 时明确告知已自动降级为 Radare2 承接）；
 3. **🔧 物理内置工具箱**：Jadx (v1.5.6)、Radare2 (v5.9.8)、Apktool (v2.11.0) 及 294 篇知识库状态；

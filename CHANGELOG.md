@@ -12,6 +12,55 @@
 
 ## [Unreleased]
 
+## [1.11.2] - 2026-11-08
+
+### 删除同名的 `ida-reverse` 简版（一份名字只留一份实现）
+
+盘点 pi 已部署内容时发现的缺陷：仓库里有两个 skill 都叫 `ida-reverse`。
+
+| 位置 | 内容 | 结局 |
+|---|---|---|
+| `Tool/skill/ida-reverse/` | 4.2 KB，1 个文件，简版 | **永远不生效** |
+| `Tool/skill/safe-skills/ida-reverse/` | 12.6 KB + `scripts/`，3 个文件，完整版 | 安装时覆盖前者 |
+
+`install-pi.ps1` 按目录字母序复制，`safe-skills` 排在 `ida-reverse` 之后，所以顶层那份
+每次安装都会被静默覆盖 —— 仓库里留着一段永远不会被用到的配置，而「11 个技能」
+这个数字其实只有 10 个唯一名字。
+
+已删除顶层那份，保留完整的 `safe-skills` 版本（含 `start.ps1` / `open.ps1`）。
+本机 `~/.pi/agent/skills/ida-reverse/` 与 `safe-skills` 版本逐字节一致，无需重装。
+
+### 连带订正
+
+- `verify.ps1` / `verify.sh` 的 ida-reverse 检查改为指向 `safe-skills/ida-reverse`
+  （原来指向已删的顶层路径，删完直接报红）。
+- `Tool/prompts/SYSTEM.md` 的路由表、`Tool/docs/PROVENANCE.md` 的溯源表同步改路径，
+  PROVENANCE 里 ida-reverse 由「1 文件 / 4 KB」订正为「3 文件 / 13 KB」，
+  apkseep 由 115 文件订正为实际的 112 文件。
+- 计数统一 11 → 10：`AGENTS.md`（根 + 源）、`CLAUDE.md`、`MANUAL/DEPLOYMENT.md`、
+  `MANUAL/DEPLOYMENT-CHECKLIST.md`（标题与总结）、`setup/install-pi.ps1`。
+- `DEPLOYMENT-CHECKLIST.md` 的技能基准表标题由「11 个技能 / 7 个目录」改为
+  「10 个技能 / 6 个目录」。
+
+### 验证
+
+```
+[4/10] 🛠️ 逆向工程专业技能库 (Skills - 10 个技能 / 6 个目录)
+  [√ PASS] IDA Pro 自动化联动 (ida-reverse)
+核心检查通过: 66 项 —— READY
+```
+
+全仓库已无任何引用指向被删除的 `Tool/skill/ida-reverse/`。
+
+### 待办（未在本版处理）
+
+`MANUAL/DEPLOYMENT-CHECKLIST.md` 的技能基准表里还有两行与仓库现状不符，属于更早的
+历史遗留，单独处理更安全：
+
+- **S6 `apk-diff`** —— `Tool/skill/safe-skills/` 下没有这个目录（实际是 `apk-reverse`，8 文件）。
+- **S9 `ida-assistant`** —— 映射到 `ida-reverse/`（safe 版），与 S3 重复。
+
+
 ## [1.11.1] - 2026-11-08
 
 ### 修掉一个很伤日常体验的问题：没进工作台却自己开工

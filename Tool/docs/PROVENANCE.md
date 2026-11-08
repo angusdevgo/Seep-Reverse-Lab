@@ -18,14 +18,14 @@
 
 ---
 
-## 二、Skill 溯源（11 个）
+## 二、Skill 溯源（10 个）
 
 | # | Skill | 本包位置 | 安装目标 | 文件数 | 体积 |
 | :--- | :--- | :--- | :--- | :---: | :--- |
 | 1 | **softseep** ⭐总控 | `Tool/skill/softseep/` | `~/.pi/agent/skills/softseep/` | 11 | 164 KB |
 | 2 | **exe-reverse** | `Tool/skill/exe-reverse/` | `~/.pi/agent/skills/exe-reverse/` | 65 | 1.5 MB |
-| 3 | **apkseep** | `Tool/skill/apkseep/` | `~/.pi/agent/skills/apkseep/` | 115 | 2.2 MB |
-| 4 | **ida-reverse** | `Tool/skill/ida-reverse/` | `~/.pi/agent/skills/ida-reverse/` | 1 | 4 KB |
+| 3 | **apkseep** | `Tool/skill/apkseep/` | `~/.pi/agent/skills/apkseep/` | 112 | 2.2 MB |
+| 4 | **ida-reverse** | `Tool/skill/safe-skills/ida-reverse/` | `~/.pi/agent/skills/ida-reverse/` | 3 | 13 KB |
 | 5 | **client-license-validation-bypass** | `Tool/skill/client-license-validation-bypass/` | `~/.pi/agent/skills/` | 1 | 32 KB |
 | 6 | **reverse-engineering** | `Tool/skill/safe-skills/reverse-engineering/` | 同上 | 15 | 380 KB |
 | 7 | **apk-reverse** | `Tool/skill/safe-skills/apk-reverse/` | 同上 | 8 | 52 KB |

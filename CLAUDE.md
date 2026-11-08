@@ -111,7 +111,7 @@ Seep\
 ├── DSH-PROFILE.md     ← DeepSeek Harness 接入模板
 │
 ├── Tool\
-│   ├── skill\         11 个 Skill（以 softseep 为总控）
+│   ├── skill\         10 个 Skill（以 softseep 为总控）
 │   ├── mcp\           seep MCP（38 工具）+ Tool\ 运行时依赖
 │   │   └── Tool\safe\ 内置 Jadx、Radare2、Apktool、Hook 引擎等
 │   ├── prompts\       SYSTEM.md、AGENTS.md 与安全扩展

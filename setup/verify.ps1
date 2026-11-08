@@ -326,8 +326,10 @@ Test-CheckItem "Skill" "Windows PE 深水区 (exe-reverse 包含 41 篇规范与
 } "exe-reverse 工程不完整，请重跑 setup\install-pi.ps1" "SKILL.md + 41 refs + 16 scripts" "$localSkills\exe-reverse"
 
 Test-CheckItem "Skill" "IDA Pro 自动化联动 (ida-reverse)" {
-    Test-Path (Join-Path $localSkills 'ida-reverse\SKILL.md')
-} "ida-reverse 技能缺失" "SKILL.md 在位" "$localSkills\ida-reverse"
+    # 完整版在 safe-skills 下（12.6 KB + scripts）。顶层曾有一份 4 KB 的同名简版，
+    # 安装时被 safe-skills 静默覆盖，已删除 —— 一份名字只留一份实现。
+    Test-Path (Join-Path $localSkills 'safe-skills\ida-reverse\SKILL.md')
+} "ida-reverse 技能缺失" "SKILL.md 在位" "$localSkills\safe-skills\ida-reverse"
 
 Test-CheckItem "Skill" "通用许可/卡密校验突破规范 (license-bypass)" {
     Test-Path (Join-Path $localSkills 'client-license-validation-bypass\SKILL.md')

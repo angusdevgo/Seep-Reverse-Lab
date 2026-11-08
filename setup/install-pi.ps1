@@ -3,7 +3,7 @@
   Seep 工作台 —— 一键配置 Pi Agent 运行环境 (加强版)
   包含：
     1. 备份原 ~/.pi/agent 配置
-    2. 同步 11 个 Skill
+    2. 同步 10 个 Skill
     3. 同步提示词与安全放行扩展
     4. 增量合并 mcp.json（保护已有用户配置，UTF-8 No BOM，反斜杠安全转义）
     5. 配置 settings.json

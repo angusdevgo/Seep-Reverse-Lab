@@ -22,7 +22,7 @@
 
 ## 二、 官方部署资产核验基准表 (Baseline Manifests)
 
-### 1. 🛠️ 技能系统基准表 (Skills System - 11 个技能 / 7 个目录)
+### 1. 🛠️ 技能系统基准表 (Skills System - 10 个技能 / 6 个目录)
 
 目标安装路径以 Pi Agent 规范为例（`~/.pi/agent/skills/`，Windows 下为 `$env:USERPROFILE\.pi\agent\skills\`）：
 
@@ -31,7 +31,7 @@
 | **S1** | **`softseep`** ⭐总控 | `~/.pi/agent/skills/softseep/` | `SKILL.md` + 10 篇 `references/` (≥11 项) | `SKILL.md`<br>`references/license-validation.md`<br>`references/gate-crosswalk.md` | 检查 10 篇 references 齐全，G0-G6 门控完整，三层门禁 crosswalk 在位 | 🟢 **核心**。缺失则总控瘫痪。修复：`powershell setup\install-pi.ps1` |
 | **S1b** | **`exe-reverse`** | `~/.pi/agent/skills/exe-reverse/` | `SKILL.md` + 41 refs + 16 scripts (≥65 项) | `SKILL.md`<br>`scripts/doctor.py`<br>`LOCAL-NOTES.md` | 运行 `python scripts/doctor.py`（应输出 16/16 scripts runnable）；`references/routing.md` 在位 | 🟢 **核心**。Windows PE 深水区引擎。修复：重跑 `install-pi.ps1` |
 | **S2** | **`apkseep`** | `~/.pi/agent/skills/apkseep/` | `SKILL.md` + 45 refs + 56 scripts (≥115 项) | `SKILL.md`<br>`scripts/doctor.py` | 运行 `python scripts/doctor.py` 无报错 | 🟢 **核心**。安卓全链路专精。修复：重跑 `install-pi.ps1` |
-| **S3** | **`ida-reverse`** | `~/.pi/agent/skills/ida-reverse/` | `SKILL.md` (≥1 项) | `SKILL.md` | 包含 IDA 13337 端口自动唤醒规约 | 🟢 **核心**。IDA 自动化调度器。修复：重跑 `install-pi.ps1` |
+| **S3** | **`ida-reverse`** | `~/.pi/agent/skills/ida-reverse/` | `SKILL.md` + `scripts/` (≥3 项) | `SKILL.md`<br>`scripts/start.ps1` | 包含 IDA 13337 端口自动唤醒规约 | 🟢 **核心**。IDA 自动化调度器。修复：重跑 `install-pi.ps1` |
 | **S4** | **`client-license-validation-bypass`** | `~/.pi/agent/skills/client-license-validation-bypass/` | `SKILL.md` (≥1 项) | `SKILL.md` | 包含 CWE-602 战术树与补丁/算号决策 | 🟢 **核心**。授权审计战术库。修复：重跑 `install-pi.ps1` |
 | **S5** | **`reverse-engineering`** | `~/.pi/agent/skills/reverse-engineering/` | `SKILL.md` + references (≥15 项) | `SKILL.md` | 通用逆向基准规则在位 | 🟢 战术包。修复：复制 `Tool/skill/safe-skills/reverse-engineering` |
 | **S6** | **`apk-diff`** | `~/.pi/agent/skills/apk-diff/` | `SKILL.md` + scripts (≥8 项) | `SKILL.md` | 二进制与 APK 差分工具在位 | 🟢 战术包。修复：复制 `Tool/skill/safe-skills/apk-diff` |
@@ -203,6 +203,6 @@ MCP 配置文件所在位置：
 > 解析链 + 环境变量覆盖 + 四态，保证同一套脚本在任意机器上给出正确结论。
 
 #### 4. 🚀 总结与开工建议
-- **系统评估**：核心组件与 11 个 Skill 100% 部署成功，工作台处于 **[READY / 完备就绪]** 状态；
+- **系统评估**：核心组件与 10 个 Skill 100% 部署成功，工作台处于 **[READY / 完备就绪]** 状态；
 - **操作指令**：请退出并重启当前终端与 Agent 会话，在对话框中输入 **`lab：`** 开启白盒测试！
 ```
