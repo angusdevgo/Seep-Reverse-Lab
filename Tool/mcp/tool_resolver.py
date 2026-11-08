@@ -20,7 +20,7 @@
     MISSING   没找到，属于核心能力
 
 解析链（逐层下降，命中即停，记录来源层）
-    env → cache → bundled → path → candidates
+    env → bundled → cache → path → candidates
     可在注册表里用 tools[].chain 覆盖顺序（python 就靠这个优先找 venv 而不是 PATH 垫片）
 """
 
@@ -35,7 +35,7 @@ import subprocess
 import sys
 from typing import Any, Dict, List, Optional
 
-DEFAULT_CHAIN = ["env", "cache", "bundled", "path", "candidates"]
+DEFAULT_CHAIN = ["env", "bundled", "cache", "path", "candidates"]
 
 
 # ---------------------------------------------------------------- 路径工具

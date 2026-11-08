@@ -74,9 +74,9 @@ MCP 配置文件所在位置：
 
 | # | 工具名称 | 所在相对目录 | 预期体积/构建版本 | 核心执行文件 | 验证测试命令 |
 |---|---|---|---|---|---|
-| **T1** | **`radare2`** | `Tool/mcp/Tool/safe/radare2/` | v6.2.2 全套 (~39MB) | `bin/radare2.exe`<br>`bin/rabin2.exe` | `.\Tool\mcp\Tool\safe\radare2\bin\rabin2.exe -v` |
+| **T1** | **`radare2`** | `Tool/mcp/Tool/safe/radare2/` | v5.9.8 全套 (~39MB) | `bin/radare2.exe`<br>`bin/rabin2.exe` | `.\Tool\mcp\Tool\safe\radare2\bin\rabin2.exe -v` |
 | **T2** | **`jadx`** | `Tool/mcp/Tool/safe/jadx/` | v1.5.6 纯净优化版 (~75MB) | `bin/jadx.bat`<br>`lib/jadx-1.5.6-all.jar` | `.\Tool\mcp\Tool\safe\jadx\bin\jadx.bat --version` |
-| **T3** | **`apktool`** | `Tool/mcp/Tool/safe/apktool/` | v3.0.3 (~24MB) | `apktool.jar`<br>`apktool.bat` | 需 Java 17 支持。运行 `apktool.bat -version` |
+| **T3** | **`apktool`** | `Tool/mcp/Tool/safe/apktool/` | v2.11.0 (~24MB) | `apktool.jar`<br>`apktool.bat` | 需 Java 17 支持。运行 `apktool.bat -version` |
 | **T4** | **`hook-mcp`** | `Tool/mcp/Tool/safe/hook-mcp/` | 模板库目录 | `templates/frida/`<br>`templates/lspilot/` | 检查模板文件是否存在 |
 | **T5** | **`js-reverse-mcp`** | `Tool/mcp/Tool/safe/js-reverse-mcp/` | 需完成解压 | `node_modules/` 目录存在 | 检查目录或运行 `setup\extract-deps.ps1` |
 | **T6** | **`playwright-mcp`** | `Tool/mcp/Tool/safe/playwright-mcp/` | 需完成解压 | `node_modules/` 目录存在 | 检查目录或运行 `setup\extract-deps.ps1` |
@@ -158,9 +158,9 @@ MCP 配置文件所在位置：
 #### 3. 🔧 运行时与内置工具箱 (Native Tools)
 | 工具 | 预期版本/文件 | 实际状态 | 状态 | 说明 |
 |---|---|---|---|---|
-| Radare2 | v6.2.2 (radare2.exe) | 物理就绪 | 🟢 READY | 二进制反编译/反汇编引擎正常 |
+| Radare2 | v5.9.8 (radare2.exe) | 物理就绪 | 🟢 READY | 二进制反编译/反汇编引擎正常 |
 | Jadx | v1.5.6 (jadx.bat) | 物理就绪 | 🟢 READY | Java 源码反编译引擎正常 |
-| Apktool | v3.0.3 (apktool.jar) | 物理就绪 | 🟢 READY | 资源解包与重打包正常 |
+| Apktool | v2.11.0 (apktool.jar) | 物理就绪 | 🟢 READY | 资源解包与重打包正常 |
 | 攻防知识库 | ≥294 篇笔记 | 物理就绪 (318 篇) | 🟢 READY | seep_kb_* 检索后端就绪 |
 
 #### 3b. 🧰 外部能力包 (External Capabilities)

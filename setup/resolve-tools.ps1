@@ -211,7 +211,7 @@ function Resolve-OneTool {
     }
 
     # 解析层顺序：注册表可用 chain 字段覆盖（例如 python 要优先找 venv 而不是 PATH 垫片）
-    $chain = @('env', 'cache', 'bundled', 'path', 'candidates')
+    $chain = @('env', 'bundled', 'cache', 'path', 'candidates')
     if ($ToolDef.PSObject.Properties.Name -contains 'chain' -and $ToolDef.chain) {
         $chain = @($ToolDef.chain)
     }

@@ -12,8 +12,8 @@
     "",
     "解析链（逐层下降，命中即停，并记录来自哪一层）：",
     "  1. env        环境变量指向（SEEP_IDA_ROOT 等），最高优先级，用户显式指定就该被尊重",
-    "  2. cache      ~/.seep/tools.json 中上次解析成功的位置，避免每次重扫磁盘",
-    "  3. bundled    仓库自带（<repo>/Tool/mcp/Tool/safe/...），相对路径，任何机器一致",
+    "  2. bundled    仓库自带（<repo>/Tool/mcp/Tool/safe/...），相对路径，任何机器一致",
+    "  3. cache      ~/.seep/tools.json 中上次解析成功的位置，只省昂贵探测，不覆盖确定来源",
     "  4. path       系统 PATH（Get-Command / shutil.which）",
     "  5. candidates 常见安装位候选表；支持 %VAR% / ~ / {env:VAR} 展开",
     "",
@@ -33,7 +33,7 @@
     "exists": "只检查路径存在（目录型 MCP 包、无法安全实跑的组件）",
     "ida": "检查 ida.exe 存在，且 IDA 自带 Python 能 import ida_pro_mcp（这才是「真的能联动」）"
   },
-  "chainNote": "可选 chain 字段：覆盖该工具的解析层顺序，缺省为 [\"env\",\"cache\",\"bundled\",\"path\",\"candidates\"]。python 用 [\"env\",\"candidates\",\"bundled\",\"path\",\"cache\"] —— 因为 PATH 上的 python 垫片经常指向一个没有装 mcp 库的解释器，而工作台自己的 venv 更可信。",
+  "chainNote": "可选 chain 字段：覆盖该工具的解析层顺序，缺省为 [\"env\",\"bundled\",\"cache\",\"path\",\"candidates\"]。python 用 [\"env\",\"candidates\",\"bundled\",\"path\",\"cache\"] —— 因为 PATH 上的 python 垫片经常指向一个没有装 mcp 库的解释器，而工作台自己的 venv 更可信。",
   "tools": [
     {
       "id": "python",
@@ -149,6 +149,7 @@
       "kind": "core",
       "purpose": "无 IDA 时的二进制分析主力（r2 命令行）",
       "bundled": [
+        "Tool/mcp/Tool/safe/radare2/bin/radare2.exe",
         "Tool/mcp/Tool/safe/radare2/bin/r2.exe",
         "Tool/mcp/Tool/safe/radare2/bin/r2.bat",
         "Tool/mcp/Tool/safe/radare2/bin/r2"
