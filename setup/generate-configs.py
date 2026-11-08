@@ -114,6 +114,32 @@ CORDIS_YAML = """# =============================================================
         toolCallTimeoutMs: 600000
         failOnStartupError: false"""
 
+# Skill 图层（可关）
+# DSH 自带 skill 机制（dsh-skill-filesystem 做发现、dsh-tool-skill 做模型侧加载），
+# 只是 web profile 里默认 disabled。开启后 DSH 与 pi 一样能看到这 10 个技能：
+#   根1 Tool/skill            -> apkseep / exe-reverse / softseep / webseep / client-license-validation-bypass
+#   根2 Tool/skill/safe-skills -> apk-reverse / ida-reverse / mcp-js-reverse-playbook / radare2 / reverse-engineering
+# 注意：customSkillDirs 是「扫这个目录下的直接子目录」，无法只挑其中几个；
+# 要少挂就只能关整层（--dsh-skills none），或在仓库外自建一个只含所需技能的根。
+CORDIS_SKILLS = """
+
+# ------------------------------------------------------------------------------
+# Skill 图层：开启 DSH 自带的 skill 发现与加载（默认关闭，这里显式打开）
+# 代价：10 个技能的 name + description 会进入每个会话的上下文。
+# 不想付这个成本，重新生成时关掉该图层即可（详见 MANUAL/DSH-VERIFICATION.md）。
+# ------------------------------------------------------------------------------
+- id: skill-filesystem
+  name: '@deepseek-ai/dsh-skill-filesystem'
+  disabled: false
+  config:
+    customSkillDirs:
+      - '{root}/Tool/skill'
+      - '{root}/Tool/skill/safe-skills'
+
+- id: tool-skill
+  name: '@deepseek-ai/dsh-tool-skill'
+  disabled: false"""
+
 
 def normalize_root(path: str) -> str:
     """统一成 POSIX 正斜杠表示，与 PowerShell 版 `$Root.Replace('\\', '/')` 对齐。"""
@@ -140,7 +166,7 @@ def write_if_changed(path: str, content: str, print_only: bool = False) -> bool:
     return True
 
 
-def generate(root: str, print_only: bool = False) -> dict:
+def generate(root: str, print_only: bool = False, dsh_skills: str = "all") -> dict:
     """生成三份配置。返回 {产物名: 路径}。"""
     root = normalize_root(os.path.abspath(root))
     server_py = root + "/Tool/mcp/seep_mcp_server.py"
@@ -166,7 +192,8 @@ def generate(root: str, print_only: bool = False) -> dict:
 
     print("\n[3/4] \u6b63\u5728\u751f\u6210 DeepSeek Harness (DSH) \u5b98\u65b9\u8865\u4e01 (cordis.generated.yml)...")
     cordis_dest = os.path.join(root, "setup", "cordis.generated.yml")
-    cordis_content = CORDIS_YAML.replace("{root}", root).replace("{server_py}", server_py)
+    cordis_body = CORDIS_YAML + (CORDIS_SKILLS if dsh_skills == "all" else "")
+    cordis_content = cordis_body.replace("{root}", root).replace("{server_py}", server_py)
     if print_only or write_if_changed(cordis_dest, cordis_content, print_only):
         if not print_only:
             print("  [\u221a] \u5df2\u751f\u6210: %s (\u9876\u5c42\u91c7\u7528\u5b98\u65b9 - insert: \u8bed\u6cd5)" % cordis_dest)
@@ -203,13 +230,15 @@ def main(argv=None) -> int:
     ap = argparse.ArgumentParser(description="Seep \u591a Agent \u914d\u7f6e\u751f\u6210\u5668\uff08\u8de8\u5e73\u53f0\uff09")
     ap.add_argument("--root", default=default_root, help="\u5de5\u4f5c\u53f0\u6839\u76ee\u5f55\uff08\u9ed8\u8ba4\u811a\u672c\u4e0a\u4e00\u5c42\uff09")
     ap.add_argument("--print-only", action="store_true", help="\u53ea\u6253\u5370\uff0c\u4e0d\u5199\u76d8")
+    ap.add_argument("--dsh-skills", choices=("all", "none"), default="all",
+                    help="\u662f\u5426\u5f00\u542f DSH \u81ea\u5e26\u7684 skill \u53d1\u73b0\uff08all=\u5f00\uff0cnone=\u5173\uff09")
     args = ap.parse_args(argv)
 
     if not os.path.isdir(os.path.join(args.root, "Tool")):
         print("[ERROR] \u76ee\u6807\u4e0d\u50cf\u5de5\u4f5c\u53f0\u6839\u76ee\u5f55\uff08\u7f3a Tool/\uff09: %s" % args.root,
               file=sys.stderr)
         return 2
-    generate(args.root, print_only=args.print_only)
+    generate(args.root, print_only=args.print_only, dsh_skills=args.dsh_skills)
     return 0
 
 

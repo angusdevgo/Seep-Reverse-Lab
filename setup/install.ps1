@@ -20,6 +20,8 @@ param(
     [switch]$WithAndroid,         # 顺带装 Android 动态（frida / APKiD，需 pip）
     [switch]$WithScanners,        # 顺带装 nuclei / ffuf
     [switch]$SkipDsh,             # 跳过 DeepSeek Harness 补丁挂载
+    [ValidateSet('all', 'none')]
+    [string]$DshSkills = 'all',   # DSH 是否开启 skill 图层（all=开，none=不挂）
     [switch]$OnlyVerify,          # 仅跑自检
     [switch]$NonInteractive       # 非交互静默模式
 )
@@ -158,7 +160,7 @@ if (-not $SkipPi) {
 
 # 自动生成 Claude / OpenCode / DSH 配置文件
 Write-Step '生成多 Agent 配置文件 (.mcp.json / opencode.jsonc / cordis.generated.yml)'
-& (Join-Path $ScriptDir 'generate-configs.ps1')
+& (Join-Path $ScriptDir 'generate-configs.ps1') -DshSkills $DshSkills
 
 # -----------------------------------------------------------------------------
 # DeepSeek Harness：~/.dsh 存在时才挂载，避免给没装 DSH 的用户制造无关步骤

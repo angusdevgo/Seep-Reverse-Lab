@@ -21,6 +21,33 @@
 存在则自动执行持久挂载，不存在则跳过（不给你制造无关步骤）。
 跳过该步骤用 `-SkipDsh`（Windows）/ `--skip-dsh`（Unix）。
 
+### Skill 图层（默认开启）
+
+DSH 自带 skill 机制 —— `dsh-skill-filesystem`（发现）+ `dsh-tool-skill`（模型侧加载），
+只是 `web` profile 里默认 `disabled: true`。工作台会在补丁里显式打开它，
+把两个技能根挂进去，让 DSH 看到与 pi 相同的 10 个技能：
+
+```yaml
+- id: skill-filesystem
+  disabled: false
+  config:
+    customSkillDirs:
+      - '<repo>/Tool/skill'            # apkseep exe-reverse softseep webseep client-license-...
+      - '<repo>/Tool/skill/safe-skills' # apk-reverse ida-reverse mcp-js-reverse-playbook radare2 reverse-engineering
+- id: tool-skill
+  disabled: false
+```
+
+| 控制方式 | 命令 | 效果 |
+| :--- | :--- | :--- |
+| 默认（开启） | `install.ps1` / `install.sh` | 10 个技能可被发现 |
+| 关闭整层 | `install.ps1 -DshSkills none`<br>`install.sh --no-dsh-skills` | 不写 skill 块，省上下文 |
+| 事后改 | `python setup/generate-configs.py --root . --dsh-skills {all,none}` → 重跑 `dsh-merge.py` | 重写补丁块 |
+
+> **代价**：10 个技能的 `name + description` 会进入每个会话的上下文。
+> `customSkillDirs` 是「扫该目录下的直接子目录」，**无法只挑其中几个** ——
+> 要少挂只能关整层，或在仓库外自建一个只含所需技能的根目录。
+
 ### 隔离部署（不动 Pi Agent）
 
 如果只想在一个独立文件夹里玩 DSH，不想碰 `~/.pi/agent` 的 skill 与 mcp.json：
@@ -125,9 +152,15 @@ python setup/dsh-merge.py --check
 # 2. DSH 自己合成的配置树里能不能看到 seep 条目
 dsh --profile web --dump-config | grep -A12 "serverName: seep"
 
+# 2b. skill 图层是否已开
+dsh --profile web --dump-config | grep -A8 "^- id: skill-filesystem"
+
 # 3. 端到端：按 DSH 合成后的配置真的启动 MCP，数工具
 python setup/test_dsh_mount.py
 #   [PASS] tools/list 返回 ≥30 个工具  -> 38
+
+# 4. 完整度评分（6 组 23 项，输出百分比与缺失清单）
+python setup/verify-dsh.py
 ```
 
 `check.ps1` / `setup/verify.sh` 也会检查：

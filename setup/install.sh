@@ -37,7 +37,7 @@ AGENT_DIR="${SEEP_AGENT_DIR:-$HOME/.pi/agent}"
 GREEN="\033[1;32m"; RED="\033[1;31m"; YELLOW="\033[1;33m"
 CYAN="\033[1;36m"; WHITE="\033[1;37m"; GRAY="\033[0;37m"; RESET="\033[0m"
 
-SKIP_PYTHON=0; SKIP_PI=0; SKIP_CAPABILITIES=0; WITH_TOOLS=0; NON_INTERACTIVE=0; SKIP_DSH=0
+SKIP_PYTHON=0; SKIP_PI=0; SKIP_CAPABILITIES=0; WITH_TOOLS=0; NON_INTERACTIVE=0; SKIP_DSH=0; DSH_SKILLS=all
 
 while [ $# -gt 0 ]; do
     case "$1" in
@@ -47,6 +47,9 @@ while [ $# -gt 0 ]; do
         --with-tools)        WITH_TOOLS=1; shift ;;
         --non-interactive)   NON_INTERACTIVE=1; shift ;;
         --skip-dsh)          SKIP_DSH=1; shift ;;
+        # DSH 的 skill 图层：默认开启（与 pi 对齐）；--no-dsh-skills 关掉以省上下文
+        --no-dsh-skills)     DSH_SKILLS=none; shift ;;
+        --dsh-skills)        DSH_SKILLS="$2"; shift 2 ;;
         -h|--help)           sed -n '2,32p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
         *) echo "未知参数: $1" >&2; exit 2 ;;
     esac
@@ -220,8 +223,8 @@ fi
 step "6/7  生成多 Agent 配置文件（.mcp.json / opencode.jsonc / cordis.generated.yml）"
 gen_py="$SCRIPT_DIR/generate-configs.py"
 if [ -f "$gen_py" ]; then
-    if "$PY_BIN" "$gen_py" >/dev/null 2>&1; then
-        ok "三份配置已生成"
+    if "$PY_BIN" "$gen_py" --dsh-skills "$DSH_SKILLS" >/dev/null 2>&1; then
+        ok "三份配置已生成（DSH skill 图层: $DSH_SKILLS）"
     else
         warn "生成失败，手动执行：$PY_BIN setup/generate-configs.py"
         FAILED+=("generate-configs")

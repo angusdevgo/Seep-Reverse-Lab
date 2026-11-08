@@ -151,14 +151,14 @@ def check_config(rep, profile, composed):
     if os.path.isfile(patch):
         body = io.open(patch, encoding="utf-8", errors="replace").read()
     has_block = ">>> seep-workbench" in body
-    rep.add(G, "A1", "cordis.patch.yml 含 seep-workbench 标记块", 6, has_block,
+    rep.add(G, "A1", "cordis.patch.yml 含 seep-workbench 标记块", 5, has_block,
             patch if os.path.isfile(patch) else "文件不存在: %s" % patch,
             "python setup/dsh-merge.py --profile %s" % profile)
 
     # A2 / A3 composed 里有 serverName
-    rep.add(G, "A2", "合成配置里有 serverName: seep", 6, "serverName: seep" in composed,
+    rep.add(G, "A2", "合成配置里有 serverName: seep", 4, "serverName: seep" in composed,
             "见 dsh --dump-config", "重跑 dsh-merge.py 或检查 profile 名")
-    rep.add(G, "A3", "合成配置里有 serverName: js-reverse", 5, "serverName: js-reverse" in composed,
+    rep.add(G, "A3", "合成配置里有 serverName: js-reverse", 3, "serverName: js-reverse" in composed,
             "见 dsh --dump-config", "重跑 dsh-merge.py")
 
     # A4 超时
@@ -190,8 +190,8 @@ def check_mcp(rep, composed, skip_spawn):
     G = "MCP 可用性"
 
     if skip_spawn:
-        for key, label, w in (("B1", "seep 能 initialize", 8), ("B2", "seep tools/list 工具数", 10),
-                              ("B3", "js-reverse 能 initialize", 6), ("B4", "js-reverse tools/list 工具数", 6)):
+        for key, label, w in (("B1", "seep 能 initialize", 6), ("B2", "seep tools/list 工具数", 8),
+                              ("B3", "js-reverse 能 initialize", 5), ("B4", "js-reverse tools/list 工具数", 6)):
             rep.add(G, key, label, w, False, "已跳过（--skip-spawn）", "去掉 --skip-spawn 重跑")
         return
 
@@ -208,8 +208,8 @@ def check_mcp(rep, composed, skip_spawn):
         return (cmd.group(1).strip() if cmd else None), argv
 
     for server, key_init, key_tools, expect, w_init, w_tools in (
-        ("seep", "B1", "B2", EXPECT_SEEP_TOOLS, 8, 10),
-        ("js-reverse", "B3", "B4", EXPECT_JS_TOOLS, 6, 6),
+        ("seep", "B1", "B2", EXPECT_SEEP_TOOLS, 6, 8),
+        ("js-reverse", "B3", "B4", EXPECT_JS_TOOLS, 5, 6),
     ):
         cmd, argv = extract(server)
         if not cmd:
@@ -227,31 +227,71 @@ def check_mcp(rep, composed, skip_spawn):
                 "实测 %d" % n, "工具数偏少通常意味着仓库不完整或启动的是旧副本")
 
 
+def check_skills(rep, composed):
+    """第 3 组：技能层（15 分）
+
+    DSH 自带 skill 机制：dsh-skill-filesystem 负责发现，dsh-tool-skill 负责把
+    catalog 和加载工具给到模型。两者在 web profile 里默认 disabled，需要显式开启。
+    开启后 DSH 与 pi 一样能看到这 10 个技能 —— 所以这一组不是「有没有」，
+    而是「开没开、根指对没指对」。
+    """
+    G = "技能层"
+
+    def entry_block(eid):
+        m = re.search(r"^- id: " + re.escape(eid) + r"\n(.*?)(?=\n- id:|\Z)", composed, re.S)
+        return m.group(1) if m else ""
+
+    fs = entry_block("skill-filesystem")
+    fs_on = bool(fs) and "disabled: false" in fs
+    rep.add(G, "F1", "skill-filesystem 已启用（DSH 的技能发现 provider）", 5, fs_on,
+            "disabled: false" if fs_on else ("未找到该条目" if not fs else "仍是 disabled: true"),
+            "python setup/generate-configs.py --root . --dsh-skills all 然后重跑 dsh-merge.py")
+
+    ts = entry_block("tool-skill")
+    ts_on = bool(ts) and "disabled: false" in ts
+    rep.add(G, "F2", "tool-skill 已启用（模型的 skill 加载工具 + 目录）", 4, ts_on,
+            "disabled: false" if ts_on else ("未找到该条目" if not ts else "仍是 disabled: true"),
+            "同上：重新生成配置后重跑 dsh-merge.py")
+
+    roots_ok = ("/Tool/skill" in fs or chr(92) + "Tool" + chr(92) + "skill" in fs) and "safe-skills" in fs
+    # 实际能被 DSH 发现的技能数（每个根下的直接子目录里含 SKILL.md 的）
+    found = 0
+    for rel in ("Tool/skill", "Tool/skill/safe-skills"):
+        d = os.path.join(ROOT, *rel.split("/"))
+        if os.path.isdir(d):
+            for child in os.listdir(d):
+                if os.path.isfile(os.path.join(d, child, "SKILL.md")):
+                    found += 1
+    rep.add(G, "F3", "customSkillDirs 覆盖两个技能根", 6, roots_ok,
+            "实际可发现 %d 个技能（期望 10）" % found,
+            "确认 cordis.generated.yml 里两个根路径都指向当前仓库")
+
+
 def check_assets(rep):
     """第 3 组：仓库资产（20 分）"""
     G = "仓库资产"
     safe = os.path.join(ROOT, "Tool", "mcp", "Tool", "safe")
     need = ["jadx", "apktool", "radare2", "playwright-mcp", "js-reverse-mcp"]
     missing = [d for d in need if not os.path.isdir(os.path.join(safe, d))]
-    rep.add(G, "C1", "内置二进制工具箱 5 件齐（jadx/apktool/radare2/playwright/js-reverse）", 6,
+    rep.add(G, "C1", "内置二进制工具箱 5 件齐（jadx/apktool/radare2/playwright/js-reverse）", 5,
             not missing, "缺: %s" % ", ".join(missing) if missing else "全部在位",
             "重新克隆仓库；node_modules 由 install 解压")
 
     kb_root = os.path.join(ROOT, "Tool", "mcp", "Tool", "reverselab", "kb")
     kb = sum(1 for _, _, fs in os.walk(kb_root) for f in fs if f.endswith(".md")) if os.path.isdir(kb_root) else 0
-    rep.add(G, "C2", "知识库 ≥ %d 篇" % EXPECT_KB, 5, kb >= EXPECT_KB, "实测 %d 篇" % kb,
+    rep.add(G, "C2", "知识库 ≥ %d 篇" % EXPECT_KB, 4, kb >= EXPECT_KB, "实测 %d 篇" % kb,
             "重新克隆仓库")
 
     cases_dir = os.path.join(ROOT, "Tool", "cases")
     cases = len([d for d in os.listdir(cases_dir) if os.path.isdir(os.path.join(cases_dir, d))]) \
         if os.path.isdir(cases_dir) else 0
-    rep.add(G, "C3", "脱敏案例 ≥ %d 个" % EXPECT_CASES, 3, cases >= EXPECT_CASES, "实测 %d 个" % cases,
+    rep.add(G, "C3", "脱敏案例 ≥ %d 个" % EXPECT_CASES, 2, cases >= EXPECT_CASES, "实测 %d 个" % cases,
             "重新克隆仓库")
 
     manuals_dir = os.path.join(ROOT, "MANUAL")
     manuals = len([f for f in os.listdir(manuals_dir) if f.endswith(".md")]) \
         if os.path.isdir(manuals_dir) else 0
-    rep.add(G, "C4", "MANUAL/ 手册 ≥ %d 份" % EXPECT_MANUALS, 3, manuals >= EXPECT_MANUALS,
+    rep.add(G, "C4", "MANUAL/ 手册 ≥ %d 份" % EXPECT_MANUALS, 2, manuals >= EXPECT_MANUALS,
             "实测 %d 份" % manuals, "重新克隆仓库")
 
     skill_dir = os.path.join(ROOT, "Tool", "skill")
@@ -265,7 +305,7 @@ def check_assets(rep):
                 names.update(x for x in os.listdir(p) if os.path.isdir(os.path.join(p, x)))
             elif d != "update":
                 names.add(d)
-    rep.add(G, "C5", "技能源目录 %d 个（DSH 不加载，但内容是纪律/知识的来源）" % EXPECT_SKILLS, 3,
+    rep.add(G, "C5", "技能源目录 %d 个（内容质量的基础）" % EXPECT_SKILLS, 2,
             len(names) >= EXPECT_SKILLS, "实测 %d 个" % len(names), "重新克隆仓库")
 
 
@@ -397,6 +437,7 @@ def main(argv=None) -> int:
     rep = Report()
     check_config(rep, args.profile, composed)
     check_mcp(rep, composed, args.skip_spawn or not composed_ok)
+    check_skills(rep, composed)
     check_assets(rep)
     check_instructions(rep)
     check_runtime(rep)

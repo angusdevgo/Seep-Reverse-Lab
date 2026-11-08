@@ -12,6 +12,98 @@
 
 ## [Unreleased]
 
+## [1.13.0] - 2026-11-09
+
+### 纠正一个错误结论：DSH 是有 skill 机制的
+
+之前为了给 DSH 做差距分析，我判断「DSH 没有 skill 加载器，10 个技能按 N/A 处理」。
+这个判断是错的，而且错得影响整条路线。
+
+核 `dsh` 0.2.2 的插件清单才发现：DSH 有完整的技能体系，只是在 `web` profile 里
+默认关掉了。
+
+```yaml
+- id: skill                                    # 注册表，已启用
+  name: '@deepseek-ai/dsh-skill'
+
+- id: skill-filesystem                         # 文件系统 provider
+  name: '@deepseek-ai/dsh-skill-filesystem'
+  disabled: true                               # ← 默认关闭的只是这一行
+
+- id: tool-skill                               # 模型侧的 skill 目录 + 加载工具
+  name: '@deepseek-ai/dsh-tool-skill'
+  disabled: true
+```
+
+而且格式与 pi **完全兼容**：目录 bundle 就是 `<name>/SKILL.md`，平铺形式是
+`<name>.md`，解析 YAML frontmatter 取 `name` / `description`。工作台现有的 10 个技能
+一个都不用改。
+
+### 部署脚本：默认开启技能层
+
+`generate-configs.py` / `generate-configs.ps1` 新增 `--dsh-skills {all,none}`（默认 `all`），
+在 `cordis.generated.yml` 末尾追加：
+
+```yaml
+- id: skill-filesystem
+  name: '@deepseek-ai/dsh-skill-filesystem'
+  disabled: false
+  config:
+    customSkillDirs:
+      - '<repo>/Tool/skill'
+      - '<repo>/Tool/skill/safe-skills'
+
+- id: tool-skill
+  name: '@deepseek-ai/dsh-tool-skill'
+  disabled: false
+```
+
+两个根正好覆盖 10 个技能（每个根的**直接子目录**各贡献 5 个）。实测合成结果正确，
+`customSkillDirs` 两行都落到位。
+
+`install.ps1 -DshSkills` / `install.sh --no-dsh-skills` 可整层关闭 —— 代价是 10 个技能的
+`name + description` 会进入每个会话的上下文，有人可能不想付这个税。
+
+> **限制**：`customSkillDirs` 是「扫该目录下所有直接子目录」，**无法只挑其中几个**。
+> 要少挂只能关整层，或在仓库外自建一个只含所需技能的根。这一点写进了文档，
+> 免得下次又有人以为可以按技能粒度裁剪。
+
+### 一致性：两个生成器逐字节相同
+
+PS 与 Python 两个生成器的输出必须字节一致（`test_config_parity.py` 会验）。
+这次踩了两个坑：
+
+1. PS here-string 的尾部换行行为与 Python 三引号不同，直接拼接会多/少一个换行。
+   改成显式契约：基座 `TrimEnd()` + 两个换行 + 技能块 `TrimEnd()`。
+2. 注释里一处写 `--dsh-skills`、一处写 `-DshSkills`，属于「有意区分平台」但会让字节比对失败。
+   改成平台中性的表述，两处共用同一句话。
+
+### `verify-dsh.py` 新增技能层（85% → 100%）
+
+评分从 5 组重排为 6 组，权重仍合计 100：
+
+| 组 | 旧 | 新 |
+| :--- | :---: | :---: |
+| 配置层 | 25 | 20 |
+| MCP 可用性 | 30 | 25 |
+| **技能层** | — | **15** |
+| 仓库资产 | 20 | 15 |
+| 指令层 | 15 | 15 |
+| 运行时 | 10 | 10 |
+
+新增三项：F1 `skill-filesystem` 已启用（5）、F2 `tool-skill` 已启用（4）、
+F3 `customSkillDirs` 覆盖两个技能根（6，同时报告实际可发现的技能数）。
+
+**没开技能层的部署现在会得 85%，这是正确结果，不是故障。** 文档里写明了这一点，
+免得把「还没部署」误读成「部署坏了」。
+
+### 文档
+
+- `MANUAL/DSH-VERIFICATION.md`：重写为 6 组 23 项，补技能层章节、85% 的解释、
+  F1–F3 的修复命令，并删掉「skill 按 N/A 处理」的错误口径。
+- `DSH-PROFILE.md`：新增「Skill 图层（默认开启）」小节，含三种控制方式与代价说明。
+
+
 ## [1.12.0] - 2026-11-08
 
 ### 新增：DSH 部署完整度校验（含 100 分制评分）

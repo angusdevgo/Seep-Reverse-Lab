@@ -9,7 +9,9 @@
 [CmdletBinding()]
 param(
     [switch]$PrintOnly,
-    [string]$Root = ''      # 仅供测试：指定工作台根目录（默认由脚本位置推导）
+    [string]$Root = '',      # 仅供测试：指定工作台根目录（默认由脚本位置推导）
+    [ValidateSet('all', 'none')]
+    [string]$DshSkills = 'all'   # all = 开启 DSH 自带 skill 发现；none = 不挂
 )
 
 [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
@@ -160,6 +162,35 @@ $dshYaml = @"
         toolCallTimeoutMs: 600000
         failOnStartupError: false
 "@
+
+# Skill 图层（可关）
+# DSH 自带 skill 机制（dsh-skill-filesystem 发现 + dsh-tool-skill 模型侧加载），
+# 只是 web profile 里默认 disabled。开启后 DSH 与 pi 一样能看到 10 个技能。
+# 注意：customSkillDirs 是「扫该目录下的直接子目录」，无法只挑其中几个；
+# 要少挂就只能关整层（-DshSkills none）。
+$dshSkillsCore = @"
+# ------------------------------------------------------------------------------
+# Skill 图层：开启 DSH 自带的 skill 发现与加载（默认关闭，这里显式打开）
+# 代价：10 个技能的 name + description 会进入每个会话的上下文。
+# 不想付这个成本，重新生成时关掉该图层即可（详见 MANUAL/DSH-VERIFICATION.md）。
+# ------------------------------------------------------------------------------
+- id: skill-filesystem
+  name: '@deepseek-ai/dsh-skill-filesystem'
+  disabled: false
+  config:
+    customSkillDirs:
+      - '$NormalizedRoot/Tool/skill'
+      - '$NormalizedRoot/Tool/skill/safe-skills'
+
+- id: tool-skill
+  name: '@deepseek-ai/dsh-tool-skill'
+  disabled: false
+"@
+# 拼接契约：基座去掉尾部换行，只插入两个换行，再接技能块（同样去掉尾部换行）。
+# 两边（PS / Python）必须逐字节一致，因此不依赖 here-string 的尾部换行行为。
+if ($DshSkills -eq 'all') {
+    $dshYaml = $dshYaml.TrimEnd() + "`n`n" + $dshSkillsCore.TrimEnd()
+}
 $dshDest = Join-Path (Join-Path $Root 'setup') 'cordis.generated.yml'
 if (-not $PrintOnly) {
     Write-IfChanged -Path $dshDest -Content $dshYaml
