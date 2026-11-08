@@ -73,6 +73,56 @@ if "%JAVA_HOME%"=="" (set JAVA=java) else (set JAVA="%JAVA_HOME%\bin\java.exe")
 
 ---
 
+## 工具装在了别处怎么办（SEEP_* 环境变量）
+
+工作台不假设你的工具装在哪个盘。解析链是：
+
+```
+环境变量  →  ~/.seep/tools.json 缓存  →  仓库自带  →  系统 PATH  →  常见安装位
+```
+
+前三层基本能覆盖绝大多数情况（jadx / apktool / radare2 / playwright-mcp / js-reverse-mcp
+都在仓库里，相对路径定位，任何机器一致）。如果你的外部工具装在非常规位置，用环境变量显式指定：
+
+| 环境变量 | 指向 | 影响 |
+|---|---|---|
+| `SEEP_PYTHON` | 能 `import mcp` 的 python.exe | seep MCP 服务运行时 |
+| `SEEP_IDA_ROOT` | IDA Pro 安装目录（含 ida.exe） | `ida` MCP 服务 |
+| `SEEP_WEB_TOOLBOX` | ffmpeg 工具箱根目录 | `seep_hls_analyze` 等 8 个 Web 工具 |
+| `SEEP_ANDROID_TOOLBOX` | frida 工具箱根目录 | `seep_android_toolbox` / `seep_apkid_scan` |
+| `SEEP_AGENT_DIR` | agent 配置目录（默认 `~/.pi/agent`） | 安装目标 |
+
+Windows 持久化（当前用户，重开终端生效）：
+
+```powershell
+[Environment]::SetEnvironmentVariable('SEEP_IDA_ROOT','E:\Rev\IDA','User')
+```
+
+Linux / macOS：写进 `~/.bashrc` / `~/.zshrc` 即可。
+
+### 怎么确认「到底找到没、能不能跑」
+
+```powershell
+# Windows
+powershell -File setup\resolve-tools.ps1 -Verify
+
+# 全平台（纯标准库）
+python Tool/mcp/tool_resolver.py --verify
+```
+
+输出四种状态：
+
+| 状态 | 含义 | 要不要管 |
+|---|---|---|
+| `READY` | 找到且实跑返回成功 | 不用 |
+| `DEGRADED` | 找到了但跑不起来（缺依赖/版本不符） | 要看 `└─` 后面的原因 |
+| `OPTIONAL` | 没找到，属于可选能力 | 不影响主链路 |
+| `MISSING` | 没找到，属于核心能力 | 必须修 |
+
+规则全部在 `setup/tool-registry.json`，想加一个新工具只改那个文件，不用改代码。
+
+---
+
 ## 装完自检
 
 ```powershell

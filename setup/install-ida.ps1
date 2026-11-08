@@ -34,6 +34,21 @@ if ($IdaRoot -ne '' -and (Test-Path (Join-Path $IdaRoot 'ida.exe'))) {
     $found = (Resolve-Path $IdaRoot).Path
 }
 
+# 环境变量次优先 —— 装在任何地方的用户只需设一次 SEEP_IDA_ROOT，
+# 之后 install / verify / resolve-tools 都能找到，不用每次传参。
+if (-not $found -and -not [string]::IsNullOrWhiteSpace($env:SEEP_IDA_ROOT)) {
+    $envRoot = $env:SEEP_IDA_ROOT.Trim().Trim('"').Trim("'")
+    if (Test-Path (Join-Path $envRoot 'ida.exe')) {
+        $found = (Resolve-Path $envRoot).Path
+        Write-Info ("从 SEEP_IDA_ROOT 找到: {0}" -f $found)
+    }
+    elseif (Test-Path $envRoot) {
+        # 允许指向 ida.exe 本身或它的父目录
+        $parent = Split-Path -Parent $envRoot
+        if (Test-Path (Join-Path $parent 'ida.exe')) { $found = (Resolve-Path $parent).Path }
+    }
+}
+
 if (-not $found) {
     # 常用候选路径列表（覆盖 C/D/E/F 盘常见安装目录、桌面、Program Files）
     $candidates = @(
@@ -108,6 +123,16 @@ if (-not $found) {
 }
 
 Write-Ok "已成功定位 IDA Pro: $found"
+
+# 若不在默认位置，建议把它固化到环境变量，否则下次 verify / resolve-tools
+# 还是得重新扫一遍候选表，而且别的脚本可能认不出来。
+$defaultRoots = @('D:\Tool\IDA Pro', 'C:\Program Files\IDA Pro', 'C:\Program Files\IDA Professional 9.0', 'C:\IDA Pro')
+$isDefault = $false
+foreach ($dr in $defaultRoots) { if ($found -eq $dr) { $isDefault = $true; break } }
+if (-not $isDefault -and $env:SEEP_IDA_ROOT -ne $found) {
+    Write-Info "IDA 不在默认位置。建议固化到环境变量，以后所有脚本都能直接找到："
+    Write-Info "    [Environment]::SetEnvironmentVariable('SEEP_IDA_ROOT','$found','User')"
+}
 
 # ---------------------------------------------------------------- 2. 定位 Python
 $idaPy = $null

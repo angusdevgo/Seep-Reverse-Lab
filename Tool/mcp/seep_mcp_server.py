@@ -7,6 +7,7 @@ seep - AI-Native Reverse Engineering & Security Analysis MCP Server
 """
 
 import os
+import io
 import sys
 import json
 import re
@@ -270,9 +271,41 @@ def _find_java() -> Optional[str]:
 # ---------------------------------------------------------------------------
 # 1. 状态与环境工具
 # ---------------------------------------------------------------------------
+
+# 外部工具的路径发现规则集中在 <repo>/setup/tool-registry.json，
+# 与 setup/resolve-tools.ps1 共用同一套声明。这样「路径判断」只有一份真相：
+# 用户把 IDA 装在 E 盘、把 frida 装在 conda 里、或者干脆没装，都能被判对，
+# 而不是拿某台机器的 D:\Tool 去要求所有人。
+# 外部工具解析 / 实跑验证：规则在 setup/tool-registry.json，逻辑在 Tool/mcp/tool_resolver.py。
+# 这里只做薄封装 —— Windows 的 resolve-tools.ps1、Unix 的 verify.sh、以及本文件的
+# seep_status 共用同一份路径判断真相，谁都不许再各写一套候选路径表。
+try:
+    if BASE_DIR not in sys.path:
+        sys.path.insert(0, BASE_DIR)
+    from tool_resolver import external_tool_report as _tool_report_impl
+
+    _REPO_ROOT = os.path.dirname(os.path.dirname(BASE_DIR))
+
+    def _external_tool_report(verify: bool = False) -> dict:
+        return _tool_report_impl(_REPO_ROOT, verify=verify)
+
+except Exception as _exc:  # noqa: BLE001
+    def _external_tool_report(verify: bool = False) -> dict:
+        return {
+            "available": False,
+            "reason": "tool_resolver.py 不可用（仓库可能未完整拉取）: %s" % _exc,
+            "tools": {},
+        }
+
+
 @server.tool()
-def seep_status() -> str:
-    """检查 seep 逆向工具链状态、内置组件就绪度及系统环境配置。"""
+def seep_status(verify: bool = False) -> str:
+    """检查 seep 逆向工具链状态、内置组件就绪度及系统环境配置。
+
+    Args:
+        verify: 为 True 时对每个找到的外部工具做一次实跑验证（会慢几秒），
+                用来区分「文件存在」和「真的能启动」。默认只做路径解析。
+    """
     java_path = _find_java()
     java_ver = "NOT FOUND (JDK 17 LTS recommended)"
     if java_path:
@@ -318,6 +351,7 @@ def seep_status() -> str:
         "description": "AI-Native Reverse Engineering Toolkit MCP Server",
         "base_directory": BASE_DIR,
         "platform_boundaries": platform_boundaries,
+        "external_tools": _external_tool_report(verify=verify),
         "components": {
             "radare2_suite": {
                 "status": "Ready" if os.path.isfile(R2_EXE) else "Missing",

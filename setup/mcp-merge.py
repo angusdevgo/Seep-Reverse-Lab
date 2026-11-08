@@ -174,7 +174,7 @@ def main(argv=None) -> int:
     ap.add_argument("--template", default=None, help="\u9ed8\u8ba4 <root>/Tool/mcp/mcp.json.template")
     ap.add_argument("--target", default=DEFAULT_TARGET, help="\u9ed8\u8ba4 ~/.pi/agent/mcp.json")
     ap.add_argument("--python", default=sys.executable, help="seep MCP \u4f7f\u7528\u7684\u89e3\u91ca\u5668\u7edd\u5bf9\u8def\u5f84")
-    ap.add_argument("--ida-root", default=None, help="\u663e\u5f0f\u7ed9\u51fa\u65f6\u624d\u63a5\u7ba1 ida \u6761\u76ee")
+    ap.add_argument("--ida-root", default=os.environ.get("SEEP_IDA_ROOT"), help="\u663e\u5f0f\u7ed9\u51fa\u65f6\u624d\u63a5\u7ba1 ida \u6761\u76ee")
     ap.add_argument("--ida-python", default=None)
     ap.add_argument("--dry-run", action="store_true")
     ap.add_argument("--no-backup", action="store_true")
@@ -200,7 +200,6 @@ def main(argv=None) -> int:
     }
     if args.ida_root:
         ida_root = os.path.abspath(args.ida_root).replace("\\", "/").rstrip("/")
-        subs["<IDA_ROOT>"] = ida_root
         subs["<IDA_ROOT>"] = ida_root
         ida_py = args.ida_python or os.path.join(ida_root, "python311", "python.exe")
         subs["<IDA_PYTHON>"] = posix(ida_py)

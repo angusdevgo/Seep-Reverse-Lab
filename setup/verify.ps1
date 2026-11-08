@@ -24,6 +24,12 @@ $AgentDir  = if ($env:SEEP_AGENT_DIR) { $env:SEEP_AGENT_DIR } else { Join-Path $
 $ManualDir = Join-Path $Root 'MANUAL'
 $localSkills = Join-Path $ToolDir 'skill'
 
+# 外部工具定位统一走 setup/tool-registry.json + resolve-tools.ps1。
+# 这里不写死任何安装路径 —— 你的 IDA 在 D:\Tool，别人的在 E:\Rev 或根本没装，
+# 都应该被判对，而不是拿某台机器的路径去要求所有人。
+$script:ResolveToolsScript = Join-Path $ScriptDir 'resolve-tools.ps1'
+$script:CoreToolIds = @('python', 'node', 'java', 'jadx', 'apktool', 'radare2')
+
 $script:OkCount = 0
 $script:FailList = @()
 $script:TodoList = @()
@@ -484,13 +490,56 @@ Test-ManualItem "协议" "Python mcp 协议库环境支持 (mcp>=1.20,<1.29)" {
     ($LASTEXITCODE -eq 0)
 } "运行 pip install ""mcp>=1.20,<1.29"" 补齐协议支持" "mcp 库已安装" "Python site-packages"
 
-Test-ManualItem "商业软件" "IDA Pro 商业反编译器协同 (需自备独立授权)" {
-    $found = $false
-    foreach ($c in @('D:\Tool\IDA Pro', 'C:\Program Files\IDA Pro', 'C:\Program Files\IDA Professional 9.0', 'C:\IDA Pro')) {
-        if (Test-Path (Join-Path $c 'ida.exe')) { $found = $true; break }
+Test-CheckItem "工具" "外部工具注册表 (setup/tool-registry.json 可解析)" {
+    $p = Join-Path $ScriptDir 'tool-registry.json'
+    if (-not (Test-Path -LiteralPath $p)) { return $false }
+    try {
+        $reg = Get-Content -LiteralPath $p -Raw -Encoding UTF8 | ConvertFrom-Json
+        (@($reg.tools).Count -ge 10)
     }
-    $found
-} "未检测到本地 IDA Pro，如无授权不影响核心链路，系统自动降级使用 Radare2（详见 MANUAL\IDA-PRO.md）" "商业授权可选" "本地安装目录"
+    catch { $false }
+} "注册表缺失或 JSON 损坏，重新拉取仓库" "注册表声明完整" "setup\tool-registry.json"
+
+Test-ManualItem "工具" "核心运行时工具实际可启动 (python/node/java/jadx/apktool/radare2)" {
+    if (-not (Test-Path -LiteralPath $script:ResolveToolsScript)) { return $false }
+    try {
+        # 必须用 -Command 而不是 -File：-File 的松散参数绑定会把 -Tool 后面的
+        # 数组元素当成多余的位置参数丢掉，导致只检查了第一个工具。
+        $ids = ($script:CoreToolIds | ForEach-Object { "'$_'" }) -join ','
+        $inv = "& '{0}' -Json -Verify -Tool {1}" -f $script:ResolveToolsScript, $ids
+        $raw = & powershell -NoProfile -ExecutionPolicy Bypass -Command $inv | Out-String
+        $rep = $raw | ConvertFrom-Json
+        ($rep.summary.missing -eq 0 -and $rep.summary.degraded -eq 0)
+    }
+    catch { $false }
+} "跑 powershell -File setup\resolve-tools.ps1 -Verify 看细项；DEGRADED 表示找到了但跑不起来" "全部实跑通过" "resolve-tools.ps1 -Verify"
+
+# 外部工具定位统一走 setup/tool-registry.json + resolve-tools.ps1。
+# 解析器脚本与核心工具列表已在文件头部定义（$script:ResolveToolsScript / $script:CoreToolIds）。
+$script:ToolReport = $null
+function Get-ToolReport {
+    if ($null -ne $script:ToolReport) { return $script:ToolReport }
+    if (-not (Test-Path -LiteralPath $script:ResolveToolsScript)) { return $null }
+    try {
+        $raw = & powershell -NoProfile -ExecutionPolicy Bypass -File $script:ResolveToolsScript -Json | Out-String
+        $script:ToolReport = $raw | ConvertFrom-Json
+    }
+    catch { $script:ToolReport = $null }
+    return $script:ToolReport
+}
+
+Test-ManualItem "商业软件" "IDA Pro 商业反编译器协同 (需自备独立授权)" {
+    $rep = Get-ToolReport
+    if ($null -eq $rep) {
+        # 注册表不可用时退回最保守的探测，不再复制一份候选路径表
+        foreach ($c in @('D:\Tool\IDA Pro', 'C:\Program Files\IDA Pro', 'C:\IDA Pro')) {
+            if (Test-Path (Join-Path $c 'ida.exe')) { return $true }
+        }
+        return $false
+    }
+    $ida = @($rep.tools | Where-Object { $_.id -eq 'ida' })[0]
+    ($null -ne $ida -and $ida.state -eq 'READY')
+} "未检测到本地 IDA Pro，如无授权不影响核心链路，系统自动降级使用 Radare2（详见 MANUAL\IDA-PRO.md）；若已安装但没认出来，设置 SEEP_IDA_ROOT 指向 IDA 目录" "商业授权可选" "tool-registry.json 解析"
 
 Test-ManualItem "配置" "Claude Code 项目级 MCP 注册 (.mcp.json 在根目录)" {
     Test-Path (Join-Path $Root '.mcp.json')

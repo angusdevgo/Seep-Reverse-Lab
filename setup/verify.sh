@@ -80,13 +80,43 @@ for v in "$AGENT_DIR/seep-venv/bin/python" "$AGENT_DIR/seep-venv/Scripts/python.
     [ -x "$v" ] && PY_BIN="$v"
 done
 
+# SEEP_PYTHON 可能是 Windows 原生路径（C:\\..\\python.exe）。
+# Git Bash 里这种路径带反斜杠 + 盘符，既不能过 [ -x ] 也不能直接执行，
+# 会导致依赖它的检查项集体误报（stdio 冒烟 / tool_state / 语法自检）。
+if [ -n "$PY_BIN" ] && command -v cygpath >/dev/null 2>&1; then
+    _norm="$(cygpath -u "$PY_BIN" 2>/dev/null || true)"
+    [ -n "$_norm" ] && [ -x "$_norm" ] && PY_BIN="$_norm"
+fi
+
+# 原生 Windows 的 python.exe 不认 /c/Users/... 这种 MSYS 路径：
+# 它会当成「盘符 C 下的 \c\Users\...」，报 can't open file 'C:\c\Users\...'。
+# 所以凡是把「路径」当参数传给 Python 的地方都走 py_run，由它统一换算。
+py_run() {
+    if [ -n "$PY_BIN" ] && command -v cygpath >/dev/null 2>&1; then
+        case "$PY_BIN" in
+            *.exe|*.EXE)
+                local out=() a
+                for a in "$@"; do
+                    case "$a" in
+                        /[A-Za-z]/*) out+=("$(cygpath -w "$a" 2>/dev/null || echo "$a")") ;;
+                        *) out+=("$a") ;;
+                    esac
+                done
+                "$PY_BIN" "${out[@]}"
+                return $?
+                ;;
+        esac
+    fi
+    "$PY_BIN" "$@"
+}
+
 test_python_syntax() {
     [ -n "$PY_BIN" ] || return 0          # 解释器不可用由专门检查项报，不在这里重复罚
-    (cd "$ROOT" && "$PY_BIN" -c "import ast; ast.parse(open('Tool/mcp/seep_mcp_server.py', encoding='utf-8').read())")
+    (cd "$ROOT" && py_run -c "import ast; ast.parse(open('Tool/mcp/seep_mcp_server.py', encoding='utf-8').read())")
 }
 
 test_python_mcp() {
-    [ -n "$PY_BIN" ] && "$PY_BIN" -c "import mcp" 2>/dev/null
+    [ -n "$PY_BIN" ] && py_run -c "import mcp" 2>/dev/null
 }
 
 test_python_avail() {
@@ -150,7 +180,7 @@ if [ -d "$DSH_HOME_DIR" ]; then
     test_dsh_mounted() {
         [ -f "$SCRIPT_DIR/dsh-merge.py" ] || return 1
         [ -n "$PY_BIN" ] || return 1
-        "$PY_BIN" "$SCRIPT_DIR/dsh-merge.py" --root "$ROOT" --dsh-home "$DSH_HOME_DIR" --check >/dev/null 2>&1
+        py_run "$SCRIPT_DIR/dsh-merge.py" --root "$ROOT" --dsh-home "$DSH_HOME_DIR" --check >/dev/null 2>&1
     }
     check_optn "Agent" "DeepSeek Harness 已挂载 seep MCP (cordis.patch.yml)" \
         "运行 python setup/dsh-merge.py 完成挂载" test_dsh_mounted
@@ -185,7 +215,7 @@ if [ -d "$DSH_HOME_DIR" ]; then
     test_dsh_mounted() {
         [ -f "$SCRIPT_DIR/dsh-merge.py" ] || return 1
         [ -n "$PY_BIN" ] || return 1
-        "$PY_BIN" "$SCRIPT_DIR/dsh-merge.py" --root "$ROOT" --dsh-home "$DSH_HOME_DIR" --check >/dev/null 2>&1
+        py_run "$SCRIPT_DIR/dsh-merge.py" --root "$ROOT" --dsh-home "$DSH_HOME_DIR" --check >/dev/null 2>&1
     }
     check_optn "Agent" "DeepSeek Harness 已挂载 seep MCP (cordis.patch.yml)" \
         "运行 python setup/dsh-merge.py 完成挂载" test_dsh_mounted
@@ -233,7 +263,7 @@ test_stdio_smoke() {
     local smoke="$TOOL_DIR/mcp/test_stdio_smoke.py"
     [ -f "$smoke" ] || return 0          # 旧版本无此脚本时不判定，避免误报
     [ -n "$PY_BIN" ] || return 0          # 无 Python 时不判定
-    "$PY_BIN" "$smoke" --quick >/dev/null 2>&1
+    py_run "$smoke" --quick >/dev/null 2>&1
 }
 check_item "MCP" "stdio 子进程不继承 stdin (issue #13 回归防护)" test_stdio_smoke
 check_item "工具箱" "Jadx 反编译引擎 (jadx-1.5.6 完整就绪)" test -f "$SAFE_DIR/jadx/lib/jadx-1.5.6-all.jar"
@@ -282,11 +312,27 @@ check_optn "能力" "扫描器（可选: nuclei + ffuf）" "补全: ./setup/inst
 # aotopsy 是 Windows PE 单文件，Unix 上预期缺失 —— 固定判为「不适用」，不计失败
 check_optn "能力" "Flutter AOT (aotopsy，Windows-only)" "Unix 上不适用：aotopsy.exe 为 Windows PE；用 apktool 解包后交给 r2/IDA" false
 
+# 外部工具定位统一走 setup/tool-registry.json —— 与 Windows 侧 resolve-tools.ps1 同一份规则，
+# 不再写死任何安装路径，也不是写死 false 的占位。
+TOOL_RESOLVER="$TOOL_DIR/mcp/tool_resolver.py"
+
+tool_state() {
+    # $1 = 工具 id；输出 READY / DEGRADED / OPTIONAL / MISSING / UNKNOWN
+    [ -n "$PY_BIN" ] && [ -f "$TOOL_RESOLVER" ] || { echo UNKNOWN; return; }
+    py_run "$TOOL_RESOLVER" --state "$1" 2>/dev/null || echo UNKNOWN
+}
+
+tool_is_ready() {
+    [ "$(tool_state "$1")" = "READY" ]
+}
+
+check_item "工具" "外部工具注册表 (setup/tool-registry.json 可解析)" test -f "$ROOT/setup/tool-registry.json"
+check_optn "商业软件" "IDA Pro 商业反编译器协同 (可选)" "无授权不影响核心链路，系统自动使用 Radare2 降级；装在非默认位置请设 SEEP_IDA_ROOT" tool_is_ready ida
+
 # 6. 环境运行时
 echo -e "\n${WHITE}[7/10] ⚙️ 外部运行时与商业授权协同 (Runtime & Commercial)${RESET}"
 check_item "运行时" "Python 解释器可用于运行时校验 (语法 / 冒烟 / 规则同步)" test_python_avail
 check_optn "协议" "Python mcp 协议库支持 (mcp>=1.20,<1.29)" "运行 pip install 'mcp>=1.20,<1.29'" test_python_mcp
-check_optn "商业软件" "IDA Pro 商业反编译器协同 (可选)" "无授权不影响核心链路，系统自动使用 Radare2 降级" false
 check_optn "配置" "Claude Code 项目级 MCP 注册 (.mcp.json 在根目录)" "直接在根目录启动 claude 即可" test -f "$ROOT/.mcp.json"
 
 # 7. 战术手册
@@ -313,7 +359,7 @@ check_item "中继" "中继单元测试套件 (tests/test_relay.py)" test -f "$R
 test_relay_rules_sync() {
     [ -n "$PY_BIN" ] || return 1
     test -f "$RELAY_DIR/sensitive-rules.json" || return 1
-    (cd "$RELAY_DIR" && "$PY_BIN" extract-rules.py --check >/dev/null 2>&1)
+    (cd "$RELAY_DIR" && py_run extract-rules.py --check >/dev/null 2>&1)
 }
 check_item "中继" "规则表与 TS 源同步 (sensitive-rules.json)" test_relay_rules_sync
 

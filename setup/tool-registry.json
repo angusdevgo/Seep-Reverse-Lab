@@ -1,0 +1,475 @@
+{
+  "$comment": [
+    "Seep 工作台 —— 外部工具声明式注册表（SSOT）",
+    "",
+    "为什么要有这个文件：",
+    "  工作台内置的 jadx / apktool / radare2 / playwright-mcp / js-reverse-mcp 随仓库分发，",
+    "  用相对路径定位，任何机器都一致。但 IDA Pro、ffmpeg、frida 这类是「用户自己装在哪都行」",
+    "  的外部工具 —— 别人的路径和你不一样，也可能根本没装。",
+    "  如果把路径写死在检查脚本里，换个用户就会误报。",
+    "  所以路径发现规则集中声明在这里，由 setup/resolve-tools.ps1（PowerShell 侧）和",
+    "  Tool/mcp/seep_mcp_server.py 的 seep_status（Python 侧）共用同一套规则。",
+    "",
+    "解析链（逐层下降，命中即停，并记录来自哪一层）：",
+    "  1. env        环境变量指向（SEEP_IDA_ROOT 等），最高优先级，用户显式指定就该被尊重",
+    "  2. cache      ~/.seep/tools.json 中上次解析成功的位置，避免每次重扫磁盘",
+    "  3. bundled    仓库自带（<repo>/Tool/mcp/Tool/safe/...），相对路径，任何机器一致",
+    "  4. path       系统 PATH（Get-Command / shutil.which）",
+    "  5. candidates 常见安装位候选表；支持 %VAR% / ~ / {env:VAR} 展开",
+    "",
+    "四态判定：",
+    "  READY     找到且「实跑」返回成功（-Verify 时才会实跑；否则标记为未实跑）",
+    "  DEGRADED  找到但跑不起来（缺依赖 / 版本不符 / 许可失效）—— 不阻断，给出修复命令",
+    "  OPTIONAL  没找到，属于可选能力 —— 不阻断",
+    "  MISSING   没找到，属于核心能力 —— 阻断部署",
+    "",
+    "新增一个外部工具只需要在 tools[] 里加一条，两个校验器自动继承，不必改代码。"
+  ],
+  "version": 1,
+  "verifyKinds": {
+    "version": "执行 <path> <args>，退出码为 0 视为可用；输出用于显示版本",
+    "python-import": "执行 <path> -c 'import <arg>'，退出码为 0 视为可用",
+    "jar": "执行 java -jar <path> <args>，用于 apktool 这种 jar 形态",
+    "exists": "只检查路径存在（目录型 MCP 包、无法安全实跑的组件）",
+    "ida": "检查 ida.exe 存在，且 IDA 自带 Python 能 import ida_pro_mcp（这才是「真的能联动」）"
+  },
+  "chainNote": "可选 chain 字段：覆盖该工具的解析层顺序，缺省为 [\"env\",\"cache\",\"bundled\",\"path\",\"candidates\"]。python 用 [\"env\",\"candidates\",\"bundled\",\"path\",\"cache\"] —— 因为 PATH 上的 python 垫片经常指向一个没有装 mcp 库的解释器，而工作台自己的 venv 更可信。",
+  "tools": [
+    {
+      "id": "python",
+      "kind": "core",
+      "purpose": "seep MCP 服务运行时（必须能 import mcp）",
+      "env": "SEEP_PYTHON",
+      "bundled": [],
+      "path_names": [
+        "python3",
+        "python",
+        "py"
+      ],
+      "candidates": [
+        "~/.pi/agent/seep-venv/Scripts/python.exe",
+        "~/.pi/agent/seep-venv/bin/python",
+        "%LOCALAPPDATA%/Programs/Python/Python312/python.exe",
+        "%LOCALAPPDATA%/Programs/Python/Python311/python.exe"
+      ],
+      "verify": {
+        "kind": "python-import",
+        "arg": "mcp",
+        "timeout": 20
+      },
+      "expect": "mcp 库可导入",
+      "fix": "powershell -File setup\\install-python.ps1",
+      "chain": [
+        "env",
+        "candidates",
+        "bundled",
+        "path",
+        "cache"
+      ]
+    },
+    {
+      "id": "node",
+      "kind": "core",
+      "purpose": "playwright-mcp / js-reverse-mcp 的运行时",
+      "env": "SEEP_NODE",
+      "path_names": [
+        "node"
+      ],
+      "verify": {
+        "kind": "version",
+        "args": [
+          "--version"
+        ],
+        "timeout": 8
+      },
+      "expect": "v18+",
+      "fix": "安装 Node.js LTS（https://nodejs.org）后重开终端"
+    },
+    {
+      "id": "java",
+      "kind": "core",
+      "purpose": "apktool 的运行时（java -jar apktool.jar）",
+      "env": "SEEP_JAVA",
+      "path_names": [
+        "java"
+      ],
+      "verify": {
+        "kind": "version",
+        "args": [
+          "-version"
+        ],
+        "timeout": 8
+      },
+      "expect": "JRE 8+",
+      "fix": "安装 JRE/JDK 8+ 并加入 PATH"
+    },
+    {
+      "id": "jadx",
+      "kind": "core",
+      "purpose": "APK 反编译为 Java 源码",
+      "bundled": [
+        "Tool/mcp/Tool/safe/jadx/bin/jadx.bat",
+        "Tool/mcp/Tool/safe/jadx/bin/jadx"
+      ],
+      "path_names": [
+        "jadx"
+      ],
+      "verify": {
+        "kind": "version",
+        "args": [
+          "--version"
+        ],
+        "timeout": 25
+      },
+      "expect": "jadx 1.5.x",
+      "fix": "仓库自带缺失请重新拉取仓库（Tool/mcp/Tool/safe/jadx）"
+    },
+    {
+      "id": "apktool",
+      "kind": "core",
+      "purpose": "APK 资源拆解与回编",
+      "bundled": [
+        "Tool/mcp/Tool/safe/apktool/apktool.jar"
+      ],
+      "requires": [
+        "java"
+      ],
+      "verify": {
+        "kind": "jar",
+        "args": [
+          "--version"
+        ],
+        "timeout": 20
+      },
+      "expect": "apktool 3.x",
+      "fix": "仓库自带缺失请重新拉取仓库（Tool/mcp/Tool/safe/apktool）"
+    },
+    {
+      "id": "radare2",
+      "kind": "core",
+      "purpose": "无 IDA 时的二进制分析主力（r2 命令行）",
+      "bundled": [
+        "Tool/mcp/Tool/safe/radare2/bin/r2.exe",
+        "Tool/mcp/Tool/safe/radare2/bin/r2.bat",
+        "Tool/mcp/Tool/safe/radare2/bin/r2"
+      ],
+      "path_names": [
+        "r2",
+        "radare2"
+      ],
+      "verify": {
+        "kind": "version",
+        "args": [
+          "-v"
+        ],
+        "timeout": 10
+      },
+      "expect": "r2 5.x+",
+      "fix": "仓库自带缺失请重新拉取仓库（Tool/mcp/Tool/safe/radare2）"
+    },
+    {
+      "id": "rabin2",
+      "kind": "core",
+      "purpose": "二进制节表 / 导入导出 / 字符串提取",
+      "bundled": [
+        "Tool/mcp/Tool/safe/radare2/bin/rabin2.exe",
+        "Tool/mcp/Tool/safe/radare2/bin/rabin2.bat",
+        "Tool/mcp/Tool/safe/radare2/bin/rabin2"
+      ],
+      "path_names": [
+        "rabin2"
+      ],
+      "verify": {
+        "kind": "version",
+        "args": [
+          "-v"
+        ],
+        "timeout": 10
+      },
+      "expect": "与 r2 同版本",
+      "fix": "仓库自带缺失请重新拉取仓库（Tool/mcp/Tool/safe/radare2）"
+    },
+    {
+      "id": "js-reverse-mcp",
+      "kind": "core",
+      "purpose": "Web 侧 JS 签名链路与页面取证（MCP 服务）",
+      "bundled": [
+        "Tool/mcp/Tool/safe/js-reverse-mcp"
+      ],
+      "requires": [
+        "node"
+      ],
+      "verify": {
+        "kind": "exists",
+        "timeout": 5
+      },
+      "expect": "包目录含 package.json",
+      "fix": "仓库自带缺失请重新拉取仓库；安装时 setup 会自动解压 node_modules.zip"
+    },
+    {
+      "id": "playwright-mcp",
+      "kind": "core",
+      "purpose": "浏览器自动化（MCP 服务）",
+      "bundled": [
+        "Tool/mcp/Tool/safe/playwright-mcp"
+      ],
+      "requires": [
+        "node"
+      ],
+      "verify": {
+        "kind": "exists",
+        "timeout": 5
+      },
+      "expect": "包目录含 package.json",
+      "fix": "仓库自带缺失请重新拉取仓库；安装时 setup 会自动解压 node_modules.zip"
+    },
+    {
+      "id": "ida",
+      "kind": "optional",
+      "purpose": "商业反编译器协同（ida.exe + IDA 自带 Python 的 ida_pro_mcp）",
+      "env": "SEEP_IDA_ROOT",
+      "candidates": [
+        "%ProgramFiles%/IDA Pro",
+        "%ProgramFiles%/IDA Professional 9.0",
+        "%ProgramFiles%/IDA Pro 9.4",
+        "%ProgramFiles%/IDA Professional 9.4",
+        "%ProgramFiles%/IDA Free",
+        "D:/Tool/IDA Pro",
+        "C:/IDA Pro",
+        "C:/IDA",
+        "D:/IDA Pro",
+        "D:/IDA",
+        "E:/IDA Pro",
+        "F:/IDA Pro",
+        "~/Desktop/IDA Pro/App/IDA Pro",
+        "~/Desktop/IDA Pro 9.4/App/IDA Pro",
+        "~/Tools/IDA Pro 9.4/App/IDA Pro"
+      ],
+      "verify": {
+        "kind": "ida",
+        "timeout": 20
+      },
+      "expect": "ida.exe + ida_pro_mcp 均可就绪",
+      "fix": "powershell -File setup\\install-ida.ps1 -IdaRoot <你的 IDA 目录>"
+    },
+    {
+      "id": "ffmpeg",
+      "kind": "optional",
+      "purpose": "HLS 取证 / 分片解密 / 重放举证",
+      "env": "SEEP_WEB_TOOLBOX",
+      "bundled": [],
+      "toolbox_layout": [
+        "{root}/ffmpeg/bin/ffmpeg.exe",
+        "{root}/bin/ffmpeg.exe",
+        "{root}/bin/ffmpeg.cmd",
+        "{root}/ffmpeg.exe"
+      ],
+      "path_names": [
+        "ffmpeg"
+      ],
+      "verify": {
+        "kind": "version",
+        "args": [
+          "-version"
+        ],
+        "timeout": 10
+      },
+      "expect": "ffmpeg 6.x+",
+      "fix": "powershell -File setup\\install-capabilities.ps1 -Only web"
+    },
+    {
+      "id": "ffprobe",
+      "kind": "optional",
+      "purpose": "媒体流参数与编码探测",
+      "env": "SEEP_WEB_TOOLBOX",
+      "toolbox_layout": [
+        "{root}/ffmpeg/bin/ffprobe.exe",
+        "{root}/bin/ffprobe.exe",
+        "{root}/bin/ffprobe.cmd",
+        "{root}/ffprobe.exe"
+      ],
+      "path_names": [
+        "ffprobe"
+      ],
+      "verify": {
+        "kind": "version",
+        "args": [
+          "-version"
+        ],
+        "timeout": 10
+      },
+      "expect": "与 ffmpeg 同版本",
+      "fix": "powershell -File setup\\install-capabilities.ps1 -Only web"
+    },
+    {
+      "id": "frida",
+      "kind": "optional",
+      "purpose": "动态插桩 / SSL Pinning 绕过 / 内存脱壳",
+      "env": "SEEP_ANDROID_TOOLBOX",
+      "toolbox_layout": [
+        "{root}/bin/frida.exe",
+        "{root}/bin/frida",
+        "{root}/frida.exe"
+      ],
+      "path_names": [
+        "frida"
+      ],
+      "verify": {
+        "kind": "version",
+        "args": [
+          "--version"
+        ],
+        "timeout": 15
+      },
+      "expect": "frida 16+",
+      "fix": "powershell -File setup\\install-capabilities.ps1 -Only android"
+    },
+    {
+      "id": "objection",
+      "kind": "optional",
+      "purpose": "Frida 之上的运行时插桩框架",
+      "env": "SEEP_ANDROID_TOOLBOX",
+      "toolbox_layout": [
+        "{root}/bin/objection.exe",
+        "{root}/bin/objection",
+        "{root}/objection.exe"
+      ],
+      "path_names": [
+        "objection"
+      ],
+      "verify": {
+        "kind": "version",
+        "args": [
+          "version"
+        ],
+        "timeout": 15
+      },
+      "expect": "objection 1.x",
+      "fix": "powershell -File setup\\install-capabilities.ps1 -Only android"
+    },
+    {
+      "id": "apkid",
+      "kind": "optional",
+      "purpose": "APK 查壳 / 反调试 / 混淆器指纹",
+      "env": "SEEP_ANDROID_TOOLBOX",
+      "toolbox_layout": [
+        "{root}/bin/apkid.exe",
+        "{root}/bin/apkid",
+        "{root}/apkid.exe"
+      ],
+      "path_names": [
+        "apkid"
+      ],
+      "verify": {
+        "kind": "version",
+        "args": [
+          "--help"
+        ],
+        "timeout": 15
+      },
+      "expect": "APKiD 可执行（--help rc=0）",
+      "fix": "powershell -File setup\\install-capabilities.ps1 -Only android"
+    },
+    {
+      "id": "frida-dexdump",
+      "kind": "optional",
+      "purpose": "运行时内存 DEX 转储（脱壳）",
+      "env": "SEEP_ANDROID_TOOLBOX",
+      "toolbox_layout": [
+        "{root}/bin/frida-dexdump.exe",
+        "{root}/bin/frida-dexdump"
+      ],
+      "path_names": [
+        "frida-dexdump"
+      ],
+      "verify": {
+        "kind": "version",
+        "args": [
+          "--help"
+        ],
+        "timeout": 15
+      },
+      "expect": "可执行（--help rc=0）",
+      "fix": "powershell -File setup\\install-capabilities.ps1 -Only android"
+    },
+    {
+      "id": "aotopsy",
+      "kind": "optional",
+      "purpose": "Flutter Dart AOT（libapp.so）静态分析与符号还原",
+      "env": "SEEP_ANDROID_TOOLBOX",
+      "bundled": [
+        "Tool/aotopsy/aotopsy.exe",
+        "Tool/aotopsy/aotopsy"
+      ],
+      "toolbox_layout": [
+        "{root}/bin/aotopsy.exe",
+        "{root}/bin/aotopsy"
+      ],
+      "path_names": [
+        "aotopsy"
+      ],
+      "verify": {
+        "kind": "version",
+        "args": [
+          "--version"
+        ],
+        "timeout": 20
+      },
+      "expect": "可执行即视为可用",
+      "fix": "powershell -File setup\\install-capabilities.ps1 -Only aotopsy"
+    },
+    {
+      "id": "nuclei",
+      "kind": "optional",
+      "purpose": "模板化漏洞扫描",
+      "path_names": [
+        "nuclei"
+      ],
+      "verify": {
+        "kind": "version",
+        "args": [
+          "-version"
+        ],
+        "timeout": 15
+      },
+      "expect": "已装即视为可用",
+      "fix": "powershell -File setup\\install-capabilities.ps1 -Only scanners"
+    },
+    {
+      "id": "ffuf",
+      "kind": "optional",
+      "purpose": "目录 / 参数爆破",
+      "path_names": [
+        "ffuf"
+      ],
+      "verify": {
+        "kind": "version",
+        "args": [
+          "-V"
+        ],
+        "timeout": 15
+      },
+      "expect": "已装即视为可用",
+      "fix": "powershell -File setup\\install-capabilities.ps1 -Only scanners"
+    },
+    {
+      "id": "pwsh",
+      "kind": "optional",
+      "purpose": "Linux/macOS 上运行 Web 取证脚本所需（Windows 用自带 PowerShell 即可）",
+      "path_names": [
+        "pwsh"
+      ],
+      "verify": {
+        "kind": "version",
+        "args": [
+          "-NoProfile",
+          "-Command",
+          "$PSVersionTable.PSVersion.Major"
+        ],
+        "timeout": 20
+      },
+      "expect": "PowerShell 7+",
+      "fix": "Linux: apt install powershell / brew install powershell；Windows 无需安装（仅在 Unix 上才判为必需）"
+    }
+  ]
+}

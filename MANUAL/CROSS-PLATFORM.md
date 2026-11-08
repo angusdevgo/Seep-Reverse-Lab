@@ -78,7 +78,15 @@ chmod +x setup/install.sh setup/verify.sh
 ```bash
 ./setup/verify.sh
 ```
-看到 37 项全部显示绿色 `[√ PASS]`，即代表工作台已在 macOS 原生就绪！
+看到全部 `[√ PASS]`（可选能力会以 `[! OPTN]` 列出，不算失败）即代表工作台已就绪。
+
+### 4. 外部工具定位核对
+```bash
+python Tool/mcp/tool_resolver.py --verify
+```
+这一步实跑每个工具，区分「文件存在」与「真的能启动」。工具装在非常规位置时，
+用 `SEEP_PYTHON` / `SEEP_IDA_ROOT` / `SEEP_WEB_TOOLBOX` / `SEEP_ANDROID_TOOLBOX` 显式指定，
+规则集中声明在 `setup/tool-registry.json`，与 Windows 侧完全一致。
 
 ---
 

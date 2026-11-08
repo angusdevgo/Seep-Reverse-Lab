@@ -12,6 +12,106 @@
 
 ## [Unreleased]
 
+## [1.11.0] - 2026-11-08
+
+### 背景：路径写死在检查脚本里，换个用户就误报
+
+用户提出的问题很尖锐：**「我本地工具在 D:\Tool，别人不一定，或者根本没下载。
+到时候你该怎么检查，怎么判断在哪里以及是否已经成功启动？」**
+
+审计后发现两类真实缺陷：
+
+1. `verify.ps1` 的 IDA 检查写死了 4 个候选路径，装在 `E:\Rev\IDA` 或绿色版的用户
+   会看到「IDA 缺失」。而 `verify.sh` 更干脆 —— 那一项直接写 `false` 的占位。
+2. 更严重的是**所有外部工具检查都只看「文件在不在」**。文件在位但启动报错
+   （缺 DLL、版本不符、`ida_pro_mcp` 没装）仍然报 READY。除了 `seep` MCP 自己
+   有真正的 stdio 握手测试，其余没有一个被真正启动验证过。
+
+### 新增：`setup/tool-registry.json` —— 路径规则只有一份
+
+20 个外部工具的定位规则声明在 JSON 里，新增工具只改这个文件，不改代码：
+
+```json
+"python": { "kind": "core", "env": "SEEP_PYTHON",
+            "chain": ["env","candidates","bundled","path","cache"],
+            "verify": { "kind": "python-import", "arg": "mcp" } }
+```
+
+解析链（逐层下降，记录来源）：
+
+```
+env（SEEP_* 环境变量）→ cache（~/.seep/tools.json）→ bundled（仓库自带）
+→ path（系统 PATH）→ candidates（常见安装位）
+```
+
+`chain` 可按工具覆盖：`python` 就靠它优先找工作台自己的 venv，而不是 PATH 上
+那个可能没装 `mcp` 库的垫片。
+
+### 新增：`setup/resolve-tools.ps1` 与 `Tool/mcp/tool_resolver.py`
+
+两个求值器，一套规则。PowerShell 版给 Windows（Python 坏掉时也能跑），
+纯标准库 Python 版给 Unix 和 MCP 侧。
+
+```powershell
+powershell -File setup\resolve-tools.ps1 -Verify        # 解析 + 实跑
+python Tool/mcp/tool_resolver.py --verify                 # 全平台
+python Tool/mcp/tool_resolver.py --state ida              # 给 shell 脚本用
+```
+
+四态判定：
+
+| 状态 | 条件 | 阻断 |
+|---|---|---|
+| `READY` | 找到 **且实跑返回成功** | 否 |
+| `DEGRADED` | 找到但跑不起来 | 否，给出原因与修复命令 |
+| `OPTIONAL` | 没找到，属于可选能力 | 否 |
+| `MISSING` | 没找到，属于核心能力 | **是**（退出码 1） |
+
+### `seep_status` 接入同一份真相
+
+`seep_status()` 新增 `external_tools` 段，20 个工具的路径、来源层、四态、修复命令
+一目了然。新增可选参数 `verify`：
+
+```python
+seep_status()              # 只解析，毫秒级
+seep_status(verify=True)   # 逐个实跑，区分「文件存在」和「真的能启动」
+```
+
+### `SEEP_IDA_ROOT` 支持
+
+`install-ida.ps1` 在 `-IdaRoot` 之后、候选表之前读 `SEEP_IDA_ROOT`；
+`mcp-merge.py --ida-root` 缺省值也改成读这个环境变量。IDA 装在非常规位置的用户
+设一次就够，不用每次传参。
+
+### 修掉的三个真 bug
+
+1. **`cmd.exe` 引号**：`.bat` / `.cmd` 必须 `/s /c ""path" "args""`（首尾各只加一个引号）。
+   写错会让带空格路径的所有工具报「不是内部或外部命令」。
+   Python 侧还必须传**单个字符串** —— 传 list 会被 `list2cmdline` 再转义一层。
+2. **`verify.sh` 的 Windows 路径**：`SEEP_PYTHON=D:\Tool\...\python.exe` 在 Git Bash 里
+   既过不了 `[ -x ]` 也不能直接执行，导致 stdio 冒烟、DSH 检查、`tool_state`
+   全部静默误报。新增 `py_run()` 统一用 `cygpath` 换算。
+3. **GBK 解码崩溃**：`subprocess.run(text=True)` 在 Windows 用 GBK 解码，遇到 UTF-8
+   输出会在 reader 线程抛 `UnicodeDecodeError`，整个调用变成空结果。改为显式
+   `encoding="utf-8", errors="replace"`，并剥掉 ANSI 颜色码。
+
+### 测试
+
+- `setup/test_tool_resolver_parity.py`（新）：两个求值器对同一注册表必须给出
+  完全一致的 `(id, state)` 集合 —— 防止将来改漏一边。
+- 四态反向验证：仓库根指向空目录 → `MISSING` + 退出码 1；
+  `SEEP_IDA_ROOT` 写错 → 保留警告并继续沿链解析；
+  幻影可选工具 → `OPTIONAL` + 退出码 0；
+  `SEEP_PYTHON` 指向非解释器 → `DEGRADED` 并给出启动失败原因。
+- 本机 20 个工具实跑全部 `READY`。
+
+### 体检项
+
+`verify.ps1` 64 → **66 项**（新增「外部工具注册表可解析」「核心运行时工具实际可启动」，
+并把 IDA 检查改为走注册表）。`verify.sh` 新增注册表检查，IDA 项从写死 `false`
+改为真实解析，并通过 `py_run()` 修好了 Windows 路径导致的静默误报。
+
+
 ## [1.10.2] - 2026-11-08
 
 ### 新增：DSH 隔离开箱部署（不碰 Pi Agent）

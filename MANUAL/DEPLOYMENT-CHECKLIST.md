@@ -178,6 +178,30 @@ MCP 配置文件所在位置：
 > **平台边界**：`aotopsy` 是 Windows PE 单文件，Unix 不适用；8 个 `seep_web_*` 工具依赖
 > PowerShell 取证脚本，Unix 需先安装 PowerShell 7。详见 [CROSS-PLATFORM.md](CROSS-PLATFORM.md)。
 
+#### 3c. 🧭 外部工具定位规则 (Tool Registry)
+
+外部工具「装在哪都行」，所以路径不能写死在代码里。规则集中声明在 `setup/tool-registry.json`：
+
+| 层 | 来源 | 典型值 |
+|---|---|---|
+| 1 | 环境变量 | `SEEP_PYTHON` / `SEEP_IDA_ROOT` / `SEEP_WEB_TOOLBOX` / `SEEP_ANDROID_TOOLBOX` |
+| 2 | 解析缓存 | `~/.seep/tools.json`（上次找到的位置） |
+| 3 | 仓库自带 | `<repo>/Tool/mcp/Tool/safe/...` |
+| 4 | 系统 PATH | `Get-Command` / `shutil.which` |
+| 5 | 常见安装位 | `Program Files` / `D:\Tool` / `~/.seep` |
+
+| 验证入口 | 平台 | 作用 |
+|---|---|---|
+| `setup\resolve-tools.ps1 -Verify` | Windows | 解析 + **实跑**（判断「是否真的能启动」） |
+| `python Tool/mcp/tool_resolver.py --verify` | 全平台 | 同上（纯标准库实现） |
+| `python setup/test_tool_resolver_parity.py` | 全平台 | 校验两个求值器判定一致 |
+
+四态：`READY`（找到且实跑成功）/ `DEGRADED`（找到但跑不起来）/ `OPTIONAL`（可选未装，不阻断）/ `MISSING`（核心缺失，阻断）。
+
+> **为什么这么设计**：你的 IDA 在 `D:\Tool\IDA Pro`，别人的可能在 `E:\Rev\IDA`，也可能根本没装。
+> 用某一台机器的路径去要求所有人，就会出现「明明装了却报缺失」。
+> 解析链 + 环境变量覆盖 + 四态，保证同一套脚本在任意机器上给出正确结论。
+
 #### 4. 🚀 总结与开工建议
 - **系统评估**：核心组件与 11 个 Skill 100% 部署成功，工作台处于 **[READY / 完备就绪]** 状态；
 - **操作指令**：请退出并重启当前终端与 Agent 会话，在对话框中输入 **`lab：`** 开启白盒测试！
