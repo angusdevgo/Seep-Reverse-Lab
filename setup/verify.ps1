@@ -30,6 +30,42 @@ $script:TodoList = @()
 # 结构化校对明细表（供 Detailed 模式使用）
 $script:AuditTable = [System.Collections.ArrayList]::new()
 
+# 解析一个「真的能执行」的 Python 解释器。
+# 为什么不直接用 `python`：Windows 上 `python` 可能是
+#   · Microsoft Store 的占位别名（执行即弹商店，退出码非 0）
+#   · 指向已删除 venv 的 .cmd 垫片（例如 ~/.pi/agent/bin/python.cmd）
+#   · 某个没装 mcp 的发行版解释器
+# 直接调用会让体检把「解释器不可用」误报成「功能损坏」，所以先探测再使用。
+function Resolve-VerifyPython {
+    $cands = @()
+    if ($env:SEEP_PYTHON) { $cands += $env:SEEP_PYTHON }
+    foreach ($v in @(
+            (Join-Path $AgentDir 'seep-venv\Scripts\python.exe'),
+            (Join-Path $AgentDir 'seep-venv/bin/python')
+        )) {
+        if (Test-Path -LiteralPath $v) { $cands += $v }
+    }
+    $onPath = Get-Command python -ErrorAction SilentlyContinue
+    if ($onPath) { $cands += $onPath.Source }
+    foreach ($p in @(
+            'C:\Program Files\Python312\python.exe',
+            'C:\Program Files\Python311\python.exe',
+            'C:\Program Files\Python310\python.exe'
+        )) {
+        if (Test-Path -LiteralPath $p) { $cands += $p }
+    }
+    foreach ($x in ($cands | Select-Object -Unique)) {
+        if ([string]::IsNullOrWhiteSpace($x)) { continue }
+        if (-not (Test-Path -LiteralPath $x)) { continue }
+        try {
+            & $x -c "import sys" 2>$null | Out-Null
+            if ($LASTEXITCODE -eq 0) { return $x }
+        }
+        catch { }
+    }
+    return $null
+}
+
 function Test-CheckItem {
     param(
         [string]$Category,
@@ -284,21 +320,25 @@ if (Test-Path $AgentDir) {
 # -----------------------------------------------------------------------------
 Write-Host "`n[5/9] 🔌 MCP 服务引擎与物理内置工具箱 (Native Tools)" -ForegroundColor White
 
+# 只解析一次，后续所有需要跑 Python 的检查点统一复用它
+$script:VerifyPython = Resolve-VerifyPython
+
 # 工具数以源码为准动态统计，避免版本迭代后断言过时导致「体检假红」
 $seepServerPath = Join-Path $ToolDir 'mcp\seep_mcp_server.py'
 $seepToolCount = if (Test-Path $seepServerPath) {
     @(Select-String -Path $seepServerPath -Pattern '^def seep_\w+\(' -AllMatches).Count
 } else { 0 }
 
+Test-CheckItem "MCP" "Python 解释器可用于运行时校验 (语法 / 冒烟 / 规则同步)" {
+    $null -ne $script:VerifyPython
+} "未找到可执行的 Python。若 PATH 上的 python 是商店占位别名或失效垫片，请显式设置 SEEP_PYTHON 或安装 Python 3.11+" "解释器可执行且能 import" "SEEP_PYTHON / ~/.pi/agent/seep-venv"
+
 Test-CheckItem "MCP" "核心服务端脚本 (seep_mcp_server.py 语法自洽)" {
     $sp = Join-Path $ToolDir 'mcp\seep_mcp_server.py'
-    if (Test-Path $sp) {
-        $pyCmd = Get-Command python -ErrorAction SilentlyContinue
-        if ($pyCmd) {
-            & python -c "import ast; ast.parse(open(r'$sp', encoding='utf-8').read())" 2>&1 | Out-Null
-            $LASTEXITCODE -eq 0
-        } else { $true }
-    } else { $false }
+    if (-not (Test-Path $sp)) { return $false }
+    if (-not $script:VerifyPython) { return $true }   # 解释器不可用由上一项单独报，不在这里重复罚
+    & $script:VerifyPython -c "import ast; ast.parse(open(r'$sp', encoding='utf-8').read())" 2>&1 | Out-Null
+    ($LASTEXITCODE -eq 0)
 } "seep_mcp_server.py 丢失或存在 Python 语法解析错误" "$seepToolCount 个原生工具定义" "$ToolDir\mcp\seep_mcp_server.py"
 
 # 语法合法 ≠ 能在 stdio 下工作：subprocess.run 派生点若漏了 stdin=DEVNULL，
@@ -308,12 +348,11 @@ Test-CheckItem "MCP" "核心服务端脚本 (seep_mcp_server.py 语法自洽)" {
 Test-CheckItem "MCP" "stdio 子进程不继承 stdin (issue #13 回归防护)" {
     $smoke = Join-Path $ToolDir 'mcp\test_stdio_smoke.py'
     if (-not (Test-Path $smoke)) { return $true }   # 旧版本无此脚本时不判定，避免误报
-    $pyCmd = Get-Command python -ErrorAction SilentlyContinue
-    if (-not $pyCmd) { return $true }               # 无 Python 时不判定
+    if (-not $script:VerifyPython) { return $true }  # 解释器不可用由专门项报
     $prevEap = $ErrorActionPreference
     $ErrorActionPreference = 'Continue'
     try {
-        & python $smoke --quick 2>&1 | Out-Null
+        & $script:VerifyPython $smoke --quick 2>&1 | Out-Null
         return ($LASTEXITCODE -eq 0)
     } finally {
         $ErrorActionPreference = $prevEap
@@ -356,37 +395,53 @@ Test-CheckItem "依赖" "Playwright 浏览器自动化依赖已解压 (playwrigh
 # -----------------------------------------------------------------------------
 # 6. 环境运行时与第三方依赖配置
 # -----------------------------------------------------------------------------
-Write-Host "`n[6/9] ⚙️ 外部运行时与商业授权协同 (Runtime & Commercial)" -ForegroundColor White
+# -----------------------------------------------------------------------------
+# 5b. 外部能力包可用性（不只看文件在不在，而是这个工具现在能不能真跑）
+#     这些程序不在仓库里（体积 / 平台 / 版本耦合），所以缺失不阻塞部署：
+#     用 Test-ManualItem 归入「可选/建议关注」，判为 🟡 DEGRADED 而不是 🔴 MISSING。
+# -----------------------------------------------------------------------------
+Write-Host "`n[5b] 🧰 外部能力包可用性 (Web / Android / 扫描器)" -ForegroundColor White
 
-# 自动补全常见 Python 安装路径到临时 PATH（提高 Windows 环境自愈容错率）
-if (-not (Get-Command python -ErrorAction SilentlyContinue)) {
-    $pyCandidates = @(
-        'C:\Program Files\Python312',
-        'C:\Program Files\Python311',
-        'C:\Program Files\Python310',
-        "$env:LOCALAPPDATA\Programs\Python\Python312",
-        "$env:LOCALAPPDATA\Programs\Python\Python311",
-        "$env:LOCALAPPDATA\Programs\Python\Python310"
-    )
-    foreach ($cand in $pyCandidates) {
-        if (Test-Path (Join-Path $cand 'python.exe')) {
-            $env:Path = "$cand;$cand\Scripts;" + $env:Path
-            break
-        }
+$capWebLib = Join-Path $Root 'Tool\scripts\lib\WebToolbox.ps1'
+$capAndLib = Join-Path $Root 'Tool\scripts\lib\AndroidToolbox.ps1'
+if (Test-Path $capWebLib) { . $capWebLib }
+if (Test-Path $capAndLib) { . $capAndLib }
+
+$capGroups = @(
+    @{ Name = 'Web 取证';        Tools = @('ffmpeg', 'ffprobe'); Purpose = 'HLS 六类根因判定（防盗链 / AES-128 / DRM）'; Fix = 'setup\install-capabilities.ps1 -Only web' },
+    @{ Name = 'Flutter AOT';     Tools = @('aotopsy');           Purpose = 'Dart AOT (libapp.so) 静态分析与符号还原';   Fix = 'setup\install-capabilities.ps1 -Only aotopsy' },
+    @{ Name = 'Android 动态';    Tools = @('frida', 'objection'); Purpose = '动态插桩 / SSL Pinning 绕过 / 内存脱壳';   Fix = 'setup\install-capabilities.ps1 -Only android' },
+    @{ Name = '加固指纹';        Tools = @('apkid');             Purpose = 'APKiD 查壳 / 反调试 / 混淆器识别';          Fix = 'setup\install-capabilities.ps1 -Only android' },
+    @{ Name = '扫描器（可选）';  Tools = @('nuclei', 'ffuf');    Purpose = '模板化漏扫与目录爆破';                      Fix = 'setup\install-capabilities.ps1 -Only scanners' }
+)
+
+foreach ($g in $capGroups) {
+    $found = @()
+    $lost  = @()
+    foreach ($t in $g.Tools) {
+        $p = $null
+        if (Get-Command Resolve-AndroidTool -ErrorAction SilentlyContinue) { $p = Resolve-AndroidTool -Name $t }
+        if (-not $p -and (Get-Command Resolve-WebTool -ErrorAction SilentlyContinue)) { $p = Resolve-WebTool -Name $t }
+        if ($p) { $found += $t } else { $lost += $t }
     }
+    $itemName = "{0} ({1})" -f $g.Name, ($g.Tools -join ' + ')
+    $expected = "可执行文件在 PATH 或工具箱内"
+    Test-ManualItem "能力" $itemName {
+        ($lost.Count -eq 0)
+    } ("缺 {0}；补全: powershell -File {1}" -f ($lost -join ', '), $g.Fix) $expected ""
 }
 
+
+Write-Host "`n[6/9] ⚙️ 外部运行时与商业授权协同 (Runtime & Commercial)" -ForegroundColor White
+
 Test-CheckItem "运行时" "Python 解释器 (3.11+ 且可执行)" {
-    $py = Get-Command python -ErrorAction SilentlyContinue
-    $py -ne $null
-} "系统未安装 Python 或未加入 PATH 环境变量，请安装 Python 3.11+" "Python 3.11+" "PATH"
+    $null -ne $script:VerifyPython
+} "系统未安装 Python 或未加入 PATH 环境变量，请安装 Python 3.11+（或用 SEEP_PYTHON 指定）" "Python 3.11+" "PATH / SEEP_PYTHON"
 
 Test-ManualItem "协议" "Python mcp 协议库环境支持 (mcp>=1.20,<1.29)" {
-    $py = Get-Command python -ErrorAction SilentlyContinue
-    if ($py) {
-        & python -c "import mcp" 2>&1 | Out-Null
-        $LASTEXITCODE -eq 0
-    } else { $false }
+    if (-not $script:VerifyPython) { return $false }
+    & $script:VerifyPython -c "import mcp" 2>&1 | Out-Null
+    ($LASTEXITCODE -eq 0)
 } "运行 pip install ""mcp>=1.20,<1.29"" 补齐协议支持" "mcp 库已安装" "Python site-packages"
 
 Test-ManualItem "商业软件" "IDA Pro 商业反编译器协同 (需自备独立授权)" {
@@ -463,11 +518,10 @@ Test-CheckItem "中继" "上下文守卫白名单 (guard-prefixes.json)" {
 Test-CheckItem "中继" "规则表与 TS 源同步 (sensitive-rules.json)" {
     $rules = Join-Path $RelayDir 'sensitive-rules.json'
     if (-not (Test-Path $rules)) { return $false }
-    $py = Get-Command python -ErrorAction SilentlyContinue
-    if (-not $py) { return (Test-Path $rules) }
+    if (-not $script:VerifyPython) { return (Test-Path $rules) }
     Push-Location $RelayDir
     try {
-        & python extract-rules.py --check 2>&1 | Out-Null
+        & $script:VerifyPython extract-rules.py --check 2>&1 | Out-Null
         $LASTEXITCODE -eq 0
     } finally { Pop-Location }
 } "规则表与 TS 源不一致，请运行 python Tool/scripts/compliance-relay/extract-rules.py" "与 TS 源同步" "$RelayDir\sensitive-rules.json"
@@ -486,7 +540,13 @@ $PrivacyPattern = 'C:[\\/]{1,2}Users[\\/]{1,2}Angus|AngusDevLab|angusdevlab|angu
 
 # 排除：第三方依赖、上游镜像、构建产物，以及扫描器自身（其模式定义会自匹配）
 $PrivacyExcludeRegex = '\\node_modules\\|\\__pycache__\\|\\Tool\\upstream\\|\\Tool\\mcp\\Tool\\|\\\.git\\|\\dist\\'
-$PrivacyExcludeNames = @('verify.ps1', 'verify.sh')
+# 安装时由脚本生成的本地配置：内含本机绝对路径属正常现象，且已被 .gitignore 排除。
+# 非 git（压缩包）部署时它们会留在磁盘上，必须一并排除，否则每次体检都误报。
+$PrivacyExcludeNames = @(
+    'verify.ps1', 'verify.sh',
+    'opencode.jsonc', 'cordis.generated.yml', 'relay-config.json',
+    'tool-index.json', 'tool-index.md'
+)
 $BinaryExt = @('.exe','.dll','.so','.dylib','.jar','.zip','.7z','.png','.jpg','.jpeg','.gif','.ico','.pdf','.bin','.dmp','.pyc','.idb','.i64','.ttf','.woff','.woff2')
 
 Test-CheckItem "脱敏" "个人隐私零残留 (已跟踪文件全深度扫描)" {
@@ -515,7 +575,7 @@ Test-CheckItem "脱敏" "个人隐私零残留 (已跟踪文件全深度扫描)"
             } |
             Select-String -Pattern $PrivacyPattern -CaseSensitive -ErrorAction SilentlyContinue
     -not $hits
-} "发现个人隐私残留，请立即脱敏后重新提交" "零残留" "git 已跟踪文件（排除第三方依赖与上游镜像）"
+} "发现个人隐私残留，请立即脱敏后重新提交" "零残留" "$(if (Test-Path (Join-Path $Root '.git')) { 'git 已跟踪文件（排除第三方依赖与上游镜像）' } else { '工作树（排除依赖、上游镜像与安装生成的本地配置）' })"
 
 Test-CheckItem "脱敏" "含本机路径的生成物未被 git 追踪" {
     if (-not (Test-Path (Join-Path $Root '.git'))) { return $true }

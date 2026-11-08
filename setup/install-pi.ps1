@@ -26,6 +26,41 @@ function Write-Ok($m)   { Write-Host "    [OK] $m" -ForegroundColor Green }
 function Write-Warn($m) { Write-Host "    [!!] $m" -ForegroundColor Yellow }
 function Write-Info($m) { Write-Host "    [..] $m" -ForegroundColor Gray }
 
+# 解析「真正装了 mcp 库」的解释器并写绝对路径进 mcp.json。
+# 为什么不能直接写 "python"：用户机器上 `python` 可能指向没装 mcp 的解释器
+# （例如系统 Python 3.10 / 商店版 / conda base），服务端会一启动就 ImportError，
+# 而这类故障在体检里只表现为「MCP 服务没连上」，排查成本很高。
+function Resolve-SeepPython {
+    $cands = @()
+    if ($env:SEEP_PYTHON) { $cands += $env:SEEP_PYTHON }
+    foreach ($v in @(
+            (Join-Path $AgentDir 'seep-venv\Scripts\python.exe'),
+            (Join-Path $AgentDir 'seep-venv/bin/python')
+        )) {
+        if (Test-Path -LiteralPath $v) { $cands += $v }
+    }
+    $onPath = Get-Command python -ErrorAction SilentlyContinue
+    if ($onPath) { $cands += $onPath.Source }
+    $pyLauncher = Get-Command py -ErrorAction SilentlyContinue
+    if ($pyLauncher) {
+        foreach ($ver in @('3.12', '3.11', '3.13', '3.10')) {
+            try {
+                $cand = & py "-$ver" -c "import sys; print(sys.executable)" 2>$null
+                if ($LASTEXITCODE -eq 0 -and $cand) { $cands += $cand.Trim() }
+            } catch { }
+        }
+    }
+
+    foreach ($c in ($cands | Select-Object -Unique)) {
+        if (-not (Test-Path -LiteralPath $c)) { continue }
+        try {
+            & $c -c "import mcp" 2>$null | Out-Null
+            if ($LASTEXITCODE -eq 0) { return (Resolve-Path -LiteralPath $c).Path }
+        } catch { }
+    }
+    return $null
+}
+
 Write-Host "`n  === Pi Agent 环境配置 ===" -ForegroundColor Cyan
 
 # ---------------------------------------------------------------- 1. 目录与备份
@@ -116,8 +151,17 @@ if (-not $existingConfig.mcpServers) {
 
 # 挂载核心 seep MCP
 $seepServerPy = "$NormalizedRoot/Tool/mcp/seep_mcp_server.py"
+$seepPython = Resolve-SeepPython
+if (-not $seepPython) {
+    $seepPython = 'python'
+    Write-Warn '未找到已安装 mcp 库的 Python 解释器，mcp.json 暂写 "python"。'
+    Write-Warn '请先运行: powershell -File setup\install-python.ps1，然后重跑本脚本。'
+}
+else {
+    Write-Ok "seep MCP 解释器: $seepPython"
+}
 $seepEntry = [PSCustomObject]@{
-    command = "python"
+    command = $seepPython
     args    = @($seepServerPy)
     env     = [PSCustomObject]@{
         PYTHONIOENCODING = "utf-8"

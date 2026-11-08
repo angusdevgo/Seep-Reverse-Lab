@@ -5,8 +5,9 @@
     1. 解压离线依赖 (node_modules.zip)
     2. Python 协议依赖安装
     3. Pi Agent / Claude Code / DSH / OpenCode 配置生成
-    4. 智能 IDA Pro 探测与自定义路径交互引导
-    5. 全维度健康核验
+    4. 外部能力包（Web 取证 / Android 工具箱 / 可选扫描器）
+    5. 智能 IDA Pro 探测与自定义路径交互引导
+    6. 全维度健康核验 + 能力看板
 #>
 [CmdletBinding()]
 param(
@@ -14,6 +15,10 @@ param(
     [switch]$SkipPython,          # 跳过 Python 依赖
     [switch]$SkipPi,              # 跳过 pi 环境配置
     [switch]$SkipTools,           # 跳过 IDA Pro 配置
+    [switch]$SkipCapabilities,    # 跳过外部能力包（ffmpeg / frida / APKiD / Aotopsy）
+    [switch]$WithWeb,             # 顺带装 Web 取证（ffmpeg，约 80 MB 下载）
+    [switch]$WithAndroid,         # 顺带装 Android 动态（frida / APKiD，需 pip）
+    [switch]$WithScanners,        # 顺带装 nuclei / ffuf
     [switch]$OnlyVerify,          # 仅跑自检
     [switch]$NonInteractive       # 非交互静默模式
 )
@@ -45,12 +50,31 @@ function Test-Environment {
     Write-Step '检测基础运行环境'
 
     # Python
-    $py = Get-Command python -ErrorAction SilentlyContinue
-    if ($py) {
-        $ver = & python --version 2>&1
-        Write-Ok "Python 可用: $ver ($($py.Source))"
-    } else {
-        Write-Err '未找到 Python。请安装 Python 3.11+ 并勾选 Add to PATH'
+    # 注意：不能只看 Get-Command 有没有结果。Windows 上 `python` 可能是
+    #   · Microsoft Store 的占位别名（执行即弹商店，非零退出）
+    #   · 指向已删除 venv 的 .cmd 垫片
+    # 这类情况下 `& python --version` 会打印「系统找不到指定的路径」，
+    # 但如果不看退出码就会误报 OK，后面所有依赖 Python 的步骤才连环失败。
+    $pyCands = @()
+    if ($env:SEEP_PYTHON) { $pyCands += $env:SEEP_PYTHON }
+    foreach ($v in @(
+            (Join-Path $AgentDir 'seep-venv\Scripts\python.exe'),
+            (Join-Path $AgentDir 'seep-venv/bin/python')
+        )) { if (Test-Path -LiteralPath $v) { $pyCands += $v } }
+    $pyOnPath = Get-Command python -ErrorAction SilentlyContinue
+    if ($pyOnPath) { $pyCands += $pyOnPath.Source }
+    foreach ($c in ($pyCands | Select-Object -Unique)) {
+        if (-not (Test-Path -LiteralPath $c)) { continue }
+        $ver = (& $c --version 2>&1 | Out-String).Trim()
+        if ($LASTEXITCODE -eq 0 -and $ver -match '^Python \d+\.\d+') {
+            Write-Ok "Python 可用: $ver ($c)"
+            $env:SEEP_PYTHON = $c
+            break
+        }
+        Write-Warn "跳过不可用的 Python 候选: $c -> $ver"
+    }
+    if (-not $env:SEEP_PYTHON -or -not (Test-Path -LiteralPath $env:SEEP_PYTHON)) {
+        Write-Err '未找到可用的 Python。请安装 Python 3.11+，或用 SEEP_PYTHON 指定解释器路径'
         $script:Failed += 'Python'
     }
 
@@ -129,6 +153,39 @@ if (-not $SkipPi) {
 # 自动生成 Claude / OpenCode / DSH 配置文件
 Write-Step '生成多 Agent 配置文件 (.mcp.json / opencode.jsonc / cordis.generated.yml)'
 & (Join-Path $ScriptDir 'generate-configs.ps1')
+
+# -----------------------------------------------------------------------------
+# 外部能力包：MCP 有 38 个工具，其中一部分算力来自仓库外的程序
+# （ffmpeg / frida / APKiD / Aotopsy / nuclei / ffuf）。这一层以前完全没覆盖，
+# 结果就是「工具在 tools/list 里看得见，一调用却返回未部署」。
+# 纪律：默认只装零成本件（Aotopsy 从仓库复制，不联网）；需要下载/装包的
+#       组件必须显式点名；任何组件失败都只警告，绝不中断部署。
+# -----------------------------------------------------------------------------
+if (-not $SkipCapabilities) {
+    $capScript = Join-Path $ScriptDir 'install-capabilities.ps1'
+    if (Test-Path $capScript) {
+        $capOnly = @()
+        if ($WithWeb)      { $capOnly += 'web' }
+        if ($WithAndroid)  { $capOnly += 'android' }
+        if ($WithScanners) { $capOnly += 'scanners' }
+        if ($capOnly.Count -eq 0) { $capOnly = @('auto') }
+
+        Write-Step "补齐外部能力包（$(($capOnly -join ', '))）"
+        try {
+            & $capScript -Only $capOnly 2>&1 | ForEach-Object { Write-Host "    $_" -ForegroundColor DarkGray }
+        }
+        catch {
+            Write-Warn "能力包步骤异常：$($_.Exception.Message)（不影响工作台其余功能）"
+        }
+        if ($capOnly -contains 'auto') {
+            Write-Host '    [..] 提示：ffmpeg / frida / APKiD 需要下载或装包，默认不装。' -ForegroundColor DarkGray
+            Write-Host '         一条命令全补：powershell -File setup\install-capabilities.ps1 -Only all' -ForegroundColor DarkGray
+        }
+    }
+    else {
+        Write-Warn "未找到 setup\install-capabilities.ps1，跳过能力包步骤"
+    }
+}
 
 if (-not $SkipTools) {
     Write-Step '配置与探测 IDA Pro（商业软件，需自备授权）'

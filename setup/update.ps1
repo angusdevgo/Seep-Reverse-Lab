@@ -28,6 +28,9 @@ param(
     [switch]$NoPull,        # 跳过 git pull（离线压缩包更新场景）
     [switch]$Check,         # 仅检查是否有新版本可用，不执行更新
     [switch]$SkipVerify,    # 跳过最终自检
+    [switch]$WithTools,     # 顺带补齐外部能力包（ffmpeg / frida / APKiD / nuclei / ffuf）
+    [switch]$SkipCapabilities,  # 跳过能力包步骤（只用本地已装的）
+    [switch]$CheckCapabilities, # 只补能力、不动代码（网络不好或只想补依赖时用）
     [string]$IdaRoot = ''   # 可选：更新时顺带绑定 IDA Pro 路径
 )
 
@@ -147,7 +150,18 @@ if ($Check) {
 
 Write-Host "  当前版本    : v$oldVersion" -ForegroundColor White
 Write-Host "  Git 仓库    : $(if ($isGitRepo) { '是（支持 git pull）' } else { '否（压缩包部署）' })" -ForegroundColor White
-Write-Host "  运行模式    : $(if ($DryRun) { 'DRY RUN（不修改任何文件）' } else { '正常更新' })" -ForegroundColor White
+Write-Host "  运行模式    : $(if ($DryRun) { 'DRY RUN（不修改任何文件）' } elseif ($CheckCapabilities) { '仅补外部能力包（不动代码）' } else { '正常更新' })" -ForegroundColor White
+
+# -CheckCapabilities 短路：不动代码、不重装配置，只补能力包，适合「网络拉不动代码但缺 ffmpeg/frida」
+if ($CheckCapabilities) {
+    $capScript = Join-Path $ScriptDir 'install-capabilities.ps1'
+    if (-not (Test-Path $capScript)) { Write-Fail '缺少 setup\install-capabilities.ps1'; exit 1 }
+    Write-Step '补齐外部能力包'
+    & $capScript -Only all
+    Write-Host ''
+    Write-Host '  完成。若本次新装了 ffmpeg / frida，请完全重启 Agent 会话让 PATH 生效。' -ForegroundColor Cyan
+    exit 0
+}
 
 # 记录更新前的用户自有数据指纹
 $beforeMcpKeys = Get-McpServerKeys
@@ -276,12 +290,14 @@ Write-Step '3/6  执行幂等增量同步（自动备份 + 保护自定义配置
 
 # 注意：PowerShell 的数组 splatting (@arr) 不会把 '-Name' 解析为参数名，
 # 会当成位置参数导致 ParameterBindingException，因此这里用显式命名参数调用。
-if ($IdaRoot -ne '') {
-    & (Join-Path $ScriptDir 'install.ps1') -NonInteractive -IdaRoot $IdaRoot
-} else {
-    & (Join-Path $ScriptDir 'install.ps1') -NonInteractive -SkipTools
-}
-$installExit = $LASTEXITCODE
+$installParams = @{ NonInteractive = $true }
+if ($IdaRoot -ne '') { $installParams['IdaRoot'] = $IdaRoot }
+else                 { $installParams['SkipTools'] = $true }
+if ($WithTools)          { $installParams['WithWeb'] = $true; $installParams['WithAndroid'] = $true }
+if ($SkipCapabilities)   { $installParams['SkipCapabilities'] = $true }
+
+& (Join-Path $ScriptDir 'install.ps1') @installParams
+$installExit = if ($?) { 0 } else { 1 }
 
 if ($installExit -ne 0) {
     Write-Warn2 "install.ps1 返回码 $installExit，部分步骤可能未完成，请查看上方输出"
@@ -352,17 +368,76 @@ Write-Host "`n==================================================================
 Write-Host ("  Seep 工作台更新完成:  v{0}  ->  v{1}" -f $oldVersion, $newVersion) -ForegroundColor Green
 Write-Host "================================================================================" -ForegroundColor White
 
+# -----------------------------------------------------------------------------
+# 能力看板：区分「文件在不在」与「这个工具现在能不能真跑」
+# 外部依赖（ffmpeg / frida / APKiD / Aotopsy / nuclei / ffuf）不在仓库里，
+# 只看文件在位会给出「全绿但一半工具不可用」的假象。
+# -----------------------------------------------------------------------------
+$capRows = @()
+$webLib = Join-Path $Root 'Tool\scripts\lib\WebToolbox.ps1'
+$andLib = Join-Path $Root 'Tool\scripts\lib\AndroidToolbox.ps1'
+if (Test-Path $webLib) { . $webLib }
+if (Test-Path $andLib) { . $andLib }
+if (Get-Command Get-WebToolboxStatus -ErrorAction SilentlyContinue) {
+    try {
+        foreach ($t in (Get-WebToolboxStatus).Tools) {
+            $capRows += [pscustomobject]@{ G = 'Web'; T = $t.Tool; R = [bool]$t.Ready }
+        }
+    }
+    catch { }
+}
+if (Get-Command Get-AndroidToolboxStatus -ErrorAction SilentlyContinue) {
+    try {
+        foreach ($t in (Get-AndroidToolboxStatus).Tools) {
+            $capRows += [pscustomobject]@{ G = 'Android'; T = $t.Tool; R = [bool]$t.Ready }
+        }
+    }
+    catch { }
+}
+$capMissing = @($capRows | Where-Object { -not $_.R })
+
+# 动态统计，避免版本迭代后报告里的数字过时
+$skillDirs  = @(Get-ChildItem (Join-Path $Root 'Tool\skill') -Directory -ErrorAction SilentlyContinue)
+$safeCount  = 0
+$safeDir    = Join-Path $Root 'Tool\skill\safe-skills'
+if (Test-Path $safeDir) { $safeCount = @(Get-ChildItem $safeDir -Directory).Count }
+$skillTotal = $skillDirs.Count - 1 + $safeCount
+$serverPy   = Join-Path $Root 'Tool\mcp\seep_mcp_server.py'
+$toolTotal  = if (Test-Path $serverPy) {
+    @(Select-String -Path $serverPy -Pattern '^def seep_\w+\(' -AllMatches).Count
+} else { 0 }
+
+Write-Host ''
+Write-Host '  本次同步:' -ForegroundColor White
+Write-Host ("    · 逆向技能 {0} 个（Tool\skill 下 {1} 个目录）" -f $skillTotal, $skillDirs.Count) -ForegroundColor Gray
+Write-Host ("    · MCP 工具定义 {0} 个" -f $toolTotal) -ForegroundColor Gray
+Write-Host '    · 提示词 (seep-system.md / AGENTS.md) 与安全扩展' -ForegroundColor Gray
+Write-Host '    · mcp.json 已增量合并（自定义 MCP 条目完整保留）' -ForegroundColor Gray
+Write-Host '    · 内置工具箱与知识库已校验' -ForegroundColor Gray
+
+if ($capRows.Count -gt 0) {
+    Write-Host ''
+    Write-Host '  外部能力:' -ForegroundColor White
+    foreach ($r in $capRows) {
+        $mark  = if ($r.R) { '[READY]  ' } else { '[MISSING]' }
+        $color = if ($r.R) { 'Green' } else { 'Yellow' }
+        Write-Host ("    {0} {1,-14} ({2})" -f $mark, $r.T, $r.G) -ForegroundColor $color
+    }
+    if ($capMissing.Count -gt 0) {
+        Write-Host ''
+        Write-Host '  缺件不影响 MCP 启动：相关工具会返回明确的修复指引，其余工具照常工作。' -ForegroundColor DarkGray
+        Write-Host '  一条命令全补: powershell -File setup\install-capabilities.ps1 -Only all' -ForegroundColor Yellow
+    }
+}
+
+Write-Host ''
+Write-Host "  下一步（顺序不能跳）:" -ForegroundColor White
 Write-Host @"
 
-  更新内容:
-    · 9 大逆向 Skill 已同步到最新
-    · 提示词 (SYSTEM.md / AGENTS.md) 与安全扩展已同步
-    · mcp.json 已增量合并（自定义 MCP 完整保留）
-    · 内置工具箱与知识库已校验
-
-  下一步:
-    1) 完全关闭并重新打开 Agent 会话（Pi / Claude Code / DSH / OpenCode）
-       —— 这一步是必须的，新 Skill 与扩展需要重新加载
+    1) 完全关闭并重新打开 Agent 会话
+       Pi / Claude Code / DSH / OpenCode 都要整个进程退出重开。
+       仅刷新或 re-load 不够 —— MCP 工具是启动时握手的，
+       不重开就看不到新工具，也读不到新 Skill。
     2) 在对话框中发送:  lab：
        即可继续开工
 

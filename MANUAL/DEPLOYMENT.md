@@ -205,7 +205,8 @@ cd <你的工作台目录>
 | 3 | 打印 `CHANGELOG.md` 本次变更说明 | 更新前先预览 |
 | 4 | 调用 `install.ps1` 幂等增量同步 | **自动备份**到 `~/.pi/agent/backup-<时间戳>/` |
 | 5 | 校验用户自有数据零丢失 | 对比更新前后的 MCP 条目 |
-| 6 | 跑官方基准自检并输出报告 | 47/46 项门禁 |
+| 6 | **补齐外部能力包**（ffmpeg / frida / APKiD / Aotopsy） | 失败只警告，绝不中断更新 |
+| 7 | 跑官方基准自检 + 输出能力看板 | 核心检查项须全绿 |
 
 ### 3. 永不被覆盖的用户数据
 
@@ -226,10 +227,51 @@ cd <你的工作台目录>
 |---|---|
 | `-DryRun`（Windows）/ `--dry-run` | 只显示将要做什么，**不修改任何文件** |
 | `-NoPull` / `--no-pull` | 跳过 `git pull`（适用于手动下载压缩包覆盖的场景） |
+| `-WithTools` | **顺带补齐外部能力包**（ffmpeg + frida + APKiD），首次更新推荐 |
+| `-CheckCapabilities` | **只补外部能力、不动代码**（网络拉不动代码时用） |
+| `-SkipCapabilities` | 跳过能力包步骤（用你已装好的外部工具） |
 | `-SkipVerify` / `--skip-verify` | 跳过最终自检（不建议） |
 | `-IdaRoot "<路径>"`（Windows） | 更新时顺带绑定 IDA Pro 路径 |
 
-### 5. 压缩包部署的用户（非 Git）
+### 5. 外部能力包：为什么需要单独一步
+
+工作台的 `seep` MCP 有 **38 个工具**，其中一部分真正的算力来自**仓库之外的独立程序**：
+
+| 组件 | 谁在用 | 体积 / 成本 |
+|---|---|---|
+| `ffmpeg` + `ffprobe` | `seep_hls_analyze`（HLS 六类根因判定） | 约 80 MB 下载 |
+| `aotopsy` | `seep_aotopsy`（Flutter / Dart AOT 分析） | **仓库自带，零网络** |
+| `frida` / `objection` | `seep_android_toolbox`、动态插桩与脱壳 | pip + 独立 venv |
+| `apkid` | `seep_apkid_scan`（加固 / 混淆器指纹） | pip |
+| `nuclei` / `ffuf` | `seep_web_report` 的可选漏扫环节 | 约 40 MB 下载 |
+
+这些不在 git 仓库里，也不该塞进去（体积大、平台相关、版本要和设备对齐）。
+所以部署链路分两层：**代码层**（`git pull`）与**能力层**（本步骤）。
+
+**默认只装零成本件**（Aotopsy 直接从仓库复制），需要下载/装包的必须显式点名：
+
+```powershell
+# 一次性全补（推荐，缺什么补什么，可重复执行）
+powershell -File setup\install-capabilities.ps1 -Only all
+
+# 只补某几组
+powershell -File setup\install-capabilities.ps1 -Only web
+powershell -File setup\install-capabilities.ps1 -Only android
+powershell -File setup\install-capabilities.ps1 -Only scanners
+
+# 只看现状，不动磁盘
+powershell -File setup\install-capabilities.ps1 -CheckOnly
+```
+
+> **缺件不会导致 MCP 服务起不来。** 相关工具会返回明确的修复指引（例如
+> `[ERROR]: Aotopsy 未部署。请运行 ...install-android-toolbox.ps1 -Only aotopsy`），
+> 其余工具照常工作。`check.ps1` 会以 🟡 DEGRADED 如实标出，**不会**因此判失败。
+
+**装在哪里 / 怎么改位置**：默认 `D:\Tool\Web` 与 `D:\Tool\Android`，
+可用环境变量 `SEEP_WEB_TOOLBOX` / `SEEP_ANDROID_TOOLBOX` 覆盖，
+或用 `-ToolboxRoot <路径>` 一次性改根目录。
+
+### 6. 压缩包部署的用户（非 Git）
 
 如果你当初是下载 ZIP 解压的，没有 `.git` 目录：
 
@@ -238,19 +280,31 @@ cd <你的工作台目录>
    > **切勿**覆盖你自己的 `work/`、`project/`、`logs/` 等数据目录；
 3. 进入新目录运行 `setup/update.ps1 -NoPull`（或 `setup/update.sh --no-pull`）完成配置同步。
 
-### 6. 更新后必做的一步
+### 7. 更新后必做的一步
 
 > ⚠️ **必须完全关闭并重新打开 Agent 会话**（Pi / Claude Code / DSH / OpenCode）。
-> 新同步的 Skill 与扩展需要重新加载才会生效。
+>
+> * 新同步的 Skill 与扩展：需要进程重启才会重新读取；
+> * **MCP 工具：在会话启动时握手**，不重开就看不到新工具（`/reload`、刷新页面都不算）。
+>
+> 重开后再发送 `lab：` 继续开工。
 
-### 7. 如何回滚
+**自检是否真的生效**：
+
+```powershell
+# 服务端工具总数（应与版本说明里的数字一致）
+python Tool/mcp/test_stdio_smoke.py
+```
+
+### 8. 如何回滚
 
 | 回滚对象 | 操作 |
 |---|---|
 | **配置** | 从 `~/.pi/agent/backup-<时间戳>/` 拷回 `mcp.json` / `settings.json` 等 |
 | **代码** | `git -C <工作台目录> log --oneline -10` 找到目标提交后 `git reset --hard <commit>` |
+| **外部能力** | 删掉 `D:\Tool\Web`、`D:\Tool\Android` 即可；它们与仓库完全解耦，不影响 MCP 启动 |
 
-### 8. 更新前先看变更
+### 9. 更新前先看变更
 
 每次更新的内容都记录在 **[CHANGELOG.md](../CHANGELOG.md)**，包含新增 / 变更 / 修复 / 安全四类，
 并标注哪些需要手工干预。建议更新前扫一眼。

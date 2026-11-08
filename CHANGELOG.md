@@ -12,6 +12,84 @@
 
 ## [Unreleased]
 
+## [1.9.2] - 2026-11-08
+
+### 部署链路重写：把「代码更新」与「能力补齐」拆成两层
+
+**问题**：工作台有三个层次，旧链路只覆盖第一层。
+
+```
+第 3 层  能用吗？   ← 外部依赖：ffmpeg / frida / APKiD / Aotopsy / nuclei / ffuf
+                     ↑ 完全没覆盖
+第 2 层  装上了吗？ ← 技能 / 脚本 / MCP 工具定义
+                     ↑ 只覆盖了一半（技能走目录枚举有，脚本没同步）
+第 1 层  代码新吗？ ← git pull
+                     ↑ 已覆盖
+```
+
+后果就是一句话：**工具在 `tools/list` 里看得见，一调用返回「未部署」。**
+
+### 新增 `setup/install-capabilities.ps1`：外部能力包统一入口
+
+| 组件 | 默认安装 | 成本 |
+|---|:---:|---|
+| `aotopsy`（Flutter AOT 分析） | ✅ | 零网络，从 `Tool/aotopsy` 直接复制 |
+| `web`（ffmpeg + ffprobe） | ✕ | 约 80 MB 下载 |
+| `android`（frida / objection / APKiD） | ✕ | pip + 独立 venv |
+| `scanners`（nuclei / ffuf） | ✕ | 约 40 MB 下载 |
+
+- 纪律：**默认只装零成本件**；要下载/装包的必须显式点名，任何组件失败只警告，绝不中断部署。
+- `-CheckOnly` 只报表不动盘；`-ToolboxRoot` 一次性改根目录；`-Strict` 供 CI 用。
+- 组件安装器不带 `exit`，改为同进程 splatting 调用 —— 顺带修掉了 `-Only a,b` 经 `-File` 传递时
+  被当成单个字符串、触发 `ValidateSet` 失败的问题。
+
+### `install.ps1` / `update.ps1` 接入
+
+- `install.ps1` 新增能力包步骤（`-SkipCapabilities` / `-WithWeb` / `-WithAndroid` / `-WithScanners`）。
+- `update.ps1` 新增 `-WithTools`（顺带补 ffmpeg + frida + APKiD）与
+  `-CheckCapabilities`（**只补能力、不动代码**，网络拉不动代码时用）；结束报告重写：
+  技能数与工具数改为**动态统计**，新增能力看板，并把「必须完全重启会话」写成独立段落
+  （原来混在一段提示里，容易被略过；而 MCP 工具是启动时握手的，不重开就看不到新工具）。
+- `install-pi.ps1`：不再往 `mcp.json` 写裸 `"python"`，改为**探测一个真正 `import mcp` 成功**的解释器
+  并写绝对路径。此前若机器上的 `python` 指向没装 `mcp` 的解释器（系统 Python 3.10 / 商店别名 /
+  conda base），服务端一启动就 ImportError，而体检只表现为「MCP 没连上」，排查成本极高。
+
+### `verify.ps1`：从「文件在不在」到「现在能不能真跑」
+
+- 新增 `[5b] 外部能力包可用性` 小节，逐组判定 Web 取证 / Flutter AOT / Android 动态 / 加固指纹 / 扫描器。
+  缺失归入 🟡 DEGRADED 而非 🔴 MISSING —— 外部程序缺失是正常状态，不该判失败。
+- 新增 `Resolve-VerifyPython`：Python 相关检查统一使用**探测后可执行**的解释器。
+  此前直接调 `python`，若它是商店占位别名或指向已删 venv 的 `.cmd` 垫片，
+  会连带把「语法自洽」「stdio 冒烟」「规则表同步」三项误报为红 —— 一次环境问题伪装成三个功能故障。
+- 隐私走查的非 git 分支补排除「安装时生成的本地配置」（`opencode.jsonc`、`cordis.generated.yml`、
+  `relay-config.json`、`tool-index.*`）。这些文件含本机绝对路径属正常，且已被 `.gitignore` 排除；
+  此前用 ZIP 部署（无 `.git`）的用户每次体检都会误报隐私残留。
+- `install.ps1` 的环境检测改为校验退出码与版本串。此前只看 `Get-Command python` 有没有结果，
+  垫片失效时会打印 `[OK] Python 可用: 系统找不到指定的路径`。
+
+### 验证记录（双路实跑）
+
+**路径 A · 全新安装**（干净目录 + 沙盒 HOME，等价首次 clone）：
+
+```
+解压离线依赖包 → 技能 11 个（含 webseep）→ seep MCP 解释器: D:\Tool\IDA Pro\python311\python.exe
+→ 补齐外部能力包（auto）→ [OK] 全部外部能力已就绪
+→ 体检报告 核心检查通过 61 项 → 🎉 READY
+```
+
+**路径 B · 老用户升级**：见下一节验证输出。
+
+`clean-format.py` 零问题；中继单测 84/84。
+
+### 已部署用户注意
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\setup\update.ps1 -WithTools
+```
+
+更新后**完全关闭并重开 Agent 会话**。想只补能力不动代码，用 `-CheckCapabilities`。
+
+
 ## [1.9.1] - 2026-11-08
 
 ### 修复：`seep_pe_*` 等工具在 stdio 模式下无限挂起（issue #13 / PR #14，致谢 @MrUncleXiang）

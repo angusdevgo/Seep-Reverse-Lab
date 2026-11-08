@@ -9,7 +9,7 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/angusdevgo/seep-reverse-lab"><img src="https://img.shields.io/badge/Release-v1.9.1-brightgreen.svg?style=for-the-badge&logo=github" alt="Release"></a>
+  <a href="https://github.com/angusdevgo/seep-reverse-lab"><img src="https://img.shields.io/badge/Release-v1.9.2-brightgreen.svg?style=for-the-badge&logo=github" alt="Release"></a>
   <a href="https://github.com/angusdevgo/seep-reverse-lab/blob/main/LICENSE"><img src="https://img.shields.io/badge/License-GPL--3.0-blue.svg?style=for-the-badge" alt="License"></a>
   <img src="https://img.shields.io/badge/Platform-Windows%20%7C%20Android%20%7C%20Linux-0078D6?style=for-the-badge&logo=windows" alt="Platform">
   <img src="https://img.shields.io/badge/Architecture-x86%20%7C%20x64%20%7C%20ARM64-orange?style=for-the-badge" alt="Architecture">
@@ -299,7 +299,23 @@ chmod +x setup/install.sh
 ./setup/install.sh
 ```
 
-> **What this does automatically**: Unpacks dependency archives (`node_modules.zip`) → validates pre-bundled tools → installs Python `mcp` libraries → registers MCP servers → resolves physical paths → runs full self-check.
+> **What this does automatically**: Unpacks dependency archives (`node_modules.zip`) → validates pre-bundled tools →
+> installs Python `mcp` libraries → registers MCP servers (picking an interpreter that actually has `mcp`) →
+> resolves physical paths → installs external capability packages (only the zero-cost Aotopsy by default) →
+> runs the full self-check plus a capability board.
+
+**Optional: fill in external capability packages**
+
+A few of the 38 MCP tools rely on programs that deliberately stay outside the repo. One command fills them in:
+
+```powershell
+powershell -File setup\install-capabilities.ps1 -Only all   # ffmpeg / frida / APKiD / nuclei / ffuf
+powershell -File setup\install-capabilities.ps1 -CheckOnly  # report only, no disk changes
+```
+
+> A missing component never blocks the MCP server: the affected tool returns an explicit fix hint,
+> and `check.ps1` reports it as 🟡 DEGRADED rather than a failure.
+> See [MANUAL/DEPLOYMENT.md — external capability packages](MANUAL/DEPLOYMENT.md#5-外部能力包为什么需要单独一步).
 
 ### 3. Multi-Agent Setup
 
