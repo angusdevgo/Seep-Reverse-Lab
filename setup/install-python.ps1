@@ -9,6 +9,11 @@ param(
 
 $ErrorActionPreference = 'Continue'
 
+# PEP 668：uv 托管的解释器与多数 Linux 发行版自带 Python 都带 externally-managed 标记，
+# 裸 pip install 会直接以 'error: externally-managed-environment' 退出，导致 mcp 装不上、
+# MCP 服务起不来。本脚本只用于部署本工作台的依赖，覆盖这层保护是预期行为。
+if (-not $env:PIP_BREAK_SYSTEM_PACKAGES) { $env:PIP_BREAK_SYSTEM_PACKAGES = '1' }
+
 function Write-Ok($m)   { Write-Host "    [OK] $m" -ForegroundColor Green }
 function Write-Warn($m) { Write-Host "    [!!] $m" -ForegroundColor Yellow }
 

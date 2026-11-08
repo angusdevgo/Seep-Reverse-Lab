@@ -12,6 +12,52 @@
 
 ## [Unreleased]
 
+## [1.9.1] - 2026-11-08
+
+### 修复：`seep_pe_*` 等工具在 stdio 模式下无限挂起（issue #13 / PR #14，致谢 @MrUncleXiang）
+
+`_run_cmd()` 用 `subprocess.run()` 派生外部进程时没有重定向 `stdin`，子进程因此继承了
+MCP 服务端自己的 stdin —— 那是一条由客户端（Claude Code / DSH / OpenCode / Pi）持有、
+会话结束前永远不会关闭的 JSON-RPC 管道。
+
+后果：在 stdio 传输下，**Python 子进程**在解释器启动阶段就卡住，脚本业务代码一行都没执行，
+工具表现为「永久挂起」直到客户端超时。r2 / jadx / apktool 这些原生 exe 不受影响 ——
+这正好解释了为什么当时只有 `seep_pe_*` 四条路径出问题（它们经由 `_run_pe_script()` → `_run_cmd()`
+启动 Python 子进程）。
+
+**本机实测复现**（`mcp` 1.30.0 / Python 3.11）：
+
+```
+修复前：  seep_pe_triage -> TIMEOUT (>20s)   seep_pe_aob_scan -> TIMEOUT (>20s)
+修复后：  seep_pe_triage -> OK (5983 chars)  seep_pe_aob_scan -> OK (679 chars)
+```
+
+- **`Tool/mcp/seep_mcp_server.py`**：两处 `subprocess` 调用点补 `stdin=subprocess.DEVNULL`
+  （`_run_cmd()` 与 `_run_web_script()`）。工作台 38 个工具的外部进程调用全部收敛在这两个函数，
+  改一处即全覆盖，对不需要交互输入的工具零副作用。
+- **新增 `Tool/mcp/test_stdio_smoke.py`**（303 行，纯标准库）：两层回归。
+  - 静态层 `--quick`：AST 遍历，要求每个 `subprocess.run/Popen/call/check_*` 调用点显式给出
+    `stdin=`，缺失即报出具体行号。零依赖、毫秒级。
+  - 端到端层：真的以 stdio 拉起服务端，走 `initialize` → `tools/list` → `tools/call`
+    （含一次真实 `seep_pe_triage`）。这是唯一能复现原始故障的层级。
+- **`setup/verify.ps1`**：新增检查项「stdio 子进程不继承 stdin」（跑 `--quick`），
+  核心检查项 54 → **55**。
+- **`setup/install-python.ps1`**：补 `PIP_BREAK_SYSTEM_PACKAGES=1`。uv 托管的解释器与多数
+  Linux 发行版自带 Python 都带 PEP 668 `externally-managed` 标记，裸 `pip install` 会直接
+  以 `error: externally-managed-environment` 退出，导致 `mcp` 装不上、MCP 服务起不来。
+
+### 为什么原有体检发现不了
+
+`verify.ps1` 对 `seep_mcp_server.py` 只做 `ast.parse` 语法自洽检查 —— 漏写 `stdin=` 语法完全合法；
+手动在普通 shell 里跑同一个脚本也只要 0.09 s。只有**以 stdio 服务方式真实调用**才暴露。
+所以这次补的不是"再检查一遍语法"，而是一条端到端调用链 + 一个静态不变量。
+
+### 已部署用户注意
+
+修复只改服务端脚本，**无需重装依赖**：`git pull` 后完全重启 Agent 会话即可。
+若仍遇到挂起，运行 `python Tool/mcp/test_stdio_smoke.py` 可自证当前副本是否已带修复。
+
+
 ## [1.9.0] - 2026-11-08
 
 ### 新增能力域：Web / 流媒体取证

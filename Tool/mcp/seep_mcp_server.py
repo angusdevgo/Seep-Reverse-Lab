@@ -121,7 +121,7 @@ def _run_web_script(script_name: str, args: List[str], timeout: int = 600) -> Tu
     cmd = [ps, "-NoProfile", "-ExecutionPolicy", "Bypass", "-File", script_path, "-Json"] + args
     try:
         proc = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8",
-                              errors="replace", timeout=timeout)
+                              errors="replace", timeout=timeout, stdin=subprocess.DEVNULL)
     except subprocess.TimeoutExpired:
         return False, f"[ERROR]: 脚本超时 (>{timeout}s): {script_name}", None
 
@@ -185,6 +185,11 @@ def _run_cmd(cmd: List[str], cwd: Optional[str] = None, timeout: int = 60) -> st
     try:
         proc = subprocess.run(
             cmd,
+            # 关键：必须显式 DEVNULL。以 stdio 传输运行时，服务端自己的 stdin 是
+            # 客户端持有的 JSON-RPC 管道；子进程若继承它，Python 子解释器会卡在
+            # 启动阶段（业务代码一行未执行），工具表现为永久挂起。
+            # 详见 issue #13 / Tool/mcp/test_stdio_smoke.py。
+            stdin=subprocess.DEVNULL,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
             cwd=cwd,

@@ -301,6 +301,25 @@ Test-CheckItem "MCP" "核心服务端脚本 (seep_mcp_server.py 语法自洽)" {
     } else { $false }
 } "seep_mcp_server.py 丢失或存在 Python 语法解析错误" "$seepToolCount 个原生工具定义" "$ToolDir\mcp\seep_mcp_server.py"
 
+# 语法合法 ≠ 能在 stdio 下工作：subprocess.run 派生点若漏了 stdin=DEVNULL，
+# 子进程会继承 MCP 自己的 JSON-RPC 管道，Python 子解释器卡在启动阶段，
+# 工具表现为永久挂起直到客户端超时（issue #13）。这一层只有跑到真实调用才暴露，
+# 所以用冒烟脚本的 --quick 静态层兜住：零依赖、毫秒级、能直接点出行号。
+Test-CheckItem "MCP" "stdio 子进程不继承 stdin (issue #13 回归防护)" {
+    $smoke = Join-Path $ToolDir 'mcp\test_stdio_smoke.py'
+    if (-not (Test-Path $smoke)) { return $true }   # 旧版本无此脚本时不判定，避免误报
+    $pyCmd = Get-Command python -ErrorAction SilentlyContinue
+    if (-not $pyCmd) { return $true }               # 无 Python 时不判定
+    $prevEap = $ErrorActionPreference
+    $ErrorActionPreference = 'Continue'
+    try {
+        & python $smoke --quick 2>&1 | Out-Null
+        return ($LASTEXITCODE -eq 0)
+    } finally {
+        $ErrorActionPreference = $prevEap
+    }
+} "subprocess 调用缺少 stdin=DEVNULL，stdio 模式下 seep_pe_* 会挂死（详见 issue #13）" "全部调用点已隔离" "$ToolDir\mcp\test_stdio_smoke.py"
+
 Test-CheckItem "工具箱" "Jadx 反编译引擎 (jadx-1.5.6 完整就绪)" {
     $j = Join-Path $ToolsDir 'jadx\lib\jadx-1.5.6-all.jar'
     $b = Join-Path $ToolsDir 'jadx\bin\jadx.bat'
