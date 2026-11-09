@@ -51,7 +51,7 @@ for dirpath, dirnames, filenames in os.walk(root):
                 print(f"  [!] Error checking BOM {filepath}: {e}")
 
         # 3. 规范化 Markdown / JSON：必须无 BOM
-        #    SKILL.md 带 BOM 时，YAML frontmatter 解析器（DSH / Claude Code 等）
+        #    SKILL.md 带 BOM 时，YAML frontmatter 解析器（DSH / Pi 等）
         #    无法识别首行 `---`，整条技能会被静默跳过；JSON 带 BOM 也会令部分解析器报错。
         elif ext in [".md", ".markdown", ".json", ".jsonc"]:
             try:

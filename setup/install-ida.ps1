@@ -253,4 +253,4 @@ if (Test-Path $McpJson) {
     Write-Info "  IDA Python 路径 = $idaPyNorm"
 }
 
-Write-Host "`n    提示：重启 Pi Agent / Claude Code 使 IDA MCP 立即生效！" -ForegroundColor Cyan
+Write-Host "`n    提示：重启 Pi Agent 或 DSH 使 IDA MCP 立即生效！" -ForegroundColor Cyan

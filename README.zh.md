@@ -63,7 +63,7 @@
 | 🧠 **大模型缺乏决断逻辑** | `softseep` 总控：两级自动判型（平台 × 9 类业务）+ 七道门决策树 |
 | 🛡️ **云端模型频繁拒绝** | 三层保险：底座级 `BLOCK_NONE` 注入 + 动态口语合规转译 + 推理级思维重定向 |
 | 📚 **实战经验无法沉淀** | 294 篇战术实战笔记 + 14 大脱敏工业范式 + "先查知识库再动手"强制纪律 |
-| 📦 **环境部署摩擦高昂** | 一键 `install.ps1`，原生适配 Pi Agent / Claude Code / DeepSeek Harness / Codex |
+| 📦 **环境部署摩擦高昂** | 一键 `install.ps1`，两个 Agent 各自一条路：Pi Agent / DeepSeek Harness |
 
 ---
 
@@ -163,8 +163,6 @@ Agent 自主完成：
 Seep\ (251 MB)
 ├── README.md                      ← 全局说明（英文默认）
 ├── README.zh.md                   ← 本文件（中文文档）
-├── CLAUDE.md                      ← Claude Code 项目级原生指令
-├── .mcp.json                      ← 项目级 MCP 注册文件（Claude Code / OpenCode）
 ├── DSH-PROFILE.md                 ← DeepSeek Harness 接入：字段表 / 挂载方式 / 校验
 ├── check.bat                      ← ⭐ 双击一键体检入口（Windows）
 ├── check.ps1                      ← PowerShell 体检入口
@@ -328,9 +326,7 @@ powershell -File setup\install-capabilities.ps1 -CheckOnly  # 只看现状
 > 四个 Agent 的接线点、lab 在哪、更新怎么做，逐项对照见 [MANUAL/AGENTS.md](MANUAL/AGENTS.md)。
 
 | **Pi Agent** | `Tool/prompts/SYSTEM.md` | `~/.pi/agent/mcp.json` | 运行 `install.ps1` 自动写入，完成后**必须重启当前终端与 Pi 会话**。 |
-| **Claude Code** | 项目根 `CLAUDE.md` | 项目根 `.mcp.json` | 运行 `powershell .\setup\generate-configs.ps1` 自愈绝对路径后，在项目根执行 `claude`。 |
 | **DeepSeek Harness** | 项目根 `AGENTS.md`（自动生成） | `DSH-PROFILE.md` | `python setup/dsh-plugin-setup.py` 装插件包并写入路径（推荐）；旧路线 `dsh-merge.py` 保留兼容。校验：`python setup/verify-dsh.py`。 |
-| **OpenCode / Codex** | 项目根 `AGENTS.md` | `opencode.jsonc` | 运行 `setup\generate-configs.ps1` 生成符合 OpenCode 官方标准的 `opencode.jsonc`，在项目根直接启动 `opencode`。 |
 
 > 📖 **咨询级部署与全套排障手册**：关于四大 Agent 的具体配置细则、常见报错（`No module named mcp`、执行策略受限、Java环境缺省等）的解决方案，请详阅 [**MANUAL/DEPLOYMENT.md**](MANUAL/DEPLOYMENT.md)。
 

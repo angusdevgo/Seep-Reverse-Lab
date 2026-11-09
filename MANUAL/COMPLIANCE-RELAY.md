@@ -202,52 +202,7 @@ python relay.py --force-on
 
 ---
 
-## 四、 Claude Code 接入（零文件侵入）
-
-只需一个环境变量：
-
-```powershell
-# Windows PowerShell
-$env:ANTHROPIC_BASE_URL = "http://127.0.0.1:17890/r/<TOKEN>/anthropic"
-claude
-```
-
-```bash
-# macOS / Linux
-export ANTHROPIC_BASE_URL="http://127.0.0.1:17890/r/<TOKEN>/anthropic"
-claude
-```
-
-若使用第三方 Anthropic 兼容中转站，把 `relay-config.json` 中的
-`upstreams.anthropic` 改为该站地址即可。
-
----
-
-## 五、 Codex 接入（生成片段，需用户确认）
-
-在 `~/.codex/config.toml` 中新增（**先备份原文件**）：
-
-```toml
-[model_providers.seep-relay]
-name = "Seep Relay"
-base_url = "http://127.0.0.1:17890/r/<TOKEN>/openai/v1"
-wire_api = "responses"
-```
-
-然后把 `model_provider` 切换为 `seep-relay`。
-
-> **纪律**：本工作台**绝不自动改写**用户的 `config.toml`，
-> 只提供片段与备份命令，由用户自行确认合并。
-
-备份建议：
-
-```powershell
-Copy-Item "$env:USERPROFILE\.codex\config.toml" "$env:USERPROFILE\.codex\config.toml.bak"
-```
-
----
-
-## 六、 边界与已知限制
+## 四、 边界与已知限制
 
 ### ⚠️ L1 只在「Google 原生接口」上生效
 
@@ -345,7 +300,7 @@ python Tool/scripts/check-gemini-safety.py --model gemini-2.5-flash
 
 ---
 
-## 七、 排障速查
+## 五、 排障速查
 
 | 现象 | 原因 | 处理 |
 |---|---|---|
@@ -359,7 +314,7 @@ python Tool/scripts/check-gemini-safety.py --model gemini-2.5-flash
 
 ---
 
-## 八、 维护规则表
+## 六、 维护规则表
 
 规则表的**唯一真值源**是
 `Tool/prompts/extensions/security-audit-interceptor.ts` 中的 `SENSITIVE_WORD_MAP`。

@@ -164,7 +164,7 @@ Android(5)    seep_apk_info · _decompile · _unpack · _smali_search · _gen_ho
 | 文件 | 本包位置 | 安装目标 | 作用 |
 | :--- | :--- | :--- | :--- |
 | **SYSTEM.md** | `Tool/prompts/SYSTEM.md` | `~/.pi/agent/SYSTEM.md` | 主提示词：人格 + **lab 开关协议** + 思维重定向 + 反退缩十项 + 提效规则 |
-| **AGENTS.md** | `Tool/prompts/AGENTS.md` | `~/.pi/agent/AGENTS.md` | 跨 agent 通用版（Codex / Claude Code / OpenCode） |
+| **AGENTS.md** | `Tool/prompts/AGENTS.md` | `~/.pi/agent/AGENTS.md` | 通用版（Pi Agent / DeepSeek Harness） |
 | **security-audit-interceptor.ts** | `Tool/prompts/extensions/` | `~/.pi/agent/extensions/` | 底座 BLOCK_NONE 注入 + **lab 标志文件门控** + 快捷口令 + 敏感词替换 |
 | **load-system-prompt.ts** | `Tool/prompts/extensions/` | `~/.pi/agent/extensions/` | 加载自定义提示词 |
 

@@ -416,7 +416,7 @@ if ($Purge) {
         try { Remove-Item $b.FullName -Recurse -Force -ErrorAction Stop; $purged++ }
         catch { Write-Warn2 "无法删除: $($b.Name)" }
     }
-    foreach ($g in @('opencode.jsonc', 'setup\cordis.generated.yml',
+    foreach ($g in @('setup\cordis.generated.yml',
                      'Tool\scripts\compliance-relay\relay-config.json')) {
         $p = Join-Path $Root $g
         if (Test-Path $p) {

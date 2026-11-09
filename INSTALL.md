@@ -14,7 +14,6 @@
 | :--- | :--- | :--- |
 | **Pi Agent** | → [路线 A](#路线-a-pi-agent) | 写 `mcp.json` + 拷技能目录 |
 | **DeepSeek Harness（DSH）** | → [路线 B](#路线-b-deepseek-harness) | 装一个插件包 |
-| Claude Code / OpenCode / Codex | → [路线 C](#路线-c-claude-code--opencode--codex) | 生成配置文件 |
 | 不确定 | 继续往下看 [共同前提](#共同前提两个-agent-都需要) | 先把前提装好，再回来选 |
 
 **两个都想装？** 两条路互不干扰，先后顺序随意，但**各自都要做一遍**。
@@ -102,7 +101,7 @@ powershell -File setup/install-pi.ps1
 powershell -File setup/verify.ps1
 ```
 
-看到 `核心检查通过: 66 项` 就对了。里面包含 pi 的那几项（技能是否同步、mcp.json 是否写对）。
+看到 `核心检查通过: 64 项` 就对了。里面包含 pi 的那几项（技能是否同步、mcp.json 是否写对）。
 
 ### 装完必须做
 
@@ -177,19 +176,6 @@ dsh plugin update --profile web seep-dsh-workbench   # 只更新插件（从 npm
 
 ---
 
-## 路线 C：Claude Code / OpenCode / Codex
-
-```bash
-powershell -File setup/generate-configs.ps1
-```
-
-生成三份文件：项目根 `.mcp.json`、`opencode.jsonc`、`setup/cordis.generated.yml`，
-并在项目根生成 `AGENTS.md`。之后在项目根直接启动对应 CLI 即可。
-
-这类 Agent **没有技能机制、没有 lab 闸门**，只提供 MCP 工具和指令文件。
-
----
-
 ## 一次装全部（图省事）
 
 ```bash
@@ -246,7 +232,7 @@ DSH 还可以直接点面板上的 Lab 开关，效果一样。
 | 设置面板 | 没有 | 有（设置 → Seep 工作台） |
 | 校验命令 | `verify.ps1` | `verify-dsh.py` |
 
-更细的对照（含 Claude Code / OpenCode）见 [MANUAL/AGENTS.md](MANUAL/AGENTS.md)。
+更细的对照见 [MANUAL/AGENTS.md](MANUAL/AGENTS.md)。
 
 ---
 

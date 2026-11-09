@@ -72,8 +72,8 @@
 技能层带 watch，知识库是查询时现读，所以内容更新**不需要重启 DSH**；
 工具层（MCP 服务进程）才是必须重启的那一层。
 
-> **这份是 DSH 专属文档。** pi / Claude Code / OpenCode / Codex 的接线完全不同，
-> 四个 Agent 的对照见 [MANUAL/AGENTS.md](MANUAL/AGENTS.md)。
+> **这份是 DSH 专属文档。** Pi Agent 的接线完全不同（写 mcp.json + 拷技能），
+> 两者的对照见 [MANUAL/AGENTS.md](MANUAL/AGENTS.md)。
 
 ### 发布与分发
 
@@ -454,27 +454,28 @@ python setup/test_dsh_mount.py
 
 `dsh-agent-instructions` 会按「宽泛 → 具体」的顺序加载：
 `$DSH_HOME/AGENTS.md` → `~/.agents/AGENTS.md` → 项目根到会话目录每一层的
-`AGENTS.md` / `CLAUDE.md`。
+`AGENTS.md`（Pi 读的是 `~/.pi/agent/AGENTS.md`）。
 
 所以本工作台做了两件事：
 
 1. **项目根 `AGENTS.md`** —— 由 `setup/generate-configs` 从 `Tool/prompts/AGENTS.md`
-   复制生成（逐字节一致，`verify` 会查漂移）。DSH 与 Codex 都从项目根读它，
-   无需手工 `cp`。
-2. 项目根 `CLAUDE.md` 保持给 Claude Code 用。
+   复制生成（逐字节一致，`verify` 会查漂移）。DSH 从项目根读它，无需手工 `cp`。
+2. Pi 走另一条：`~/.pi/agent/AGENTS.md`，由 `install-pi.ps1` 同步。
 
-> 两者内容不同，会**各自加载一次**（DSH 只对内容完全相同的重复项去重）。
+> Pi 与 DSH 加载的是**两份不同的文件**，各自生效，互不干扰。
 
 ---
 
-## 六、 与其它 Agent 的对照
+## 六、 与 Pi Agent 的对照
 
-| Agent | 配置文件 | 挂载方式 |
+| | Pi Agent | DeepSeek Harness |
 | :--- | :--- | :--- |
-| **Pi Agent** | `~/.pi/agent/mcp.json` | `install.ps1` 写入，解释器为解析后的绝对路径 |
-| **Claude Code** | 项目根 `.mcp.json` | 相对路径，直接 `claude` 即可 |
-| **Codex / OpenCode** | 项目根 `opencode.jsonc` | `generate-configs` 生成 |
-| **DeepSeek Harness** | `$DSH_HOME/profiles/<p>/cordis.patch.yml` | `setup/dsh-merge.py` 持久挂载，或 `--patch` 临时挂载 |
+| 配置文件 | `~/.pi/agent/mcp.json` | `$DSH_HOME/profiles/<p>/cordis.patch.yml` |
+| 挂载方式 | `install-pi.ps1` 写入，解释器为解析后的绝对路径 | 插件包在运行时挂；旧路线 `dsh-merge.py` |
+| 技能 | 拷贝到 `~/.pi/agent/skills` | 插件直接指向仓库两个目录 |
+| 校验 | `setup/verify.ps1` | `setup/verify-dsh.py` |
+
+细节见 [MANUAL/AGENTS.md](MANUAL/AGENTS.md)。
 
 ---
 

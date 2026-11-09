@@ -147,11 +147,10 @@ check_item "知识库" "内置 MCP 源码组件 (ReverseLab/Ghidra/JSHook)" test
 echo -e "\n${WHITE}[3/10] 🧠 智能体指令系统与运行时拦截扩展 (Prompts & Extensions)${RESET}"
 check_item "提示词" "Pi Agent 系统指令 (SYSTEM.md 已就绪)" test -f "$TOOL_DIR/prompts/SYSTEM.md"
 check_item "提示词" "通用跨 Agent 规范 (AGENTS.md)" test -f "$TOOL_DIR/prompts/AGENTS.md"
-check_item "提示词" "Claude Code 项目级规范 (CLAUDE.md 在项目根)" test -f "$ROOT/CLAUDE.md"
 check_item "提示词" "DeepSeek Harness 配置文件 (DSH-PROFILE.md)" test -f "$ROOT/DSH-PROFILE.md"
 check_item "扩展"   "底层安全放行与 Lab 状态机扩展 (.ts)" test -f "$TOOL_DIR/prompts/extensions/security-audit-interceptor.ts"
 
-# 项目根 AGENTS.md：DSH / Codex 的指令入口，由 generate-configs 从 Tool/prompts 复制生成
+# 项目根 AGENTS.md：DSH 的指令入口（Pi 读 ~/.pi/agent/AGENTS.md），由 generate-configs 从 Tool/prompts 复制生成
 test_root_agents_sync() {
     local a b
     [ -f "$TOOL_DIR/prompts/AGENTS.md" ] || return 1
@@ -160,7 +159,7 @@ test_root_agents_sync() {
     b=$(tr -d '\r' < "$TOOL_DIR/prompts/AGENTS.md")
     [ "$a" = "$b" ]
 }
-check_item "Agent" "项目根 AGENTS.md 与源同步 (DSH / Codex 指令入口)" test_root_agents_sync
+check_item "Agent" "项目根 AGENTS.md 与源同步 (DSH 指令入口)" test_root_agents_sync
 
 # DSH Cordis 补丁生成物结构
 test_cordis_patch() {
@@ -192,7 +191,7 @@ if [ -d "$DSH_HOME_DIR" ]; then
         "运行 python setup/dsh-plugin-setup.py（推荐）" test_dsh_mounted
 fi
 
-# 项目根 AGENTS.md：DSH / Codex 的指令入口，由 generate-configs 从 Tool/prompts 复制生成
+# 项目根 AGENTS.md：DSH 的指令入口（Pi 读 ~/.pi/agent/AGENTS.md），由 generate-configs 从 Tool/prompts 复制生成
 test_root_agents_sync() {
     local a b
     [ -f "$TOOL_DIR/prompts/AGENTS.md" ] || return 1
@@ -201,7 +200,7 @@ test_root_agents_sync() {
     b=$(tr -d '\r' < "$TOOL_DIR/prompts/AGENTS.md")
     [ "$a" = "$b" ]
 }
-check_item "Agent" "项目根 AGENTS.md 与源同步 (DSH / Codex 指令入口)" test_root_agents_sync
+check_item "Agent" "项目根 AGENTS.md 与源同步 (DSH 指令入口)" test_root_agents_sync
 
 # DSH Cordis 补丁生成物结构
 test_cordis_patch() {
@@ -339,7 +338,6 @@ check_optn "商业软件" "IDA Pro 商业反编译器协同 (可选)" "无授权
 echo -e "\n${WHITE}[7/10] ⚙️ 外部运行时与商业授权协同 (Runtime & Commercial)${RESET}"
 check_item "运行时" "Python 解释器可用于运行时校验 (语法 / 冒烟 / 规则同步)" test_python_avail
 check_optn "协议" "Python mcp 协议库支持 (mcp>=1.20,<1.29)" "运行 pip install 'mcp>=1.20,<1.29'" test_python_mcp
-check_optn "配置" "Claude Code 项目级 MCP 注册 (.mcp.json 在根目录)" "直接在根目录启动 claude 即可" test -f "$ROOT/.mcp.json"
 
 # 7. 战术手册
 echo -e "\n${WHITE}[8/10] 📚 MANUAL/ 战术手册完备性校验${RESET}"
@@ -390,7 +388,7 @@ test_privacy_clean() {
             --exclude-dir=.git --exclude-dir=node_modules --exclude-dir=__pycache__ \
             --exclude-dir=upstream --exclude-dir=dist \
             --exclude=verify.sh --exclude=verify.ps1 \
-            --exclude=opencode.jsonc --exclude=cordis.generated.yml \
+            --exclude=cordis.generated.yml \
             --exclude=relay-config.json --exclude=tool-index.json --exclude=tool-index.md 2>/dev/null \
             | grep -v "/Tool/mcp/Tool/" | head -3)
     fi
@@ -402,7 +400,7 @@ test_generated_untracked() {
     [ -d "$ROOT/.git" ] || return 0
     local tracked f
     tracked=$(git -C "$ROOT" ls-files 2>/dev/null)
-    for f in opencode.jsonc setup/cordis.generated.yml Tool/scripts/compliance-relay/relay-config.json; do
+    for f in setup/cordis.generated.yml Tool/scripts/compliance-relay/relay-config.json; do
         if echo "$tracked" | grep -qx "$f"; then return 1; fi
     done
     return 0

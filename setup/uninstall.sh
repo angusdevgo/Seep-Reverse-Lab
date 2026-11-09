@@ -414,7 +414,7 @@ if [ "$PURGE" = "1" ]; then
         [ "$b" = "$BACKUP_ROOT" ] && continue
         rm -rf "$b" 2>/dev/null && PURGED=$((PURGED+1)) || warn "无法删除: $(basename "$b")"
     done < <(find "$AGENT_DIR" -maxdepth 1 -type d -name 'backup-*' 2>/dev/null)
-    for g in opencode.jsonc setup/cordis.generated.yml Tool/scripts/compliance-relay/relay-config.json; do
+    for g in setup/cordis.generated.yml Tool/scripts/compliance-relay/relay-config.json; do
         if [ -f "$ROOT/$g" ]; then
             rm -f "$ROOT/$g" 2>/dev/null && { ok "已删除生成配置: $g"; PURGED=$((PURGED+1)); }
         fi

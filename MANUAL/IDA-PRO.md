@@ -63,7 +63,7 @@ IDA 9.4+ 把 MCP 服务做成了可独立运行的 `idalib` 模块，由 supervi
 > 不确定用哪种？直接跑 `powershell -File .\setup\install-ida.ps1`，脚本会自动判定并打印
 > 实际选用的模式（`配置为 IDA 原生模块运行模式` 或 `配置为 server.py 脚本模式`）。
 
-#### 其他 Agent 的配置示例（DSH / Codex 风格）
+#### DSH 风格的配置示例
 
 ```yml
 - id: ida-mcp

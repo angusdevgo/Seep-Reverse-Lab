@@ -1,9 +1,12 @@
-# MANUAL — 工作台全景部署与多 Agent 集成指南 (Deployment Guide)
+# MANUAL — 工作台部署指南（Pi Agent / DeepSeek Harness）
 
 > 只想装一个 Agent？看根目录 [INSTALL.md](../INSTALL.md)；这份讲的是完整部署与细节。
 
 > 本手册是 **Seep Reverse Lab** 的咨询级部署标准规范。
-> 无论您使用的是 **Pi Agent**、**Claude Code**、**DeepSeek Harness (DSH)** 还是 **Codex / OpenCode**，亦或是运行在 **Windows**、**Linux** 或 **macOS** 环境，均可按照本手册实现 **100% 零错漏完整部署**。
+> 本工作台只支持两个 Agent：**Pi Agent** 与 **DeepSeek Harness (DSH)**。
+> 无论跑在 **Windows**、**Linux** 还是 **macOS**，按本手册都能完成完整部署。
+>
+> 只想装一个 Agent、想先看最短路径：根目录 [INSTALL.md](../INSTALL.md)。
 
 ---
 
@@ -49,7 +52,7 @@ chmod +x setup/install.sh
 
 ---
 
-## 三、 四大主流 Agent 接入专属 SOP
+## 三、 两个 Agent 的接入 SOP
 
 ### 1. 🟣 Pi Agent 专属接入流程
 
@@ -67,7 +70,7 @@ Pi Agent 是原生支持 Skill 渐进式披露、拦截扩展与 `lab：` 状态
 3. **关键动作：重启 Pi Agent**：
    - ⚠️ **切记**：安装完成后，**必须完全关闭当前的 pi 终端会话并重新拉起 `pi`**，使得新挂载的 Skill 和扩展被内存加载。
 4. **模型凭据配置 (API Key)**：
-   - 编辑 `~/.pi/agent/models.json`（或在启动时按提示配置），填入您授权的大模型 API Key（推荐 Claude 3.5 Sonnet / DeepSeek-V3 / GPT-4o）。
+   - 编辑 `~/.pi/agent/models.json`（或在启动时按提示配置），填入您授权的大模型 API Key（推荐 DeepSeek-V3 / V4 等）。
 5. **开工打卡**：
    在 Pi 对话框中发送：
    ```text
@@ -77,42 +80,7 @@ Pi Agent 是原生支持 Skill 渐进式披露、拦截扩展与 `lab：` 状态
 
 ---
 
-### 2. 🟠 Claude Code 专属接入流程
-
-Claude Code 原生支持项目级上下文（`CLAUDE.md`）与项目级 MCP 注册（`.mcp.json`），是配置最简洁的智能体。
-
-1. **环境自愈生成**：
-   在项目根目录下运行一键配置生成脚本，确保 `.mcp.json` 中的命令指向当前实际路径：
-   ```powershell
-   powershell -ExecutionPolicy Bypass -File .\setup\generate-configs.ps1
-   ```
-2. **确认依赖就绪**：
-   确保运行 Claude Code 的当前终端能够执行 Python 并已安装 `mcp` 库：
-   ```bash
-   python -c "import mcp; print('MCP Ready')"
-   ```
-   若报错，执行：`pip install "mcp>=1.20,<1.29"`。
-3. **启动 Claude Code**：
-   在 Seep 项目根目录下直接运行：
-   ```bash
-   claude
-   ```
-4. **验证 MCP 挂载状态**：
-   在 Claude 对话界面中输入：
-   ```text
-   /mcp
-   ```
-   检查 `seep` 服务是否显示为绿色 `connected`，且暴露出 38 个工具。
-5. **执行一键校验**：
-   在 Claude 对话框直接发送：
-   ```text
-   check
-   ```
-   Claude 会自动执行 `check.ps1` 并以内联卡片向您汇报当前环境健康度。
-
----
-
-### 3. 🔵 DeepSeek Harness (DSH) 专属接入流程
+### 2. 🔵 DeepSeek Harness (DSH) 专属接入流程
 
 DSH 通过 `@deepseek-ai/dsh-mcp-client` 桥接外部 MCP，配置以 **Cordis Overlay 补丁**形式挂载
 （顶层 `- insert:` 语法）。适配基准：DSH 0.2.2-rc.1。
@@ -171,48 +139,6 @@ DSH 通过 `@deepseek-ai/dsh-mcp-client` 桥接外部 MCP，配置以 **Cordis O
 
 ---
 
-### 4. 🟢 Codex / OpenCode 专属接入流程
-
-OpenCode 原生支持项目级与全局级 MCP 工具，其配置标准为 `opencode.jsonc`（顶层为 `"mcp"`，命令为数组格式）。
-
-1. **自动生成 OpenCode 工作区配置文件**：
-   运行：
-   ```powershell
-   powershell -ExecutionPolicy Bypass -File .\setup\generate-configs.ps1
-   ```
-   脚本将自动在项目根目录下生成合规的 `opencode.jsonc`。
-2. **官方配置规范对照**：
-   生成的文件结构完全符合 [OpenCode 官方 MCP 标准](https://dev.opencode.ai/docs/mcp-servers/)：
-   ```jsonc
-   {
-     "$schema": "https://opencode.ai/config.json",
-     "mcp": {
-       "seep": {
-         "type": "local",
-         "command": [
-           "python",
-           "C:/实际路径/Tool/mcp/seep_mcp_server.py"
-         ],
-         "enabled": true,
-         "environment": {
-           "PYTHONIOENCODING": "utf-8"
-         }
-       }
-     }
-   }
-   ```
-3. **指令载入与启动**：
-   在项目根目录下直接运行 `opencode`。OpenCode 会自动解析根目录的 `opencode.jsonc` 挂载 38 项 `seep` 工具，并自动加载项目根目录的 `AGENTS.md` 作为作战协议。发送 `check` 即可开启自检！
-         "env": { "PYTHONIOENCODING": "utf-8" }
-       }
-     }
-   }
-   ```
-3. **指令载入**：
-   确保项目根目录下存在 `AGENTS.md`。启动 OpenCode 后，Agent 会自动解析该文件作为系统级作战协议。
-
----
-
 ## 四、 已有用户更新指南 (How to Update)
 
 > 如果你**已经部署过**本工作台，不需要重新克隆或手动拷贝任何文件。
@@ -252,7 +178,7 @@ cd <你的工作台目录>
 | `~/.pi/agent/auth.json` | 登录凭证 |
 | `~/.pi/agent/mcp.json` 中**你自行添加**的 MCP 条目 | 仅**增量合并**，不会删除已有项 |
 | `~/.pi/agent/seep-system.md` | 作战模式提示词（由扩展按需注入，非磁盘状态） |
-| `~/.codex/config.toml`、`.mcp.json`（项目根） | 脚本**从不**自动改写 |
+| 你自己的 `~/.pi/agent/mcp.json` 中手写的条目 | 脚本**只增量合并，从不覆盖** |
 
 > 脚本只会**新增**工作台自带的标准 MCP 条目（`seep` / `js-reverse` / `playwright`），
 > 以及**更新**它自己管理的 Skill 与提示词。
@@ -333,7 +259,7 @@ powershell -File setup\install-capabilities.ps1 -CheckOnly
 
 ### 7. 更新后必做的一步
 
-> ⚠️ **必须完全关闭并重新打开 Agent 会话**（Pi / Claude Code / DSH / OpenCode）。
+> ⚠️ **必须完全关闭并重新打开 Agent 会话**（Pi 或 DSH）。
 >
 > * 新同步的 Skill 与扩展：需要进程重启才会重新读取；
 > * **MCP 工具：在会话启动时握手**，不重开就看不到新工具（`/reload`、刷新页面都不算）。

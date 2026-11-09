@@ -334,7 +334,7 @@ echo -e "  ${YELLOW}一条命令全补: ./setup/install-capabilities.sh --only a
 echo -e ""
 echo -e "  ${WHITE}下一步（顺序不能跳）:${RESET}"
 echo -e "    1) 完全关闭并重新打开 Agent 会话"
-echo -e "       Pi / Claude Code / DSH / OpenCode 都要整个进程退出重开。"
+echo -e "       Pi 与 DSH 都要整个进程退出重开。"
 echo -e "       仅刷新或 re-load 不够 —— MCP 工具是启动时握手的，"
 echo -e "       不重开就看不到新工具，也读不到新 Skill。"
 echo -e "    2) 在对话框中发送:  lab："

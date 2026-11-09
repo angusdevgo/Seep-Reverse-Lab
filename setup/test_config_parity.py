@@ -3,12 +3,11 @@
 """`generate-configs.py` 与 `generate-configs.ps1` 输出一致性测试
 
 两份生成器各服务一个平台（Unix 走 .py，Windows 走 .ps1）。它们必须产出**逐字节相同**
-的三份配置，否则同一个仓库在不同平台生成的 `.mcp.json` / `opencode.jsonc` /
-`cordis.generated.yml` 会出现差异，进而引发「我这台好用、他那台不好用」。
+的两份配置，否则同一个仓库在不同平台生成的 DSH 补丁会出现差异，
+进而引发「我这台好用、他那台不好用」。
 
-做法：把两份生成器分别跑进两个临时根目录，比较三份产物。
-`opencode.jsonc` 与 `cordis.generated.yml` 内嵌了工作台绝对路径，
-比较前先把各自的根目录替换成占位符。
+做法：把两份生成器分别跑进两个临时根目录，比较两份产物。
+`cordis.generated.yml` 内嵌了工作台绝对路径，比较前先把各自的根目录替换成占位符。
 
 无 PowerShell（非 Windows 且无 pwsh）时 SKIP，不判失败。
 
@@ -31,8 +30,6 @@ GEN_PY = os.path.join(HERE, "generate-configs.py")
 GEN_PS1 = os.path.join(HERE, "generate-configs.ps1")
 
 PRODUCTS = (
-    ".mcp.json",
-    "opencode.jsonc",
     os.path.join("setup", "cordis.generated.yml"),
     "AGENTS.md",
 )

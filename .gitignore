@@ -2,14 +2,12 @@
 # 本机隐私与运行凭据（绝不入库）
 # ---------------------------------------------------------------------------
 # 由 generate-configs.ps1 生成的、含本机绝对路径的配置文件
-opencode.jsonc
 setup/cordis.generated.yml
 
 # 合规中继的本机运行配置（含访问 token 与 provider 上游映射）
 Tool/scripts/compliance-relay/relay-config.json
 
 # 各 Agent 的本地配置副本
-.mcp.json.bak
 mcp.json
 
 # ---------------------------------------------------------------------------

@@ -4,7 +4,7 @@
   包含：
     1. 解压离线依赖 (node_modules.zip)
     2. Python 协议依赖安装
-    3. Pi Agent / Claude Code / DSH / OpenCode 配置生成
+    3. DSH 配置生成（Pi 的接线在单独的 install-pi.ps1）
     4. 外部能力包（Web 取证 / Android 工具箱 / 可选扫描器）
     5. 智能 IDA Pro 探测与自定义路径交互引导
     6. 全维度健康核验 + 能力看板
@@ -158,8 +158,8 @@ if (-not $SkipPi) {
     if ($LASTEXITCODE -ne 0) { $script:Failed += 'pi' }
 }
 
-# 自动生成 Claude / OpenCode / DSH 配置文件
-Write-Step '生成多 Agent 配置文件 (.mcp.json / opencode.jsonc / cordis.generated.yml)'
+# 生成 DSH 需要的配置文件与指令入口（Pi 由 install-pi.ps1 负责）
+Write-Step '生成 DSH 配置 (cordis.generated.yml / AGENTS.md)'
 & (Join-Path $ScriptDir 'generate-configs.ps1') -DshSkills $DshSkills
 
 # -----------------------------------------------------------------------------
@@ -276,7 +276,7 @@ Write-Host "=================================================================" -
 Write-Host @"
 
 开工指南:
-  1) 重新打开终端启动 Agent (Pi / Claude Code / DSH / OpenCode)
+  1) 重新打开终端启动 Agent (Pi 或 DSH)
   2) 在对话框中输入:  lab： 即可开启白盒测试！
 
 "@ -ForegroundColor Cyan

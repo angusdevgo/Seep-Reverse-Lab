@@ -1,10 +1,12 @@
 ﻿#Requires -Version 5.1
 <#
-  Seep 工作台 — 各 Agent 配置一键自愈与绝对路径展开生成器 (Config Generator)
-  用于自动生成：
-  1. Claude Code 项目级配置 (.mcp.json)
-  2. OpenCode 官方格式工作区配置 (opencode.jsonc)
-  3. DeepSeek Harness (DSH) 官方 Cordis Overlay 补丁 (cordis.generated.yml，采用 - insert: 语法)
+  Seep 工作台 — DSH 配置与指令入口生成器
+
+  本工作台只支持两个 Agent：**Pi Agent** 与 **DeepSeek Harness (DSH)**。
+  Pi 的接线由 setup/install-pi.ps1 负责（写 mcp.json + 拷技能）；
+  这个脚本只做 DSH 侧需要的两件事：
+    1. DeepSeek Harness 官方 Cordis Overlay 补丁 (cordis.generated.yml)
+    2. 项目根 AGENTS.md（DSH 从项目根自动读取的指令入口）
 #>
 [CmdletBinding()]
 param(
@@ -48,77 +50,15 @@ function Write-IfChanged {
 }
 
 Write-Host "================================================================================" -ForegroundColor Cyan
-Write-Host "          Seep Reverse Lab — 多 Agent 配置文件生成与自愈器" -ForegroundColor Cyan
+Write-Host "          Seep Reverse Lab — DSH 配置文件生成器（Pi 走 install-pi）" -ForegroundColor Cyan
 Write-Host "================================================================================" -ForegroundColor Cyan
 Write-Host "  检测到工作台物理根目录: $Root" -ForegroundColor White
 Write-Host "  标准化 POSIX 路径表示: $NormalizedRoot" -ForegroundColor Gray
 
 # -----------------------------------------------------------------------------
-# 1. 生成 Claude Code 项目级 .mcp.json
-# -----------------------------------------------------------------------------
-Write-Host "`n[1/4] 正在生成 Claude Code 项目级配置 (.mcp.json)..." -ForegroundColor White
-$claudeMcpJson = @"
-{
-  "mcpServers": {
-    "seep": {
-      "command": "python",
-      "args": [
-        "Tool/mcp/seep_mcp_server.py"
-      ],
-      "env": {
-        "PYTHONIOENCODING": "utf-8"
-      },
-      "transport": "stdio"
-    },
-    "js-reverse": {
-      "command": "npx",
-      "args": [
-        "-y",
-        "js-reverse-mcp"
-      ],
-      "transport": "stdio"
-    }
-  }
-}
-"@
-$claudeDest = Join-Path $Root '.mcp.json'
-if (-not $PrintOnly) {
-    Write-IfChanged -Path $claudeDest -Content $claudeMcpJson
-    Write-Host "  [√] 已更新: $claudeDest" -ForegroundColor Green
-}
-
-# -----------------------------------------------------------------------------
-# 2. 生成 OpenCode 官方标准工作区配置 (opencode.jsonc)
-# -----------------------------------------------------------------------------
-Write-Host "`n[2/4] 正在生成 OpenCode 官方标准配置 (opencode.jsonc)..." -ForegroundColor White
-$openCodeJsonc = @"
-{
-  "`$schema": "https://opencode.ai/config.json",
-  "mcp": {
-    "seep": {
-      "type": "local",
-      "command": [
-        "python",
-        "$McpServerPy"
-      ],
-      "enabled": true,
-      "environment": {
-        "PYTHONIOENCODING": "utf-8"
-      }
-    }
-  }
-}
-"@
-$openCodeDest = Join-Path $Root 'opencode.jsonc'
-if (-not $PrintOnly) {
-    Write-IfChanged -Path $openCodeDest -Content $openCodeJsonc
-    Write-Host "  [√] 已更新: $openCodeDest (符合 OpenCode 官方 mcp 顶层与数组 command 标准)" -ForegroundColor Green
-}
-
-# -----------------------------------------------------------------------------
 # 3. 生成 DeepSeek Harness 官方 Cordis Overlay 补丁 (cordis.generated.yml)
 # -----------------------------------------------------------------------------
-Write-Host "`n[3/4] 正在生成 DeepSeek Harness (DSH) 官方补丁 (cordis.generated.yml)..." -ForegroundColor White
+Write-Host "`n[1/2] 正在生成 DeepSeek Harness (DSH) 官方补丁 (cordis.generated.yml)..." -ForegroundColor White
 $dshYaml = @"
 # ==============================================================================
 # DeepSeek Harness (Cordis) Overlay 补丁 — 遵循 DSH 官方 - insert: 规范
@@ -198,12 +138,12 @@ if (-not $PrintOnly) {
 }
 
 # -----------------------------------------------------------------------------
-# 4. 项目根 AGENTS.md
-# DeepSeek Harness 与 Codex 都在「项目根目录」寻找 AGENTS.md / CLAUDE.md 作为指令来源。
-# 本仓库的中性底座在 Tool/prompts/AGENTS.md，这里生成一份同内容副本到根目录，
-# 让 DSH / Codex 无需手工 cp 就能读到（Claude 仍走 CLAUDE.md，pi 走 ~/.pi/agent/AGENTS.md）。
+# 2. 项目根 AGENTS.md
+# DSH 在「项目根目录」寻找 AGENTS.md 作为指令来源。
+# 中性底座在 Tool/prompts/AGENTS.md，这里生成一份同内容副本到根目录，
+# 让 DSH 无需手工 cp 就能读到（Pi 读的是 ~/.pi/agent/AGENTS.md，由 install-pi.ps1 同步）。
 # -----------------------------------------------------------------------------
-Write-Host "`n[4/4] 在项目根生成 AGENTS.md（供 DSH / Codex 自动读取）..." -ForegroundColor White
+Write-Host "`n[2/2] 在项目根生成 AGENTS.md（DSH 自动读取的指令入口）..." -ForegroundColor White
 $agentsSrc = Join-Path $ToolDir 'prompts\AGENTS.md'
 $agentsDest = Join-Path $Root 'AGENTS.md'
 if (Test-Path $agentsSrc) {
@@ -216,7 +156,7 @@ else {
 }
 
 Write-Host "`n================================================================================" -ForegroundColor Cyan
-Write-Host "  🎉 所有 Agent 配置文件生成完毕！" -ForegroundColor Green
-Write-Host "  - OpenCode: 直接启动 opencode，自动识别根目录 opencode.jsonc" -ForegroundColor White
-Write-Host "  - DSH: 持久挂载 python setup/dsh-merge.py --profile web  或临时 dsh web --patch `"$NormalizedRoot/setup/cordis.generated.yml`"" -ForegroundColor White
+Write-Host "  🎉 DSH 配置文件生成完毕！" -ForegroundColor Green
+Write-Host "  - 推荐装法：python setup/dsh-plugin-setup.py（装插件包，运行时自动挂 MCP）" -ForegroundColor White
+Write-Host "  - 旧路线   ：python setup/dsh-merge.py --profile web（把 cordis.generated.yml 拼进 profile）" -ForegroundColor White
 Write-Host "================================================================================" -ForegroundColor Cyan

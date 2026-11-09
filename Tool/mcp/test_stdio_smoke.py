@@ -6,7 +6,7 @@
 ----
 `seep_mcp_server._run_cmd()` 用 `subprocess.run()` 派生子进程时，若没有重定向
 `stdin`，在 stdio 传输下子进程会继承 MCP 服务端自己的 stdin —— 那是一条由客户端
-（Claude Code / DSH / OpenCode / Pi）持有、会话结束前不会关闭的管道。子进程卡在
+（Pi / DSH 等宿主程序）持有、会话结束前不会关闭的管道。子进程卡在
 启动阶段，脚本业务代码一行都没执行，工具表现为「永久挂起」直到客户端超时。
 
 受影响的工具都经由 `_run_pe_script()` → `_run_cmd()`：

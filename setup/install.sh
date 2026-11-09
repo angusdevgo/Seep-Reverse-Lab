@@ -8,7 +8,7 @@
 #   3. 安装 Python mcp 协议库（PEP 668 兜底）
 #   4. 备份 + 安全增量合并 ~/.pi/agent/mcp.json（不再整体覆盖）
 #   5. 同步技能（先删后拷）/ 提示词 / 扩展
-#   6. 生成 .mcp.json / opencode.jsonc / cordis.generated.yml
+#   6. 生成 DSH 配置（cordis.generated.yml / AGENTS.md）
 #   7. 可选：补齐外部能力包
 #
 # 关键修正（相对旧版）
@@ -219,8 +219,8 @@ else
     step "5/7  同步技能 / 提示词 / 扩展（已跳过 --skip-pi）"
 fi
 
-# ---------------------------------------------------------------- 6. 生成多 Agent 配置
-step "6/7  生成多 Agent 配置文件（.mcp.json / opencode.jsonc / cordis.generated.yml）"
+# ---------------------------------------------------------------- 6. 生成 DSH 配置
+step "6/7  生成 DSH 配置（cordis.generated.yml / AGENTS.md）"
 gen_py="$SCRIPT_DIR/generate-configs.py"
 if [ -f "$gen_py" ]; then
     if "$PY_BIN" "$gen_py" --dsh-skills "$DSH_SKILLS" >/dev/null 2>&1; then
@@ -313,7 +313,7 @@ else
 fi
 echo -e "${CYAN}================================================================================${RESET}"
 echo    "  下一步提示:"
-echo    "  1. 完全退出并重新打开 Agent（Pi / Claude Code / DSH / OpenCode）"
+echo    "  1. 完全退出并重新打开 Agent（Pi 或 DSH）"
 echo    "     —— MCP 工具在会话启动时握手，不重开看不到新工具"
 echo    "  2. 在对话框中发送: lab： 即可开启测试"
 echo -e "${CYAN}================================================================================${RESET}"

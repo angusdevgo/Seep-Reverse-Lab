@@ -1,7 +1,7 @@
 # MANUAL — 官方部署资产全景核验基准清单 (Deployment Checklist & Verification Manifest)
 
 > **版本**：v1.3.0  
-> **适用范围**：Pi Agent / Claude Code / DeepSeek Harness / Codex / OpenCode  
+> **适用范围**：Pi Agent / DeepSeek Harness（本工作台只支持这两个 Agent）  
 > **核心用途**：作为 Seep Reverse Lab 部署交付的 **单一真值源 (Single Source of Truth, SSOT)**。  
 > 明确声明每个组件的 **官方期望物理路径、文件数、入口文件、可用性验证命令、三态健康标准与降级处置方案**。  
 > 部署完成后，Agent 与用户均以此清单为唯一法定标准进行双向比对校对。
@@ -45,9 +45,7 @@
 
 MCP 配置文件所在位置：
 - **Pi Agent**：`~/.pi/agent/mcp.json`
-- **Claude Code**：项目根目录 `.mcp.json`
 - **DeepSeek Harness**：`cordis.generated.yml` / 用户 profile
-- **Codex / OpenCode**：项目根目录 `opencode.jsonc`
 
 | # | 服务标识 | 驱动命令 / 核心脚本 | 预期暴露出工具数 | 连通性测试命令 | 缺失/未配时的表现与降级路径 |
 |---|---|---|---|---|---|
@@ -64,7 +62,6 @@ MCP 配置文件所在位置：
 |---|---|---|---|---|
 | **P1** | **`SYSTEM.md`** | `~/.pi/agent/SYSTEM.md` | 包含 `Lab Mode Protocol`、思维重定向、反退缩十项 | Pi Agent 专用系统指令 |
 | **P2** | **`AGENTS.md`** | `~/.pi/agent/AGENTS.md`<br>项目根 `AGENTS.md` | 跨 Agent 中性底座（部署/更新/卸载 + 非 lab 禁令） | 作战纪律已移出本文件，只在 `lab：` 后注入 |
-| **P3** | **`CLAUDE.md`** | 项目根 `CLAUDE.md` | 包含 Claude Code 项目级规范与自动化部署规约 | Claude Code 项目指令 |
 | **P4** | **`security-audit-interceptor.ts`** | `~/.pi/agent/extensions/` | 包含 `BLOCK_NONE` 底座注入与 `SENSITIVE_WORD_MAP` 字典 | 核心防模型拒绝与敏感词自动转译引擎 |
 | **P5** | **`seep-system.md`** | `~/.pi/agent/seep-system.md` | 扩展在输入 `lab：` 后按需注入；未激活时不出现 | 作战模式提示词（**会话级内存开关，不写磁盘 flag**） |
 
@@ -108,7 +105,7 @@ MCP 配置文件所在位置：
 
 > **零落盘纪律**：中继绝不写入请求体 / 响应体 / 鉴权头，日志只输出命中条数。
 > **默认关闭**：不随系统启动，不做常驻服务，需用户显式运行 `python relay.py`。
-> **覆盖协议**：`openai-completions`（Pi Agent 主力）/ `anthropic-messages`（Claude Code）/ `openai-responses`（Codex）。
+> **覆盖协议**：`openai-completions`（Pi Agent 主力）/ `anthropic-messages`（中继备用）。
 
 ---
 
@@ -121,7 +118,7 @@ MCP 配置文件所在位置：
 | **D1** | **个人绝对路径零残留** | 无 `C:\Users\<真实用户名>` 等本机路径 | 全深度递归扫描（排除第三方依赖与上游镜像） | 🔴 **阻断项**。命中即禁止发布 |
 | **D2** | **个人身份标识零残留** | 无个人昵称 / 品牌名 / 私有邮箱 | 同上 | 🔴 **阻断项** |
 | **D3** | **私有服务地址零残留** | 无个人中转站域名 / 私有服务器 IP | 同上 | 🔴 **阻断项** |
-| **D4** | **运行凭据零入库** | `relay-config.json`（含 token）、`opencode.jsonc`、`cordis.generated.yml` 均未被 git 追踪 | `git ls-files` 比对 | 🔴 **阻断项**。含本机绝对路径或访问令牌 |
+| **D4** | **运行凭据零入库** | `relay-config.json`（含 token）、`setup/cordis.generated.yml` 均未被 git 追踪 | `git ls-files` 比对 | 🔴 **阻断项**。含本机绝对路径或访问令牌 |
 | **D5** | **真实密钥 / Salt 零残留** | 无真实产品 Salt、Token、私钥字面值 | 人工复核 + 通用形态扫描 | 🔴 **阻断项** |
 | **D6** | **目标产品名脱敏** | 叙述性提及一律泛化为「项目A ~ 项目N」或「同类商业软件」 | 关键词扫描 | 🟡 **可选**。**功能性标识符例外**：注册表路径 / API 域名 / 代码符号若删除即导致 PoC 无法复现，则经案例 README 明确声明后可保留原文 |
 

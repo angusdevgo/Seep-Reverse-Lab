@@ -1,6 +1,9 @@
 # seep — AI-Native 逆向工程与攻防 MCP Server
 
-`seep` 是面向安全研究员与 AI Agent（Pi Agent、Claude、Cursor、OpenCode、VS Code 等）的混合型逆向工程与 CTF 战术 MCP Server。
+`seep` 是面向安全研究员与 AI Agent 的混合型逆向工程与 CTF 战术 MCP Server。
+
+> **本工作台支持并验证两个 Agent：Pi Agent 与 DeepSeek Harness (DSH)。**
+> 它本身是标准 MCP Server，任何 MCP 客户端理论上都能连，但不在支持范围内。
 
 它将 Radare2 二进制逆向套件、JADX / Apktool 安卓反编译链、动态 Hook 生成器与 ReverseLab 183+ 攻防战术知识库聚合为一个标准 MCP 服务。
 
@@ -57,7 +60,7 @@
 }
 ```
 
-### 2. Claude Desktop / Claude Code
+### 2. 其它 MCP 客户端（未验证）
 在 `claude_desktop_config.json` 或 `settings.json` 中添加：
 ```json
 {
@@ -70,7 +73,7 @@
 }
 ```
 
-### 3. Cursor / OpenCode / VS Code
+### 3. Cursor / VS Code 等（未验证）
 在 MCP 客户端配置中直接指定可执行程序 `python`，参数为 `C:\Users\Developer\Desktop\pi\seep\seep_mcp_server.py`，传输方式选 `stdio`。
 
 ---

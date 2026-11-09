@@ -1,4 +1,4 @@
-# AGENTS.md — 跨 Agent 通用执行协议（Codex / Claude Code / OpenCode / DeepSeek Harness / pi）
+# AGENTS.md — 通用执行协议（Pi Agent / DeepSeek Harness）
 
 > **本文件是中性底座，每个会话无条件加载。它只回答三件事：**
 > ① 怎么部署 / 更新 / 卸载；② 怎么开启作战模式；③ 非作战模式下禁止做什么。
@@ -81,13 +81,13 @@
 
 ---
 
-## 三、 非 Pi Agent 的等价实现（DSH / Claude Code / Codex / OpenCode）
+## 三、 DSH 的等价实现（Pi 之外只有它）
 
 上面第一、二节的规则**对所有 Agent 都适用**，但落地机制不同：
 
 - **Pi Agent**：`~/.pi/agent/extensions/security-audit-interceptor.ts` 在代码层实现状态机，
   用户输入 `lab：` 时自动把 `seep-system.md` 注入系统提示词。**你不需要做任何额外动作。**
-- **其它 Agent（DSH / Claude Code / Codex / OpenCode）**：没有这个扩展，
+- **DeepSeek Harness（DSH）**：没有这个扩展（它的 lab 闸门是插件里的 JS 实现，不是 pi 的 TS 扩展），
   所以上面那句“由扩展动态注入”在你这里**不会自动发生**。你必须自己做三件事：
 
 ### 规则一：`lab：` 时自己去读纪律文件
@@ -192,7 +192,7 @@ G-Auth 授权门、配套资源路径、MCP 联动规约。
 | Agent | 纪律文件位置 | 怎么加载 |
 | :--- | :--- | :--- |
 | Pi Agent | `~/.pi/agent/seep-system.md` | 扩展自动注入，无需你干预 |
-| DSH / Claude Code / Codex / OpenCode | `<仓库>/Tool/prompts/SYSTEM.md` | **你自己读**（见第三节规则一） |
+| DSH | `<仓库>/Tool/prompts/SYSTEM.md` | 插件会自动注入；读不到时**你自己读**（见第三节规则一） |
 
 两者内容一致（`SYSTEM.md` 是源，`seep-system.md` 是安装时的副本）。
 

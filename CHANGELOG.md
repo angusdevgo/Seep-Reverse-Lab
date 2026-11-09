@@ -12,6 +12,20 @@
 
 ## [Unreleased]
 
+### 变更
+
+- **只支持两个 Agent：Pi Agent 与 DeepSeek Harness。** 移除 Claude Code / OpenCode / Codex 的
+  支持面：`generate-configs` 不再生成 `.mcp.json` 与 `opencode.jsonc`，只产出
+  `setup/cordis.generated.yml` 与项目根 `AGENTS.md`；仓库里删掉 `CLAUDE.md` 与两个模板文件。
+- `verify.ps1` / `verify.sh` 去掉 Claude Code 与 `.mcp.json` 两项检查（66 → 64 项）。
+- 文档全面对齐：`INSTALL.md` 去掉路线 C，`MANUAL/DEPLOYMENT.md` 从「四大 Agent」改为两个，
+  `MANUAL/AGENTS.md` 重写为两列对照，README 中英双语的 Agent 表也同步。
+- `setup/test_config_parity.py` 只比两份产物（cordis + AGENTS）。
+
+> 模型层面的 Claude / GPT / Gemini 仍可作为**后端模型**使用（见 MODEL-REFUSAL-MATRIX），
+> 这里移除的是「把 Claude Code / Codex / OpenCode 当作受支持的 Agent 客户端」。
+
+
 ## [1.15.0] - 2026-11-09
 
 ### 新增

@@ -4,7 +4,7 @@
 Seep 工作台 —— 合规转译中继 (compliance-relay)
 
 把「敏感口语 → 合规术语」的转译从「Agent 插件能力」下沉为「网络传输能力」，
-从而一次性覆盖任意支持自定义 baseUrl 的 Agent（Pi Agent / Claude Code / Codex 等）。
+从而一次性覆盖支持自定义 baseUrl 的 Agent（本工作台验证的是 Pi Agent 与 DeepSeek Harness）。
 
 设计原则
 --------

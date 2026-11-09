@@ -4,7 +4,7 @@
 > 面向所有人（包括三个月后忘了细节的我们）。
 
 > **范围声明：本包只服务 DeepSeek Harness（DSH）。**
-> pi / Claude Code / OpenCode / Codex 的接线是另外几套，不走 npm、没有版本号。
+> Pi Agent 的接线是另一套（写 mcp.json + 拷技能），不走 npm、没有版本号。
 > 四个 Agent 的对照见 [AGENTS.md](AGENTS.md)。
 
 ---
@@ -142,10 +142,11 @@ dsh plugin add --profile web "file:<仓库>/packages/dsh-workbench"
 # 1. 全绿才往下走
 node packages/dsh-workbench/test/lab-gate.test.mjs     # 单测
 python setup/verify-dsh.py                             # DSH 完整度 100 分
-powershell -File setup/verify.ps1                      # 仓库基准 66 项
+powershell -File setup/verify.ps1                      # 仓库基准 64 项
 
 # 2. 隐私扫描（绝不能把本机路径、真实姓名带出去）
-grep -rn "C:\\\\Users\\\\\|angus\.vip\|AngusDevLab" packages/dsh-workbench/ | grep -v angusdevgo
+#   规则内置在 setup/verify.ps1 第 10 组（脱敏与隐私走查），含本机路径/真名/私人域名
+powershell -File setup/verify.ps1 -Detailed   # 看「脱敏」那几行是否全绿
 
 # 3. 版本号 + CHANGELOG 同步
 #    VERSION、packages/dsh-workbench/package.json、CHANGELOG.md 三处一致
