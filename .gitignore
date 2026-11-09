@@ -74,3 +74,7 @@ node_modules/
 Tool/mcp/probe/
 # 人工指定的工具路径（每台机器不同，不进仓库）
 setup/tool-paths.local.json
+
+# 打包产物（pack-plugin.py 输出，含本机路径）
+dist/
+*.tgz

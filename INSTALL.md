@@ -121,6 +121,8 @@ pi 的技能是**拷贝**的，所以 `git pull` 之后**必须**重跑 `install
 
 ---
 
+> 装完之后怎么更新、插件发在哪、更新时会连带什么：见 [MANUAL/UPDATING.md](MANUAL/UPDATING.md)。
+
 ## 路线 B：DeepSeek Harness
 
 ### 装什么

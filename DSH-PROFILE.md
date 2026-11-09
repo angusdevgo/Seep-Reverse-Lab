@@ -73,7 +73,8 @@
 工具层（MCP 服务进程）才是必须重启的那一层。
 
 > **这份是 DSH 专属文档。** Pi Agent 的接线完全不同（写 mcp.json + 拷技能），
-> 两者的对照见 [MANUAL/AGENTS.md](MANUAL/AGENTS.md)。
+> 两者的对照见 [MANUAL/AGENTS.md](MANUAL/AGENTS.md)；
+> 更新与发布路线见 [MANUAL/UPDATING.md](MANUAL/UPDATING.md)。
 
 ### 发布与分发
 
