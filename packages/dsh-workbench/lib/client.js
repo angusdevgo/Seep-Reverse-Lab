@@ -680,6 +680,26 @@ window.__ModuleLoader__.load({
                   }, status.lab.injecting ? '关闭' : '开启'),
                 )
               : null,
+            status && status.lab && status.lab.lastRewrite
+              ? h(
+                  'div',
+                  {
+                    style: {
+                      fontSize: 11.5,
+                      lineHeight: '17px',
+                      padding: '8px 10px',
+                      marginBottom: 10,
+                      borderRadius: 8,
+                      border: '0.5px dashed var(--dsw-alias-border-l2)',
+                      color: 'var(--dsw-alias-label-secondary)',
+                      wordBreak: 'break-all',
+                    },
+                  },
+                  h('div', { style: { fontWeight: 600, marginBottom: 4 } }, '最近一次改写（界面里看不到，发给模型的是这份）'),
+                  h('div', null, '原：', status.lab.lastRewrite.before),
+                  h('div', null, '改：', status.lab.lastRewrite.after),
+                )
+              : null,
             error
               ? h('p', { style: S.err }, error)
               : status

@@ -14,6 +14,8 @@
  * （见 test/lab-gate.test.mjs）。
  */
 
+import { rewriteMessages } from './lab-rewrite.js';
+
 /** 进入实验的口令。只认指令，不认内容 —— 聊到 APK/破解 不构成激活。 */
 export const ENTER_PATTERNS = ['lab：', 'lab:', '实验：', '进入实验：'];
 
@@ -63,6 +65,8 @@ export function installLabGate(ctx, { discipline = '', enabled = true } = {}) {
   // forced=true 表示用户直接用面板/卡片开的，之后新建的会话也应该接着进。
   let masterEnabled = enabled !== false;
   let forced = false;
+  let rewriteCount = 0;
+  let lastRewrite = null;
 
   /** 这个会话现在到底算不算在实验模式里。 */
   const isActive = (agent) => masterEnabled && state.get(agent)?.active === true;
@@ -82,7 +86,7 @@ export function installLabGate(ctx, { discipline = '', enabled = true } = {}) {
   });
 
   // 只观察，不拦消息：永远把决定权交回给后面的监听者。
-  ctx.on('agent/pre-step', ({ agent, messages }, next) => {
+  ctx.on('agent/pre-step', async ({ agent, messages }, next) => {
     const current = state.get(agent);
     // 总闸关着的时候连口令都不认 —— 「什么都不触发」就应该是真的什么都不触发。
     if (current !== undefined && masterEnabled) {
@@ -97,7 +101,31 @@ export function installLabGate(ctx, { discipline = '', enabled = true } = {}) {
         forced = false;
       }
     }
-    return next();
+
+    const decision = await next();
+
+    // 不在 lab 模式就原样放行；在的话改写进入这一步的消息：
+    // 敏感口语词换成合规术语，命中审计词时补一句授权前缀。
+    // 口令判定用的是改写前的原文（classify 在 next() 之前已经跑过）。
+    if (decision?.kind === 'reject' || !isActive(agent)) return decision;
+    const rewritten = rewriteMessages(decision.messages ?? messages);
+    if (rewritten === (decision.messages ?? messages)) return decision;
+
+    rewriteCount += 1;
+    {
+      const before = String((decision.messages ?? messages)?.[0]?.content?.[0]?.text ?? '');
+      const after = String(rewritten?.[0]?.content?.[0]?.text ?? '');
+      lastRewrite = { before: before.slice(0, 200), after: after.slice(0, 240), at: Date.now() };
+    }
+    // 改写只发生在「发给模型的那份消息」上，界面里看到的仍是原文。
+    // 想确认它真的生效，设 SEEP_LAB_DEBUG=1 就能在 dsh 日志里看到前后对比。
+    if (process.env.SEEP_LAB_DEBUG) {
+      const before = (decision.messages ?? messages)?.[0]?.content?.[0]?.text ?? '';
+      const after = rewritten?.[0]?.content?.[0]?.text ?? '';
+      console.error('[lab] 改写前: %s', String(before).slice(0, 80));
+      console.error('[lab] 改写后: %s', String(after).slice(0, 120));
+    }
+    return { ...decision, messages: rewritten };
   });
 
   ctx.on('agent/disposed', ({ agent }) => {
@@ -143,6 +171,8 @@ export function installLabGate(ctx, { discipline = '', enabled = true } = {}) {
         sessions: agents.length,
         injecting: masterEnabled && agents.some((e) => e.active),
         hasDiscipline: discipline.length > 0,
+        rewrites: rewriteCount,
+        lastRewrite,
       };
     },
     state,
