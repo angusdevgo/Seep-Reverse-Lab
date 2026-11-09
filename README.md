@@ -1,3 +1,5 @@
+> **First time here? Read [INSTALL.md](INSTALL.md) first** — it spells out what to install for Pi Agent vs. DeepSeek Harness (they are two different frameworks).
+
 <p align="center">
   <img src="app_logo.svg" alt="Seep Reverse Lab Logo" width="120" height="120">
 </p>
@@ -347,6 +349,7 @@ Already deployed? No need to re-clone or copy files by hand. The updater is **id
 ```powershell
 # Windows
 powershell -ExecutionPolicy Bypass -File .\setup\update.ps1
+
 ```
 ```bash
 # Linux / macOS

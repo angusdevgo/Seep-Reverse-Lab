@@ -1,3 +1,5 @@
+> **第一次来？先看 [INSTALL.md](INSTALL.md)** —— 讲清楚 Pi Agent 和 DeepSeek Harness 各装什么、怎么装，选错会白忙。
+
 <p align="center">
   <img src="app_logo.svg" alt="Seep Reverse Lab Logo" width="120" height="120">
 </p>
@@ -342,6 +344,7 @@ powershell -File setup\install-capabilities.ps1 -CheckOnly  # 只看现状
 ```powershell
 # Windows
 powershell -ExecutionPolicy Bypass -File .\setup\update.ps1
+
 ```
 ```bash
 # Linux / macOS
