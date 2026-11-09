@@ -9,17 +9,59 @@
 
 ---
 
-## 一、 三种挂载方式
+## 一、 四种挂载方式
 
 | 方式 | 命令 | 适用 |
 | :--- | :--- | :--- |
-| **持久挂载（推荐）** | `python setup/dsh-merge.py` | 长期使用。写入 `$DSH_HOME/profiles/web/cordis.patch.yml`，**只替换标注块，你自己的模型/插件配置原样保留**，写前自动备份 |
+| **插件包（1.14.0 起，推荐）** | `python setup/dsh-plugin-setup.py` | 长期使用。装一个几十 KB 的插件包，路径写在配置里；MCP 与技能由插件在运行时自己挂 |
+| 持久挂载（旧路线，保留兼容） | `python setup/dsh-merge.py` | 没有 `dsh` CLI 或不想装包时。直接往 profile patch 里写条目 |
 | 全局挂载 | `python setup/dsh-merge.py --global` | 本机所有 profile 都生效（`$DSH_HOME/cordis.patch.yml`） |
 | 临时挂载 | `dsh web --patch "<工作台绝对路径>/setup/cordis.generated.yml"` | 一次性试用，不落盘 |
 
 `setup/install.ps1` / `setup/install.sh` 会**自动检测** `$DSH_HOME`（默认 `~/.dsh`）：
-存在则自动执行持久挂载，不存在则跳过（不给你制造无关步骤）。
+存在则**先试插件包路线**，失败才回退旧路线（两条不能同时上，否则 MCP 会挂两份）。
 跳过该步骤用 `-SkipDsh`（Windows）/ `--skip-dsh`（Unix）。
+
+### 插件包路线（1.14.0 起）
+
+为什么加这一条：旧路线把 MCP 条目写死在 profile patch 里，路径是绝对路径，
+仓库一搬家就全断。改成插件包之后，**只有一个地方要改：工作台路径**。
+
+```powershell
+python setup\dsh-plugin-setup.py                          # 装包 + 写入当前仓库路径
+python setup\dsh-plugin-setup.py --root D:\新位置\Seep     # 仓库搬家后重跑这一条
+python setup\dsh-plugin-setup.py --no-skills               # 不在 DSH 里列技能
+python setup\dsh-plugin-setup.py --no-lab-gate             # 关掉 lab 开关
+python setup\dsh-plugin-setup.py --dry-run                 # 只看会改什么
+```
+
+它做的事：
+
+1. `dsh plugin --profile web remove seep-dsh-workbench`（没装过时失败属正常）
+2. `dsh plugin --profile web add file:<仓库>/packages/dsh-workbench`
+3. 往 `$DSH_HOME/profiles/<p>/cordis.patch.yml` 写：
+
+```yaml
+- id: seep-workbench-boot
+  config:
+    repoRoot: '<仓库绝对路径>'
+```
+
+装好之后插件做的事：路径自检 → 挂 `seep` / `js-reverse` 两个 MCP（超时 900s / 600s）
+→ 挂技能层 → 起 lab 开关。结果写进 `$DSH_HOME/seep-workbench.status.json`，
+`setup/verify-dsh.py` 读那份文件，不用去猜合成配置。
+
+> **一个坑（实测）**：`file:` 安装是**硬链接**，不是拷贝。
+> 手工往包里加新文件后必须 `remove` + `add` 重装才生效，
+> 只改已有文件则是即时生效。`dsh plugin update` 对 `file:` 会回一句
+> "Already up to date"，别信。`dsh-plugin-setup.py` 每次都先 remove 再 add，
+> 所以重跑它一定能拿到最新代码。
+
+> **另一个坑（实测，必须知道）**：DSH 0.2.2 的「设置 → 内置插件」列表里能看到
+> `seep-workbench-boot` 这一条，但**第三方插件包不显示自动生成的配置表单**
+> （只有内置插件有那种卡片）。所以工作台路径**不能在网页上填**，
+> 只能用 `dsh-plugin-setup.py` 写，或者手改上面那个 `cordis.patch.yml`
+> （设置 → 打开配置文件 可以直接打开它）。
 
 ### Skill 图层（默认开启）
 
@@ -105,7 +147,7 @@ python setup/dsh-merge.py --remove      # 只移除标注块，其余配置不�
 
 ## 三、 生成物长什么样
 
-`setup/generate-configs.ps1` / `.py` 生成的 `setup/cordis.generated.yml`：
+旧路线（`dsh-merge.py`）的生成物 `setup/cordis.generated.yml`：
 
 ```yaml
 - insert:
@@ -141,26 +183,56 @@ python setup/dsh-merge.py --remove      # 只移除标注块，其余配置不�
 - `cordis.patch.yml` 顶层就是「补丁条目数组」，而生成物本身也是数组，
   所以追加即合法合并 —— 不需要 YAML 解析器，也不会动到你的既有条目。
 
+插件包路线（1.14.0 起）的补丁只有一条，其余全在代码里：
+
+```yaml
+# packages/dsh-workbench/cordis.patch.yml
+- insert:
+    - id: seep-workbench-boot
+      name: 'seep-dsh-workbench'
+```
+
+MCP 条目与技能层由 `lib/index.js` 在运行时用 `ctx.plugin()` 挂：
+
+```js
+ctx.plugin(McpClient, { serverName: 'seep', command: python, args: [入口脚本],
+                        cwd: repoRoot, toolCallTimeoutMs: 900000, failOnStartupError: false });
+if (enableSkills) {
+  ctx.plugin(SkillFilesystem, { customSkillDirs: [`${repoRoot}/Tool/skill`,
+                                                  `${repoRoot}/Tool/skill/safe-skills`] });
+  ctx.plugin(ToolSkill, {});
+}
+```
+
+于是「仓库搬家」只需重跑一次 `dsh-plugin-setup.py --root <新位置>`，
+不需要改生成物、也不需要手工编辑 YAML 里的绝对路径。
+
 ---
 
 ## 四、 校验
 
+插件包路线下，最直接的判据是插件自己写的状态文件：
+
 ```bash
-# 1. 是否已挂载（0=已挂载 / 1=未挂载）
-python setup/dsh-merge.py --check
+cat "$DSH_HOME/seep-workbench.status.json"     # Windows: type %USERPROFILE%\.dsh\seep-workbench.status.json
+# {"ok":true,"repoRoot":"...","version":"1.14.0",
+#  "python":"...python.exe","mounted":{"seep":true,"jsReverse":true,"skills":true},
+#  "skillsEnabled":true,"labGate":true,"lines":[]}
+```
 
-# 2. DSH 自己合成的配置树里能不能看到 seep 条目
-dsh --profile web --dump-config | grep -A12 "serverName: seep"
-
-# 2b. skill 图层是否已开
-dsh --profile web --dump-config | grep -A8 "^- id: skill-filesystem"
-
-# 3. 端到端：按 DSH 合成后的配置真的启动 MCP，数工具
-python setup/test_dsh_mount.py
-#   [PASS] tools/list 返回 ≥30 个工具  -> 38
-
-# 4. 完整度评分（6 组 23 项，输出百分比与缺失清单）
+```bash
+# 1. 完整度评分（6 组 / 21 项 / 100 分，输出百分比与缺失清单）
 python setup/verify-dsh.py
+
+# 2. 插件有没有挂上（合成配置里应有 seep-workbench-boot）
+dsh --profile web --dump-config | grep -A3 "seep-workbench-boot"
+
+# 3. lab 开关单测（不需 DSH、不需模型，纯逻辑）
+node packages/dsh-workbench/test/lab-gate.test.mjs
+
+# 4. 旧路线的自查（只在用 dsh-merge.py 时有意义）
+python setup/dsh-merge.py --check
+python setup/test_dsh_mount.py
 ```
 
 `check.ps1` / `setup/verify.sh` 也会检查：
@@ -198,6 +270,13 @@ python setup/verify-dsh.py
 
 ## 七、 约束与边界
 
+- **lab 开关只管提示词，不管工具可用性。** 无论开不开 lab，`seep` 的 38 个工具
+  都挂在模型眼前；lab 开关只决定「要不要把 `Tool/prompts/SYSTEM.md` 的纪律正文
+  注入这个会话的系统提示词」。跟 pi 侧强度一致，不夸大。
+- **lab 状态只在内存里。** 进程退出即清，不写磁盘；新会话、`resume`、
+  `compact` 都从关闭开始。A 窗口开不影响 B 窗口。
+- **插件自检失败不抛异常**（除非 `strict: true`）。路径没填、工具没下载这类问题
+  只打印修复提示，绝不让整条 profile 起不来。
 - 不搬动 `Tool/mcp/Tool/` —— `seep_mcp_server.py` 内部按相对路径解析运行时依赖。
 - IDA Pro 需自备授权；无授权时自动由内置 Radare2 承接。
 - 所有测试目标须确认已获授权（G-Auth 门）。

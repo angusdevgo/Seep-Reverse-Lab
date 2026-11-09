@@ -12,6 +12,63 @@
 
 ## [Unreleased]
 
+## [1.14.0] - 2026-11-09
+
+### DSH 接入改成插件包，并给 `lab：` 加上代码级开关
+
+之前 DSH 的接法是往 profile 的 `cordis.patch.yml` 里写一堆条目，路径是绝对路径，
+仓库一搬家就全断。现在改成装一个几十 KB 的插件包（`packages/dsh-workbench/`），
+路径只在一个地方写：
+
+```powershell
+python setup\dsh-plugin-setup.py              # 装包 + 写入当前仓库路径
+python setup\dsh-plugin-setup.py --root D:\新位置\Seep   # 搬家后重跑这一条
+```
+
+### 变化
+
+| 位置 | 之前 | 现在 |
+| :--- | :--- | :--- |
+| DSH 接线 | `dsh-merge.py` 往 patch 写 4 个条目 | 装插件包；MCP 与技能由插件在运行时挂 |
+| 工作台路径 | 写死在 patch 里，搬家全断 | 配置项 `repoRoot`，重跑脚本即改 |
+| Python 解释器 | 写死绝对路径 | 按 `setup/tool-registry.json` 的候选链自己找 |
+| 启动输出 | 一行「就绪」 | 就绪 + 已接线哪几个，并写 `seep-workbench.status.json` |
+| 系统提示词 | 不注入 | **只有 `lab：` 之后** 才注入作战纪律，且只影响那个会话 |
+| 校验 | 解析合成配置去猜 | 读状态文件，问插件到底挂上了什么 |
+
+### lab 开关（文档级闸门升级为代码级）
+
+pi 上的 `lab：` 是靠扩展实现的。DSH 上现在也在插件里实现了同一套语义：
+
+- 每个会话一个内存状态，**默认关闭**；
+- 消息里出现 `lab：` / `lab:` / `实验：` / `进入实验：` 才打开；
+- `退出实验` / `退出工作环境` / `exit lab` 关掉；
+- 新会话、`resume`、`compact` 都从关闭开始；
+- 只认指令不认内容 —— 聊到 APK / 破解 / hook **不构成激活**；
+- 纪律正文只从仓库里的 `Tool/prompts/SYSTEM.md` 读，不另存副本；
+- 该文件缺失时降级为「只切状态、不注入正文」，不影响使用。
+
+想整个关掉：`--no-lab-gate`，或配置项 `labGate: false`。
+
+### 两个实测出来的坑（写进文档了）
+
+1. **`file:` 安装是硬链接**。包里新增文件必须 `remove` + `add` 重装才生效；
+   `dsh plugin update` 对 `file:` 会回 "Already up to date"，别信。
+   安装脚本每次都先 remove 再 add。
+2. **第三方插件包没有自动配置表单**。DSH 0.2.2 的插件页只在「内置插件」
+   列表里展示我们的条目，但不给第三方包生成配置界面。所以路径不能网页上填，
+   只能用 `dsh-plugin-setup.py` 写，或手改 `cordis.patch.yml`
+   （设置 → 打开配置文件 可直接打开）。
+
+### 新增/改动文件
+
+- `packages/dsh-workbench/` —— 插件包本体（`package.json` / `cordis.patch.yml` / `lib/index.js` / `lib/lab-gate.js`）
+- `packages/dsh-workbench/test/lab-gate.test.mjs` —— lab 开关单测，25 项，不需 DSH 与模型
+- `setup/dsh-plugin-setup.py` —— 装包 + 写路径 + 打印下一步
+- `setup/verify-dsh.py` —— 改读 `seep-workbench.status.json`；6 组 21 项 100 分
+- `setup/install.ps1` / `setup/install.sh` —— 先试插件路线，失败才回退旧路线
+- `DSH-PROFILE.md` —— 新增插件包路线章节与两个坑
+
 ## [1.13.0] - 2026-11-09
 
 ### 纠正一个错误结论：DSH 是有 skill 机制的

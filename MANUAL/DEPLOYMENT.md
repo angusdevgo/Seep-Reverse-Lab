@@ -184,7 +184,7 @@ OpenCode 原生支持项目级与全局级 MCP 工具，其配置标准为 `open
    }
    ```
 3. **指令载入与启动**：
-   在项目根目录下直接运行 `opencode`。OpenCode 会自动解析根目录的 `opencode.jsonc` 挂载 23 项 `seep` 工具，并自动加载项目根目录的 `AGENTS.md` 作为作战协议。发送 `check` 即可开启自检！
+   在项目根目录下直接运行 `opencode`。OpenCode 会自动解析根目录的 `opencode.jsonc` 挂载 38 项 `seep` 工具，并自动加载项目根目录的 `AGENTS.md` 作为作战协议。发送 `check` 即可开启自检！
          "env": { "PYTHONIOENCODING": "utf-8" }
        }
      }

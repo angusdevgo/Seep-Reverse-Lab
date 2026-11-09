@@ -16,8 +16,8 @@
 | MCP `ida` / `playwright` | 2 | **0**（可选挂） | 设计选择，不计分 |
 | MCP 工具总数 | 135 | **62**（34 + 24 之外还有 ida/playwright 的差） | 同上 |
 | Skill | 10 | **10（需显式开启）** | 机制存在，默认关闭 |
-| `lab：` 会话状态机 | 代码层强制 | 指令层自律 | 架构差异 |
-| 纪律自动注入 | 自动 | 模型自己读 `SYSTEM.md` | 架构差异 |
+| `lab：` 会话状态机 | 代码层强制 | **1.14.0 起同为代码层强制**（插件内实现） | 一致 |
+| 纪律自动注入 | 自动 | **1.14.0 起 `lab：` 之后由插件注入** | 一致 |
 
 > **重要**：DSH **有** skill 机制 —— `dsh-skill-filesystem`（发现）+ `dsh-tool-skill`（加载），
 > 只是在 `web` profile 里默认 `disabled: true`。开启后能直接吃 pi 的 `<name>/SKILL.md` 布局，
@@ -29,29 +29,29 @@
 
 ### 第 1 组 · 配置层（20 分）
 
+1.14.0 起接线由插件包完成，不再往 profile patch 里塞 MCP 条目。
+所以这一组查的是「包装了没、跑过没、指向对不对、lab 开着没」。
+
 | 编号 | 检查项 | 分值 | 判据 | 采集方式 |
 | :---: | :--- | :---: | :--- | :--- |
-| A1 | `cordis.patch.yml` 含 `seep-workbench` 标记块 | 5 | 能找到 `>>> seep-workbench` | 读 `$DSH_HOME/profiles/<p>/cordis.patch.yml` |
-| A2 | 合成配置里有 `serverName: seep` | 4 | `dsh --dump-config` 含该行 | `dsh --profile web --dump-config` |
-| A3 | 合成配置里有 `serverName: js-reverse` | 3 | 同上 | 同上 |
-| A4 | `seep` 的 `toolCallTimeoutMs` ≥ 300000 | 4 | 正则取数值 | 同上 |
-| A5 | `seep` 的 `cwd` 指向仓库根 | 2 | 等于 `<repo>` | 同上 |
-| A6 | `failOnStartupError: false` | 2 | 出现该行 | 同上 |
+| A1 | 插件包 `seep-dsh-workbench` 已装进 profile | 8 | `dsh.profile.bundles` 含该包名 | 读 `$DSH_HOME/profiles/<p>/package.json` |
+| A2 | 插件已启动并写出状态文件 | 5 | `$DSH_HOME/seep-workbench.status.json` 存在 | 启动一次 dsh 后读文件 |
+| A3 | 状态 `ok:true` 且 `repoRoot` 指向当前仓库 | 4 | 路径规范化后相等 | 同上 |
+| A4 | `labGate` 已启用 | 3 | 状态里 `labGate: true` | 同上 |
 
-> **A4 为什么必须查**：DSH 默认 60000（60 秒）。jadx 全量反编译、HLS 分片解密、
-> Flutter AOT 分析都要几分钟，不设成 900000 会被按超时杀掉，表现为「工具调用莫名中断」。
->
-> **A5 为什么必须查**：`seep_mcp_server.py` 用相对路径定位内置工具，`cwd` 错了会报一堆
-> MISSING，但文件其实都在。
+> 旧路线（`dsh-merge.py`）残留的 `>>> seep-workbench` 标记块**不扣分**，
+> 但会提示「不要两条路线同时用」—— 同时用会把 MCP 挂两份。
 
 ### 第 2 组 · MCP 可用性（25 分）★ 核心
 
+命令与参数从插件写出的状态文件里取 —— 校验的就是插件真正会启动的东西。
+
 | 编号 | 检查项 | 分值 | 判据 |
 | :---: | :--- | :---: | :--- |
-| B1 | `seep` 能 `initialize` | 6 | 按合成配置真启动，收到 `result` |
+| B1 | `seep` 能 `initialize` | 7 | 按合成配置真启动，收到 `result` |
 | B2 | `seep` `tools/list` = **38** 个工具 | 8 | 工具数组长度 ≥ 38 |
 | B3 | `js-reverse` 能 `initialize` | 5 | 同上 |
-| B4 | `js-reverse` `tools/list` ≥ **24** | 6 | 工具数组长度 ≥ 24 |
+| B4 | `js-reverse` `tools/list` ≥ **24** | 5 | 工具数组长度 ≥ 24 |
 
 这一组是**唯一能证明「真的能用」**的部分：真启动进程、真发 JSON-RPC、真数工具。
 只看进程没退出不够 —— 服务可能起来但握手失败。
@@ -60,9 +60,9 @@
 
 | 编号 | 检查项 | 分值 | 判据 |
 | :---: | :--- | :---: | :--- |
-| F1 | `skill-filesystem` 已启用 | 5 | 合成配置里该条目为 `disabled: false` |
-| F2 | `tool-skill` 已启用 | 4 | 同上（模型侧的 skill 目录 + 加载工具） |
-| F3 | `customSkillDirs` 覆盖两个技能根 | 6 | 同时含 `<repo>/Tool/skill` 与 `.../safe-skills` |
+| F1 | 插件已挂载技能层 | 5 | 状态里 `skillsEnabled:true` 且 `mounted.skills:true` |
+| F2 | 仓库里可发现 ≥ 10 个技能 | 6 | 两个技能根下各含 `SKILL.md` 的子目录计数 |
+| F3 | 两个技能根都在仓库里 | 4 | `<repo>/Tool/skill` 与 `<repo>/Tool/skill/safe-skills` 均存在 |
 
 两个根对应的技能：
 
@@ -125,9 +125,9 @@ Linux / macOS 同样适用（脚本纯标准库）。
 ### 输出样例
 
 ```
-【配置层】   A1..A6   20/20
+【配置层】   A1..A4   20/20
 【MCP 可用性】B1..B4   25/25     seep 38 工具 / js-reverse 24 工具
-【技能层】   F1..F3   15/15     10 个技能可被 DSH 发现
+【技能层】   F1..F3   15/15     插件已挂技能层，10 个技能可被发现
 【仓库资产】 C1..C5   15/15
 【指令层】   D1..D3   15/15
 【运行时】   E1..E2   10/10
@@ -135,13 +135,13 @@ Linux / macOS 同样适用（脚本纯标准库）。
 完整率  ████████████████████████████████████████  100.0%   (100 / 100 分)
 ```
 
-未开启技能层时会是 **85%** —— 这是**正确**的结果，不是故障：
+用 `--no-skills` 装（或状态里 `skillsEnabled:false`）时会是 **85%** —— 这是**设计选择**，不是故障：
 
 ```
 【技能层】
- [FAIL] F1  skill-filesystem 已启用            5 分
- [FAIL] F2  tool-skill 已启用                  4 分
- [FAIL] F3  customSkillDirs 覆盖两个技能根      6 分
+ [FAIL] F1  插件已挂载技能层                    5 分
+ [FAIL] F2  仓库里可发现 ≥ 10 个技能             6 分
+ [FAIL] F3  两个技能根都在仓库里                  4 分
 完整率  ██████████████████████████████████░░░░░░   85.0%
 ```
 
@@ -152,9 +152,9 @@ Linux / macOS 同样适用（脚本纯标准库）。
 | 完整率 | 含义 | 该怎么办 |
 | :---: | :--- | :--- |
 | **100%** | 配置、MCP、技能、资产、指令、运行时全部就位 | 可以开工 |
-| **85%** | 只差技能层（skill 未开启） | `generate-configs --dsh-skills all` → 重跑 `dsh-merge.py` |
-| **60–84%** | 缺 MCP 或运行时，工具基本用不了 | 看「缺失清单」逐项修 |
-| **< 60%** | 配置层就没挂上 | `python setup/dsh-merge.py --profile web` |
+| **85%** | 只差技能层（`--no-skills` 装的） | `python setup/dsh-plugin-setup.py`（不带 `--no-skills`）重装 |
+| **60–84%** | 缺 MCP 或运行时，工具基本用不了 | 看「缺失清单」逐项修；路径不对就重跑 `dsh-plugin-setup.py --root <正确路径>` |
+| **< 60%** | 插件包根本没装上 | `python setup/dsh-plugin-setup.py` |
 
 ### 完整的含义边界
 
