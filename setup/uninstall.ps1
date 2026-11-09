@@ -354,6 +354,59 @@ if ($flagHits.Count -gt 0) {
     } catch { Write-Fail '移除 lab-mode.flag 失败'; $script:Failed++ }
 }
 
+# DSH：插件包 + 我们写的那条配置 + 状态文件（1.14.0 起的主路线）
+$dshHomeDir = if ($env:DSH_HOME) { $env:DSH_HOME } else { Join-Path $env:USERPROFILE '.dsh' }
+if (Test-Path $dshHomeDir) {
+    $dshCli = Get-Command dsh -ErrorAction SilentlyContinue
+    $dshProfilePkg = Join-Path $dshHomeDir 'profiles\web\package.json'
+    $dshPatch = Join-Path $dshHomeDir 'profiles\web\cordis.patch.yml'
+
+    $hasPlugin = $false
+    if (Test-Path $dshProfilePkg) {
+        try {
+            $pj = Get-Content $dshProfilePkg -Raw -Encoding UTF8 | ConvertFrom-Json
+            $hasPlugin = @($pj.dsh.profile.bundles) -contains 'seep-dsh-workbench'
+        } catch { }
+    }
+
+    if ($hasPlugin) {
+        if ($dshCli) {
+            & dsh plugin --profile web remove seep-dsh-workbench 2>&1 | Out-Null
+            if ($LASTEXITCODE -eq 0) { Write-Ok '已从 DSH 卸下插件包 seep-dsh-workbench'; $script:Removed++ }
+            else { Write-Warn '插件包卸载返回非 0，可能已不存在；配置条目仍会被清理' }
+        }
+        else { Write-Warn 'PATH 里没有 dsh，只能清理配置条目；如需彻底移除请手动 dsh plugin remove' }
+    }
+
+    # 我们写进 profile 的那条配置（只在能唯一定位时删，避免误伤别的条目）
+    if (Test-Path $dshPatch) {
+        $body = Get-Content $dshPatch -Raw -Encoding UTF8
+        if ($body -match '(?m)^- id:\s*seep-workbench-boot\s*$') {
+            try {
+                Copy-Item $dshPatch "$dshPatch.bak" -Force
+                # 删掉从这条 id 到下一个顶层列表项之间的内容
+                $lines = Get-Content $dshPatch -Encoding UTF8
+                $out = New-Object System.Collections.Generic.List[string]
+                $skipping = $false
+                foreach ($line in $lines) {
+                    if ($line -match '^- id:\s*seep-workbench-boot\s*$') { $skipping = $true; continue }
+                    if ($skipping -and $line -match '^- \S') { $skipping = $false }
+                    if (-not $skipping) { $out.Add($line) }
+                }
+                $text = ($out -join "`n").TrimEnd() + "`n"
+                [System.IO.File]::WriteAllText($dshPatch, $text, (New-Object System.Text.UTF8Encoding $false))
+                Write-Ok '已移除 DSH profile 里的 seep-workbench-boot 配置（备份 .bak）'; $script:Removed++
+            } catch { Write-Fail "DSH 配置清理失败: $($_.Exception.Message)"; $script:Failed++ }
+        }
+    }
+
+    $dshStatus = Join-Path $dshHomeDir 'seep-workbench.status.json'
+    if (Test-Path $dshStatus) {
+        try { Remove-Item $dshStatus -Force -ErrorAction Stop; Write-Ok '已移除 DSH 插件状态文件'; $script:Removed++ }
+        catch { Write-Warn '状态文件删不掉，可手动删除（不影响使用）' }
+    }
+}
+
 # ---------------------------------------------------------------- 5. 可选深度清理
 if ($Purge) {
     Write-Step '5/5  深度清理 (-Purge)'

@@ -74,6 +74,23 @@ pi 上的 `lab：` 是靠扩展实现的。DSH 上现在也在插件里实现了
 改完路径不会自动重挂 MCP，需要重启 DSH；技能 / lab 开关对下一个会话生效。
 面板上已直接写明。
 
+### 部署与校验的收尾（同一版本内）
+
+上一版把 DSH 接线改成插件包，但周边没跟上，补了四处：
+
+1. **旧路线残留会自动清掉**。如果 profile 里还留着 `dsh-merge.py` 写的标注块，
+   插件装完会一并删除 —— 两条路线同时生效会把 MCP 挂两份（这是真会出问题的）。
+2. **`dsh-plugin-setup.py --check`**：只报状态不改文件，告诉你包装了没、路径写了没、
+   配置里的路径跟当前仓库一不一致、有没有旧路线残留、上次启动接线了哪些。
+3. **`uninstall.ps1` / `uninstall.sh` 现在会处理 DSH**（之前完全没写）：
+   卸载插件包、删掉我们写的那条配置（保留你自己的条目，备份 `.bak`）、删状态文件。
+4. **`verify-dsh.py` 从 22 项加到 24 项**，并且装完自动跑：
+   - A6「没有旧路线残留」—— 负向验证过：故意造残留会掉到 97%
+   - A7「lab 开关单测通过」—— 真跑一次 `lab-gate.test.mjs`，
+     光看状态文件里的 `labGate: true` 说明不了它真的按「会话级 / 默认关 / 只认指令」工作
+
+`install.ps1` / `install.sh` 结束时会自动输出 DSH 完整度评分，不用再自己想起来跑。
+
 ### 两个实测出来的坑（写进文档了）
 
 1. **`file:` 安装是硬链接**。包里新增文件必须 `remove` + `add` 重装才生效；
@@ -89,7 +106,7 @@ pi 上的 `lab：` 是靠扩展实现的。DSH 上现在也在插件里实现了
 - `packages/dsh-workbench/` —— 插件包本体（`package.json` / `cordis.patch.yml` / `lib/index.js` / `lib/lab-gate.js` / `lib/client.js` 面板）
 - `packages/dsh-workbench/test/lab-gate.test.mjs` —— lab 开关单测，25 项，不需 DSH 与模型
 - `setup/dsh-plugin-setup.py` —— 装包 + 写路径 + 打印下一步
-- `setup/verify-dsh.py` —— 改读 `seep-workbench.status.json`；6 组 22 项 100 分（新增面板声明项）
+- `setup/verify-dsh.py` —— 改读 `seep-workbench.status.json`；6 组 24 项 100 分（新增面板声明 / 旧路线残留 / lab 单测）
 - `setup/install.ps1` / `setup/install.sh` —— 先试插件路线，失败才回退旧路线
 - `DSH-PROFILE.md` —— 新增插件包路线章节与两个坑
 

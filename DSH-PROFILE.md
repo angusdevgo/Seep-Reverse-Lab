@@ -30,10 +30,14 @@
 ```powershell
 python setup\dsh-plugin-setup.py                          # 装包 + 写入当前仓库路径
 python setup\dsh-plugin-setup.py --root D:\新位置\Seep     # 仓库搬家后重跑这一条
+python setup\dsh-plugin-setup.py --check                   # 只报状态，不改任何文件
 python setup\dsh-plugin-setup.py --no-skills               # 不在 DSH 里列技能
 python setup\dsh-plugin-setup.py --no-lab-gate             # 关掉 lab 开关
 python setup\dsh-plugin-setup.py --dry-run                 # 只看会改什么
 ```
+
+`--check` 会报：包装了没、路径写了没、配置里的路径跟当前仓库一不一致、
+**有没有旧路线残留**、插件上次启动时接线了哪些。排查先跑它。
 
 它做的事：
 
@@ -50,6 +54,10 @@ python setup\dsh-plugin-setup.py --dry-run                 # 只看会改什么
 装好之后插件做的事：路径自检 → 挂 `seep` / `js-reverse` 两个 MCP（超时 900s / 600s）
 → 挂技能层 → 起 lab 开关。结果写进 `$DSH_HOME/seep-workbench.status.json`，
 `setup/verify-dsh.py` 读那份文件，不用去猜合成配置。
+
+> **旧路线会自动清掉**：如果 profile 里还留着 `dsh-merge.py` 写的标注块，
+> `dsh-plugin-setup.py` 装完会把它删掉 —— 两条路线同时生效会把 MCP 挂两份。
+> `verify-dsh.py` 的 A6 项专门查这个。
 
 > **一个坑（实测）**：`file:` 安装是**硬链接**，不是拷贝。
 > 手工往包里加新文件后必须 `remove` + `add` 重装才生效，
@@ -256,7 +264,7 @@ cat "$DSH_HOME/seep-workbench.status.json"     # Windows: type %USERPROFILE%\.ds
 ```
 
 ```bash
-# 1. 完整度评分（6 组 / 22 项 / 100 分，输出百分比与缺失清单）
+# 1. 完整度评分（6 组 / 24 项 / 100 分，输出百分比与缺失清单）
 python setup/verify-dsh.py
 
 # 2. 插件有没有挂上（合成配置里应有 seep-workbench-boot）

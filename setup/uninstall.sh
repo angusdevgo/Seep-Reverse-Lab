@@ -368,6 +368,43 @@ if [ "${#FLAG_HITS[@]}" -gt 0 ]; then
     else fail '移除 lab-mode.flag 失败'; FAILED=$((FAILED+1)); fi
 fi
 
+# DSH：插件包 + 我们写的那条配置 + 状态文件（1.14.0 起的主路线）
+DSH_HOME_DIR="${DSH_HOME:-$HOME/.dsh}"
+if [ -d "$DSH_HOME_DIR" ]; then
+    DSH_PROFILE_PKG="$DSH_HOME_DIR/profiles/web/package.json"
+    DSH_PATCH="$DSH_HOME_DIR/profiles/web/cordis.patch.yml"
+
+    if [ -f "$DSH_PROFILE_PKG" ] && grep -q 'seep-dsh-workbench' "$DSH_PROFILE_PKG"; then
+        if command -v dsh >/dev/null 2>&1; then
+            if dsh plugin --profile web remove seep-dsh-workbench >/dev/null 2>&1; then
+                ok '已从 DSH 卸下插件包 seep-dsh-workbench'; REMOVED=$((REMOVED+1))
+            else
+                warn '插件包卸载返回非 0，可能已不存在；配置条目仍会被清理'
+            fi
+        else
+            warn 'PATH 里没有 dsh，只能清理配置条目'
+        fi
+    fi
+
+    # 我们写进 profile 的那条配置（只在能唯一定位时删）
+    if [ -f "$DSH_PATCH" ] && grep -q '^- id:[[:space:]]*seep-workbench-boot[[:space:]]*$' "$DSH_PATCH"; then
+        if cp "$DSH_PATCH" "$DSH_PATCH.bak" 2>/dev/null; then
+            awk '
+                /^- id:[[:space:]]*seep-workbench-boot[[:space:]]*$/ { skip=1; next }
+                skip && /^- [^[:space:]]/ { skip=0 }
+                !skip { print }
+            ' "$DSH_PATCH.bak" > "$DSH_PATCH.tmp" && mv "$DSH_PATCH.tmp" "$DSH_PATCH"                 && { ok '已移除 DSH profile 里的 seep-workbench-boot 配置（备份 .bak）'; REMOVED=$((REMOVED+1)); }
+        else
+            warn 'DSH 配置清理失败（备份不成功，未改动原文件）'
+        fi
+    fi
+
+    DSH_STATUS="$DSH_HOME_DIR/seep-workbench.status.json"
+    if [ -f "$DSH_STATUS" ]; then
+        rm -f "$DSH_STATUS" 2>/dev/null && { ok '已移除 DSH 插件状态文件'; REMOVED=$((REMOVED+1)); }
+    fi
+fi
+
 # ---------------------------------------------------------------- 5. 深度清理
 if [ "$PURGE" = "1" ]; then
     step '5/5  深度清理 (--purge)'

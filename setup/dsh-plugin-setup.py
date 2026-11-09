@@ -34,6 +34,7 @@ from __future__ import annotations
 
 import argparse
 import io
+import json
 import os
 import re
 import shutil
@@ -45,6 +46,11 @@ REPO = os.path.dirname(HERE)
 BUNDLE_REL = os.path.join("packages", "dsh-workbench")
 PKG_NAME = "seep-dsh-workbench"
 ENTRY_ID = "seep-workbench-boot"
+
+# 旧路线（dsh-merge.py）用的标注块。两条路线同时存在 = MCP 挂两份，必须清掉。
+LEGACY_BEGIN = "# >>> seep-workbench (managed block — 由 setup/dsh-merge.py 生成，请勿手改)"
+LEGACY_END = "# <<< seep-workbench"
+LEGACY_RE = re.compile(re.escape(LEGACY_BEGIN) + r".*?" + re.escape(LEGACY_END) + r"\n?", re.S)
 
 # 插件条目在 profile patch 里的起始行
 ENTRY_RE = re.compile(r"^- id:\s*" + re.escape(ENTRY_ID) + r"\s*$", re.M)
@@ -76,6 +82,31 @@ def run(cmd, timeout=300):
         return None, "", "超时 %ds" % timeout
     except Exception as exc:  # noqa: BLE001
         return None, "", str(exc)
+
+
+def strip_legacy(text: str) -> tuple[str, bool]:
+    """移除旧路线（dsh-merge.py）写的标注块。返回 (新文本, 是否改动过)。"""
+    if LEGACY_BEGIN not in text:
+        return text, False
+    new = LEGACY_RE.sub("", text)
+    # 清完可能留下连续空行，收一下
+    new = re.sub(r"\n{3,}", "\n\n", new)
+    return new, True
+
+
+def dsh_version(dsh: str) -> str:
+    rc, out, err = run([dsh, "--version"])
+    if rc != 0:
+        return ""
+    text = (out or err or "").strip().splitlines()
+    return text[0].strip() if text else ""
+
+
+def parse_version(text: str) -> tuple:
+    """从 '0.2.2-rc.1' 这种串里取出可比较的数字段。"""
+    import re as _re
+    m = _re.search(r"(\d+)\.(\d+)\.(\d+)", text or "")
+    return tuple(int(x) for x in m.groups()) if m else (0, 0, 0)
 
 
 def quote_yaml(value: str) -> str:
@@ -123,6 +154,55 @@ def splice(text: str, entry: str) -> tuple[str, str]:
     return text[:start] + entry + text[stop:], "更新已有条目"
 
 
+def report_status(root: str, profile: str, version: str) -> int:
+    """只报告：插件装了没、路径对不对、有没有旧路线残留。什么都不改。"""
+    print("  状态检查（不改任何文件）")
+    print("  " + "-" * 66)
+
+    pkg = os.path.join(dsh_home(), "profiles", profile, "package.json")
+    installed = False
+    if os.path.isfile(pkg):
+        try:
+            data = json.loads(io.open(pkg, encoding="utf-8", errors="replace").read())
+            bundles = ((data.get("dsh") or {}).get("profile") or {}).get("bundles") or []
+            installed = PKG_NAME in bundles
+        except (ValueError, OSError):
+            installed = False
+    print("  插件包已装进 profile : %s" % ("是" if installed else "否"))
+
+    patch = os.path.join(dsh_home(), "profiles", profile, "cordis.patch.yml")
+    body = ""
+    if os.path.isfile(patch):
+        body = io.open(patch, encoding="utf-8", errors="replace").read()
+
+    has_entry = ENTRY_ID in body
+    print("  路径配置已写入       : %s" % ("是" if has_entry else "否"))
+    m = re.search(r"^\s*repoRoot:\s*'?([^'\n]*)'?\s*$", body, re.M)
+    configured = (m.group(1).strip() if m else "")
+    print("  配置里的路径         : %s" % (configured or "（空，退回环境变量 SEEP_ROOT）"))
+    if configured and os.path.normcase(os.path.normpath(configured)) != os.path.normcase(os.path.normpath(root)):
+        print("                         ⚠️ 与当前仓库不一致（本仓库是 %s）" % root)
+
+    legacy = LEGACY_BEGIN in body
+    print("  旧路线残留           : %s" % ("有（会把 MCP 挂两份，重跑本脚本会清掉）" if legacy else "无"))
+
+    stat = os.path.join(dsh_home(), "seep-workbench.status.json")
+    if os.path.isfile(stat):
+        try:
+            st = json.loads(io.open(stat, encoding="utf-8", errors="replace").read())
+            print("  插件上次启动         : ok=%s, 版本=%s" % (st.get("ok"), st.get("version")))
+            print("  已接线               : %s" % (st.get("mounted") or {}))
+        except (ValueError, OSError):
+            print("  插件上次启动         : 状态文件读不出来")
+    else:
+        print("  插件上次启动         : 还没启动过（装完要重启 DSH）")
+
+    print("  " + "-" * 66)
+    ok = installed and has_entry and not legacy
+    print("  结论：%s" % ("已就绪（重启 DSH 后生效）" if ok else "不完整，重跑 python setup/dsh-plugin-setup.py"))
+    return 0 if ok else 1
+
+
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser(description="把 Seep 工作台插件装进 DSH 并写好路径")
     ap.add_argument("--profile", default="web")
@@ -130,6 +210,7 @@ def main(argv=None) -> int:
     ap.add_argument("--no-skills", action="store_true", help="不在 DSH 里列出技能")
     ap.add_argument("--no-lab-gate", action="store_true", help="关掉 lab 开关")
     ap.add_argument("--dry-run", action="store_true", help="只打印，不实际改动")
+    ap.add_argument("--check", action="store_true", help="只报告状态，不改任何文件")
     args = ap.parse_args(argv)
 
     root = os.path.abspath(args.root)
@@ -157,6 +238,14 @@ def main(argv=None) -> int:
     if dsh is None:
         print("  [FAIL] PATH 里找不到 dsh。先装 DeepSeek Harness 再来。")
         return 2
+
+    version = dsh_version(dsh)
+    print("  dsh     : %s" % (version or "未知版本"))
+    print()
+
+    # --check：只报告状态，不改任何东西
+    if args.check:
+        return report_status(root, args.profile, version)
 
     # 1) 装包。file: 是硬链接，升级时必须 remove 再 add，否则新加的文件不会出现。
     if args.dry_run:
@@ -202,6 +291,9 @@ def main(argv=None) -> int:
         print("\n  [dry-run] 到此为止，没有改任何文件。")
         return 0
 
+    # 旧路线（dsh-merge.py）的标注块必须清掉 —— 否则 MCP 会被挂两份
+    new, stripped = strip_legacy(new)
+
     if new != old:
         if old:
             backup = patch + ".bak"
@@ -219,8 +311,8 @@ def main(argv=None) -> int:
     print("    2. 检查是否接上：python setup/verify-dsh.py")
     print("    3. 想改路径：重跑本脚本并加 --root <新路径>，或改 %s" % patch)
     print()
-    print("  注意：这个 DSH 版本的插件页不给第三方包显示配置表单，")
-    print("        所以路径只能这样写进去 —— 不是在网页上填。")
+    print("  改路径也可以不用命令：DSH 里 设置 → Seep 工作台 直接填。")
+    print("  面板入口有两条：设置左侧导航 / 设置 → 插件 → 本包 → 「配置」。")
     print()
     return 0
 

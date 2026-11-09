@@ -239,10 +239,35 @@ def check_config(rep, profile, status):
     body = ""
     if os.path.isfile(patch):
         body = io.open(patch, encoding="utf-8", errors="replace").read()
-    if ">>> seep-workbench" in body:
-        rep.add_optional("旧路线残留", "DEGRADED",
-                         "profile patch 里还有 dsh-merge.py 写的 marker 块",
-                         "删掉那块，否则 MCP 会被挂两份")
+    legacy = ">>> seep-workbench" in body
+    rep.add(G, "A6", "没有旧路线残留（两条路线同时用会挂两份 MCP）", 3, not legacy,
+            "profile patch 里还有 dsh-merge.py 的 marker 块" if legacy else "干净",
+            "重跑 python setup/dsh-plugin-setup.py（会自动清掉旧块）")
+
+
+def check_lab_gate(rep):
+    """第 1 组附加：lab 开关的单测。
+
+    lab 是「会话级、默认关、只认指令」三件事，光看状态文件里的 labGate=true
+    说明不了它真的这么工作。这里直接跑仓库里的单测（纯 JS 逻辑，不需要 DSH）。
+    """
+    G = "配置层"
+    test = os.path.join(ROOT, "packages", "dsh-workbench", "test", "lab-gate.test.mjs")
+    if not os.path.isfile(test):
+        rep.add(G, "A7", "lab 开关单测通过（会话级 / 默认关 / 只认指令）", 4, False,
+                "缺 %s" % test, "重新 clone 仓库")
+        return
+    node = shutil.which("node") or shutil.which("node.exe")
+    if not node:
+        rep.add(G, "A7", "lab 开关单测通过（会话级 / 默认关 / 只认指令）", 4, False,
+                "PATH 里找不到 node", "安装 Node.js LTS")
+        return
+    rc, out, err = run([node, test], timeout=120)
+    passed = rc == 0
+    tail = [ln.strip() for ln in (out or "").splitlines() if ln.strip()]
+    summary = tail[-1] if tail else (err or "").strip()[:100]
+    rep.add(G, "A7", "lab 开关单测通过（会话级 / 默认关 / 只认指令）", 4, passed,
+            summary[:90], "node packages/dsh-workbench/test/lab-gate.test.mjs 看具体哪条挂了")
 
 
 def check_mcp(rep, status, skip_spawn):
@@ -254,15 +279,15 @@ def check_mcp(rep, status, skip_spawn):
     G = "MCP 可用性"
 
     if not status or not status.get("repoRoot"):
-        for key, label, w in (("B1", "seep 能 initialize", 7), ("B2", "seep 工具数", 8),
-                              ("B3", "js-reverse 能 initialize", 5), ("B4", "js-reverse 工具数", 5)):
+        for key, label, w in (("B1", "seep 能 initialize", 6), ("B2", "seep 工具数", 7),
+                              ("B3", "js-reverse 能 initialize", 5), ("B4", "js-reverse 工具数", 4)):
             rep.add(G, key, label, w, False, "插件还没跑过 / 没填路径",
                     "先跑 setup/verify-dsh.py 的 A2、A3 两项")
         return
 
     if skip_spawn:
-        for key, label, w in (("B1", "seep 能 initialize", 7), ("B2", "seep 工具数", 8),
-                              ("B3", "js-reverse 能 initialize", 5), ("B4", "js-reverse 工具数", 5)):
+        for key, label, w in (("B1", "seep 能 initialize", 6), ("B2", "seep 工具数", 7),
+                              ("B3", "js-reverse 能 initialize", 5), ("B4", "js-reverse 工具数", 4)):
             rep.add(G, key, label, w, False, "已跳过（--skip-spawn）", "去掉 --skip-spawn 重跑")
         return
 
@@ -271,8 +296,8 @@ def check_mcp(rep, status, skip_spawn):
     entry = os.path.join(root, "Tool", "mcp", "seep_mcp_server.py")
 
     for server, cmd, argv, key_init, key_tools, expect, w_init, w_tools in (
-        ("seep", py, [entry], "B1", "B2", EXPECT_SEEP_TOOLS, 7, 8),
-        ("js-reverse", "npx", ["-y", "js-reverse-mcp"], "B3", "B4", EXPECT_JS_TOOLS, 5, 5),
+        ("seep", py, [entry], "B1", "B2", EXPECT_SEEP_TOOLS, 6, 7),
+        ("js-reverse", "npx", ["-y", "js-reverse-mcp"], "B3", "B4", EXPECT_JS_TOOLS, 5, 4),
     ):
         tools, err = spawn_tools(cmd, argv)
         ok_init = tools is not None
@@ -326,7 +351,7 @@ def check_assets(rep):
 
     kb_root = os.path.join(ROOT, "Tool", "mcp", "Tool", "reverselab", "kb")
     kb = sum(1 for _, _, fs in os.walk(kb_root) for f in fs if f.endswith(".md")) if os.path.isdir(kb_root) else 0
-    rep.add(G, "C2", "知识库 ≥ %d 篇" % EXPECT_KB, 4, kb >= EXPECT_KB, "实测 %d 篇" % kb,
+    rep.add(G, "C2", "知识库 ≥ %d 篇" % EXPECT_KB, 3, kb >= EXPECT_KB, "实测 %d 篇" % kb,
             "重新克隆仓库")
 
     cases_dir = os.path.join(ROOT, "Tool", "cases")
@@ -352,7 +377,7 @@ def check_assets(rep):
                 names.update(x for x in os.listdir(p) if os.path.isdir(os.path.join(p, x)))
             elif d != "update":
                 names.add(d)
-    rep.add(G, "C5", "技能源目录 %d 个（内容质量的基础）" % EXPECT_SKILLS, 2,
+    rep.add(G, "C5", "技能源目录 %d 个（内容质量的基础）" % EXPECT_SKILLS, 1,
             len(names) >= EXPECT_SKILLS, "实测 %d 个" % len(names), "重新克隆仓库")
 
 
@@ -373,7 +398,7 @@ def check_instructions(rep):
             "", "python setup/generate-configs.py --root .")
 
     system = os.path.join(ROOT, "Tool", "prompts", "SYSTEM.md")
-    rep.add(G, "D3", "纪律文件 Tool/prompts/SYSTEM.md 存在（lab: 时要读的那份）", 5,
+    rep.add(G, "D3", "纪律文件 Tool/prompts/SYSTEM.md 存在（lab: 时要读的那份）", 3,
             os.path.isfile(system), system, "重新克隆仓库")
 
 
@@ -485,6 +510,7 @@ def main(argv=None) -> int:
     status = read_status()
     check_config(rep, args.profile, status)
     check_mcp(rep, status, args.skip_spawn)
+    check_lab_gate(rep)
     check_skills(rep, status)
     check_assets(rep)
     check_instructions(rep)

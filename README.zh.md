@@ -145,7 +145,7 @@ Agent 自主完成：
 - 🔄 **PoC 自愈循环**：Frida 报错 → 根因映射 → 自动修正代码 → 重跑（最多 3 次，超限后结构化移交人工）
 - 💎 **14 大工业级脱敏范式**：单进程离线 → 多进程 IPC → VM 集中判定 → .NET 算号 → 弱模 RSA 旁路 → Java 动态插桩 → .NET VM 逆向，全覆盖（项目 A ~ 项目 N）
 - 🌐 **链路层合规转译中继与自动重试**：纯标准库实现的本地中继，支持流式拒答自动重试级联（`S1 评审清单` → `S2 架构走查` → `S3 英文重塑`），100% 保留目标参数不漂移，84 项单元测试全绿
-- ⚡ **DeepSeek Harness (DSH) 接入**：`python setup/dsh-plugin-setup.py` 装一个几十 KB 的插件包并写入工作台路径 —— MCP（`toolCallTimeoutMs` 900 秒，DSH 默认 60 秒会掐断长任务）与 10 个技能由插件在运行时自己挂，仓库搬家只改这一处；`lab：` 闸门也升级为**插件内代码实现**（会话级、默认关、聊到 APK 不算激活）；另带**设置面板**（设置 → Seep 工作台），能看运行状态、直接改路径、列 20 个工具的四态清单。校验：`python setup/verify-dsh.py`（6 组 22 项 100 分）
+- ⚡ **DeepSeek Harness (DSH) 接入**：`python setup/dsh-plugin-setup.py` 装一个几十 KB 的插件包并写入工作台路径 —— MCP（`toolCallTimeoutMs` 900 秒，DSH 默认 60 秒会掐断长任务）与 10 个技能由插件在运行时自己挂，仓库搬家只改这一处；`lab：` 闸门也升级为**插件内代码实现**（会话级、默认关、聊到 APK 不算激活）；另带**设置面板**（设置 → Seep 工作台），能看运行状态、直接改路径、列 20 个工具的四态清单。校验：`python setup/verify-dsh.py`（6 组 24 项 100 分）
 - 🛡️ **实测抗拒答综合防线**：Gemini-Safe 提示词语义重塑（`gemini-safe.flag`，377 token 拒答 → 3300 字深度分析）、L1 拦截器动态可观测日志（`l1-log.flag`）、底座级 `BLOCK_NONE` 注入
 - 🔌 **离线预置全量内置**：所有工具链物理打包（251 MB），部署后零外网依赖
 - 🪟 **Windows PE 深水区引擎（`exe-reverse`）**：41 篇带门禁的参考文档 + **16 个零依赖 Python 引擎** —— `peutil`（RVA↔偏移、导入导出/TLS/重定位、微软校验和、逐节熵）、`pe_triage`、`pepatch`（等长补丁 + 校验和重算 + **写盘后逐字节回读**）、`aob_scan`（unique/ambiguous/pervasive 裁决）、`pe_diff`、`hwprobe`、`trace_reduce`（可选 SMT 证明）、`fold`。覆盖保护壳、虚拟化/控制流平坦化、.NET、Unity IL2CPP、打包 Python、内核驱动、硬件追踪与 Hypervisor 观测

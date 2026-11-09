@@ -27,7 +27,7 @@
 
 ## 二、评分表（满分 100）
 
-### 第 1 组 · 配置层（20 分）
+### 第 1 组 · 配置层（27 分）
 
 1.14.0 起接线由插件包完成，不再往 profile patch 里塞 MCP 条目。
 所以这一组查的是「包装了没、跑过没、指向对不对、lab 开着没、面板在不在」。
@@ -39,20 +39,22 @@
 | A3 | 状态 `ok:true` 且 `repoRoot` 指向当前仓库 | 3 | 路径规范化后相等 | 同上 |
 | A4 | `labGate` 已启用 | 3 | 状态里 `labGate: true` | 同上 |
 | A5 | 设置面板已声明 | 3 | `package.json` 有 `dsh.client` 且 `lib/client.js` 存在 | 读包目录 |
+| A6 | 没有旧路线残留 | 3 | profile patch 里没有 `>>> seep-workbench` 标注块 | 读 `cordis.patch.yml` |
+| A7 | lab 开关单测通过 | 4 | `node .../lab-gate.test.mjs` 退出码 0 | 真跑一次单测 |
 
 > 旧路线（`dsh-merge.py`）残留的 `>>> seep-workbench` 标记块**不扣分**，
 > 但会提示「不要两条路线同时用」—— 同时用会把 MCP 挂两份。
 
-### 第 2 组 · MCP 可用性（25 分）★ 核心
+### 第 2 组 · MCP 可用性（22 分）★ 核心
 
 命令与参数从插件写出的状态文件里取 —— 校验的就是插件真正会启动的东西。
 
 | 编号 | 检查项 | 分值 | 判据 |
 | :---: | :--- | :---: | :--- |
-| B1 | `seep` 能 `initialize` | 7 | 按合成配置真启动，收到 `result` |
-| B2 | `seep` `tools/list` = **38** 个工具 | 8 | 工具数组长度 ≥ 38 |
+| B1 | `seep` 能 `initialize` | 6 | 按合成配置真启动，收到 `result` |
+| B2 | `seep` `tools/list` = **38** 个工具 | 7 | 工具数组长度 ≥ 38 |
 | B3 | `js-reverse` 能 `initialize` | 5 | 同上 |
-| B4 | `js-reverse` `tools/list` ≥ **24** | 5 | 工具数组长度 ≥ 24 |
+| B4 | `js-reverse` `tools/list` ≥ **24** | 4 | 工具数组长度 ≥ 24 |
 
 这一组是**唯一能证明「真的能用」**的部分：真启动进程、真发 JSON-RPC、真数工具。
 只看进程没退出不够 —— 服务可能起来但握手失败。
@@ -76,23 +78,23 @@
 > 不想付这个成本就 `--dsh-skills none` 重新生成（整层关闭）。
 > `customSkillDirs` 是「扫该目录下的直接子目录」，**无法只挑其中几个**。
 
-### 第 4 组 · 仓库资产（15 分）
+### 第 4 组 · 仓库资产（13 分）
 
 | 编号 | 检查项 | 分值 | 期望 |
 | :---: | :--- | :---: | :--- |
 | C1 | 内置二进制工具箱 5 件齐 | 5 | `Tool/mcp/Tool/safe/` 下 jadx / apktool / radare2 / playwright-mcp / js-reverse-mcp |
-| C2 | 知识库篇数 | 4 | ≥ 294 篇 `.md` |
+| C2 | 知识库篇数 | 3 | ≥ 294 篇 `.md` |
 | C3 | 脱敏案例数 | 2 | ≥ 14 个目录 |
 | C4 | `MANUAL/` 手册 | 2 | ≥ 7 份 `.md` |
-| C5 | 技能源目录 | 2 | 10 个唯一名 |
+| C5 | 技能源目录 | 1 | 10 个唯一名 |
 
-### 第 5 组 · 指令层（15 分）
+### 第 5 组 · 指令层（13 分）
 
 | 编号 | 检查项 | 分值 | 判据 |
 | :---: | :--- | :---: | :--- |
 | D1 | 仓库根 `AGENTS.md` 存在 | 5 | DSH 启动时自动读取 |
 | D2 | 根 `AGENTS.md` 与 `Tool/prompts/AGENTS.md` 一致 | 5 | 内容完全相同（无漂移） |
-| D3 | `Tool/prompts/SYSTEM.md` 存在 | 5 | 用户发 `lab：` 时模型要读的那份纪律 |
+| D3 | `Tool/prompts/SYSTEM.md` 存在 | 3 | 用户发 `lab：` 时模型要读的那份纪律 |
 
 ### 第 6 组 · 运行时（10 分）
 
@@ -126,11 +128,11 @@ Linux / macOS 同样适用（脚本纯标准库）。
 ### 输出样例
 
 ```
-【配置层】   A1..A5   20/20
-【MCP 可用性】B1..B4   25/25     seep 38 工具 / js-reverse 24 工具
+【配置层】   A1..A7   27/27
+【MCP 可用性】B1..B4   22/22     seep 38 工具 / js-reverse 24 工具
 【技能层】   F1..F3   15/15     插件已挂技能层，10 个技能可被发现
-【仓库资产】 C1..C5   15/15
-【指令层】   D1..D3   15/15
+【仓库资产】 C1..C5   13/13
+【指令层】   D1..D3   13/13
 【运行时】   E1..E2   10/10
 ──────────────────────────────────────────────────────────
 完整率  ████████████████████████████████████████  100.0%   (100 / 100 分)
@@ -180,6 +182,8 @@ Linux / macOS 同样适用（脚本纯标准库）。
 | A3 分 > 0 但不满 | 面板上改了路径还没重启 | 重启 DSH |
 | A4 FAIL | lab 开关被关掉 | 面板里打开，或重跑 `dsh-plugin-setup.py` |
 | A5 FAIL | 插件包不完整（缺 `lib/client.js`） | 重新 clone；或重跑 `dsh-plugin-setup.py` |
+| A6 FAIL | 旧路线（dsh-merge）的标注块还在 → MCP 会挂两份 | 重跑 `setup/dsh-plugin-setup.py`，它会自动清掉 |
+| A7 FAIL | lab 开关逻辑坏了，或 PATH 里没有 node | `node packages/dsh-workbench/test/lab-gate.test.mjs` 看具体哪条 |
 | B1 FAIL，报 `ImportError: mcp` | `seep` 用的解释器没装 mcp | `setup\install-python.ps1`，或设 `SEEP_PYTHON` |
 | B2 工具数 < 38 | 启动的是旧副本 | 确认 `args` 指向当前仓库 |
 | B3/B4 FAIL | `npx js-reverse-mcp` 网络/缓存问题 | 手动跑一次 `npx -y js-reverse-mcp` 预热 |
