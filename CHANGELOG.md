@@ -74,6 +74,26 @@ pi 上的 `lab：` 是靠扩展实现的。DSH 上现在也在插件里实现了
 改完路径不会自动重挂 MCP，需要重启 DSH；技能 / lab 开关对下一个会话生效。
 面板上已直接写明。
 
+### 技能「挂上了」与「真的注册上了」不是一回事
+
+排查时发现：`mounted.skills = true` 只说明插件调了 `ctx.plugin(SkillFilesystem)`，
+并不能证明技能进了 DSH 的注册表 —— web profile 默认把 `skill-filesystem` 和
+`tool-skill` 两个入口 `disabled: true`，全靠插件在运行时补。
+
+现在插件启动后会等一会儿，用 `ctx.skills.snapshot()` 问一次**真实注册表**，
+把「到底看见几个、叫什么」写进状态文件：
+
+```json
+"skills": { "count": 11, "complete": true, "names": ["apk-reverse", ...] }
+```
+
+`verify-dsh.py` 的 F1 项也随之改成查这个字段：仓库里 10 个技能名必须全部出现。
+（11 而不是 10，是因为 DSH 自带一个 `diagnose-windows-sandbox-acl`。）
+
+另外踩到一个 cordis 的坑：服务不能在没 `inject` 的上下文里直接读，
+`ctx.skills` 会抛 `cannot get property "skills" without inject`；
+而 `ctx.inject()` 的回调**不保证同步触发**，必须等它（脚本里留了 6 秒兜底超时）。
+
 ### 部署与校验的收尾（同一版本内）
 
 上一版把 DSH 接线改成插件包，但周边没跟上，补了四处：

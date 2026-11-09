@@ -319,9 +319,43 @@ def check_skills(rep, status):
 
     enabled = (status or {}).get("skillsEnabled") is True
     mounted = bool(((status or {}).get("mounted") or {}).get("skills"))
-    rep.add(G, "F1", "插件已挂载技能层（skill-filesystem + tool-skill）", 5, enabled and mounted,
-            "skillsEnabled=%s, mounted.skills=%s" % (enabled, mounted),
-            "设置 → 插件 → seep-workbench-boot → 「列出技能」打开，重启 DSH")
+
+    # 光看 mounted.skills 只说明「调了 ctx.plugin」，不等于技能真的注册上了。
+    # 插件会在运行时问一次技能注册表，把结果写进 status.skills。
+    # 注册表里除我们的 10 个，还会有 DSH 自带的（沙箱诊断等），所以只要求我们的都在。
+    runtime = ((status or {}).get("skills") or {})
+    seen = set(runtime.get("names") or [])
+    expected = set()
+    for rel in ("Tool/skill", "Tool/skill/safe-skills"):
+        d = os.path.join(ROOT, *rel.split("/"))
+        if not os.path.isdir(d):
+            continue
+        for child in os.listdir(d):
+            md = os.path.join(d, child, "SKILL.md")
+            if not os.path.isfile(md):
+                continue
+            name = child
+            try:
+                body = io.open(md, encoding="utf-8", errors="replace").read(2000)
+                m = re.search(r"^name:\s*(.+)$", body, re.M)
+                if m:
+                    name = m.group(1).strip()
+            except OSError:
+                pass
+            expected.add(name)
+
+    missing = sorted(expected - seen)
+    registered = enabled and mounted and bool(seen) and not missing
+
+    if not seen:
+        detail = "状态文件里没有 skills 字段（插件没探测成功）"
+    elif missing:
+        detail = "注册表 %d 个，缺：%s" % (len(seen), ", ".join(missing[:4]))
+    else:
+        detail = "注册表 %d 个（仓库 %d 个全在）" % (len(seen), len(expected))
+
+    rep.add(G, "F1", "技能真的注册进 DSH 注册表（不只是挂了个插件）", 5, registered, detail,
+            "重启 DSH；仍有缺失看 dsh 启动日志里的 [seep-workbench] 技能行")
 
     found = 0
     for rel in ("Tool/skill", "Tool/skill/safe-skills"):

@@ -267,6 +267,58 @@ function writeStatus(payload) {
   }
 }
 
+// ---------------------------------------------------------------- 技能注册表探测
+// 只写 mounted.skills: true 说明不了技能真的注册上了 —— 那只是「调了 ctx.plugin」。
+// 这里等 provider 就绪后问一次真实的注册表：到底能列出几个技能、叫什么。
+// 探测失败不影响使用，状态文件里保持 skills: null 即可。
+function probeSkills(ctx, repoRoot) {
+  return new Promise((resolve) => {
+    let settled = false;
+    const finish = (value) => {
+      if (settled) return;
+      settled = true;
+      resolve(value);
+    };
+
+    // 注册表是服务，不能在没 inject 的上下文里直接读（cordis 会抛
+    // "cannot get property ... without inject"），只能走 inject 回调。
+    // 回调不保证同步触发，所以要等它，并留一个兜底超时。
+    setTimeout(() => {
+      try {
+        ctx.inject(['skills'], (scope) => {
+          void (async () => {
+            try {
+              const shot = await scope.skills.snapshot({ cwd: repoRoot });
+              const list = Array.isArray(shot?.skills) ? shot.skills : Array.isArray(shot) ? shot : [];
+              finish({
+                count: list.length,
+                complete: shot?.complete !== false,
+                names: list.map((entry) => String(entry?.name ?? '')).filter(Boolean).sort(),
+              });
+            } catch (error) {
+              console.error(
+                `[seep-workbench] 技能探测失败：${error instanceof Error ? error.message : String(error)}`,
+              );
+              finish(null);
+            }
+          })();
+        });
+      } catch (error) {
+        console.error(
+          `[seep-workbench] 技能探测注入失败：${error instanceof Error ? error.message : String(error)}`,
+        );
+        finish(null);
+      }
+      setTimeout(() => {
+        if (!settled) {
+          console.error('[seep-workbench] 技能探测超时：skills 服务没就绪');
+          finish(null);
+        }
+      }, 6000);
+    }, 1200);
+  });
+}
+
 // ---------------------------------------------------------------- 工具扫描
 // 面板要显示「哪个工具找到、哪个缺」。浏览器读不到磁盘，所以由宿主算好给它。
 
@@ -580,7 +632,7 @@ export function apply(ctx, rawConfig = {}) {
     }
   }
 
-  writeStatus({
+  const status = {
     at: new Date().toISOString(),
     ok,
     repoRoot,
@@ -588,9 +640,22 @@ export function apply(ctx, rawConfig = {}) {
     python: result.ok ? resolvePython(config) : '',
     mounted,
     skillsEnabled: config.enableSkills !== false,
+    skills: null,
     labGate,
     lines,
-  });
+  };
+  writeStatus(status);
+
+  // 技能是真注册上了还是只是「调了」，等注册表能答话再补写一次
+  if (mounted.skills) {
+    probeSkills(ctx, repoRoot).then((found) => {
+      if (!found) return;
+      writeStatus({ ...status, skills: found, at: new Date().toISOString() });
+      console.error(
+        `[seep-workbench] 技能注册表：${found.count} 个（${found.names.join(', ') || '空'}）`,
+      );
+    });
+  }
 
   return { ...result, ok, mounted, lines };
 }

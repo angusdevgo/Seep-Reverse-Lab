@@ -63,7 +63,7 @@
 
 | 编号 | 检查项 | 分值 | 判据 |
 | :---: | :--- | :---: | :--- |
-| F1 | 插件已挂载技能层 | 5 | 状态里 `skillsEnabled:true` 且 `mounted.skills:true` |
+| F1 | 技能真的注册进 DSH 注册表 | 5 | `status.skills.names` 覆盖仓库里全部技能名 | 插件启动后问一次 `ctx.skills.snapshot()` |
 | F2 | 仓库里可发现 ≥ 10 个技能 | 6 | 两个技能根下各含 `SKILL.md` 的子目录计数 |
 | F3 | 两个技能根都在仓库里 | 4 | `<repo>/Tool/skill` 与 `<repo>/Tool/skill/safe-skills` 均存在 |
 
@@ -184,6 +184,7 @@ Linux / macOS 同样适用（脚本纯标准库）。
 | A5 FAIL | 插件包不完整（缺 `lib/client.js`） | 重新 clone；或重跑 `dsh-plugin-setup.py` |
 | A6 FAIL | 旧路线（dsh-merge）的标注块还在 → MCP 会挂两份 | 重跑 `setup/dsh-plugin-setup.py`，它会自动清掉 |
 | A7 FAIL | lab 开关逻辑坏了，或 PATH 里没有 node | `node packages/dsh-workbench/test/lab-gate.test.mjs` 看具体哪条 |
+| F1 FAIL | 技能没进注册表（mounted=true 但注册表空） | 看 dsh 启动日志的 `[seep-workbench] 技能注册表 / 技能探测` 行 |
 | B1 FAIL，报 `ImportError: mcp` | `seep` 用的解释器没装 mcp | `setup\install-python.ps1`，或设 `SEEP_PYTHON` |
 | B2 工具数 < 38 | 启动的是旧副本 | 确认 `args` 指向当前仓库 |
 | B3/B4 FAIL | `npx js-reverse-mcp` 网络/缓存问题 | 手动跑一次 `npx -y js-reverse-mcp` 预热 |
