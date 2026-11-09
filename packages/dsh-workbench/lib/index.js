@@ -639,6 +639,16 @@ function updateContent(config = {}) {
  *   file: / link:  → 开发者模式（硬链接或本地 tgz），改代码即生效，没有「更新」概念
  *   版本号/范围     → 从 npm 装的，`dsh plugin update` 才有意义
  */
+/** 插件自己的版本号（读包内的 package.json）。读不到就返回空串，不抛。 */
+function selfVersion() {
+  try {
+    const self = join(import.meta.dirname ?? '', '..', 'package.json');
+    return JSON.parse(readFileSync(self, 'utf8')).version || '';
+  } catch {
+    return '';
+  }
+}
+
 function pluginInstallInfo() {
   const home = String(process.env.DSH_HOME ?? '').trim() || join(homedir(), '.dsh');
   const profile = String(process.env.SEEP_DSH_PROFILE ?? '').trim() || 'web';
@@ -665,6 +675,7 @@ function pluginInstallInfo() {
         ? 'npm（可以自动更新）'
         : '未知来源',
     updatable: Boolean(spec) && !local,
+    version: selfVersion(),
   };
 }
 
@@ -888,6 +899,71 @@ function registerPanelApi(ctx, config, getLab) {
               sendJson(res, 400, { ok: false, error: '工作台路径还没配好，先修好路径再改工具' });
               return;
             }
+            // 一键更新：仓库 + 内容 + 插件，能拉的都拉，拉不了的明说原因。
+            // 设计原则：不做任何有损操作（不 stash、不 reset、不强制覆盖），
+            // 有任何一项失败都如实报告，不因为某一项失败就跳过其它项。
+            if (payload.action === 'updateAll') {
+              const liveCfg = readConfig(config);
+              const steps = [];
+
+              const repoBefore = gitStatus(root);
+              if (!repoBefore.ok) {
+                steps.push({ label: '工作台仓库', ok: false, message: repoBefore.error || '读不到仓库状态' });
+              } else if (repoBefore.dirty > 0) {
+                // 有本地改动时不 pull：--ff-only 会失败，stash 又有丢改动的风险。
+                steps.push({
+                  label: '工作台仓库',
+                  ok: false,
+                  skipped: true,
+                  message: `本地有 ${repoBefore.dirty} 个文件改动，先提交或 stash 再来更新（不会替你做，怕丢东西）`,
+                });
+              } else {
+                const r = updateGitDir(root, '工作台仓库');
+                steps.push({ label: '工作台仓库', ok: r.ok, changed: !!r.changed, message: r.message });
+              }
+
+              // 内容层：没配就跳过，不算失败。
+              const contentRoot = resolveContentRoot(liveCfg);
+              if (!contentRoot) {
+                steps.push({ label: '内容层', ok: true, skipped: true, message: '没配独立内容目录，用的是仓库自带的' });
+              } else {
+                const r = updateContent(liveCfg);
+                steps.push({ label: '内容层', ok: r.ok, changed: !!r.changed, message: r.message });
+              }
+
+              // 插件：npm 装法才拉得到，本地装法明说无需更新。
+              const info = pluginInstallInfo();
+              if (!info.updatable) {
+                steps.push({
+                  label: '插件',
+                  ok: true,
+                  skipped: true,
+                  message: `v${info.version || '?'} ${info.mode}，没有远端可拉（改代码重启即生效）`,
+                });
+              } else {
+                const r = updatePlugin();
+                steps.push({ label: '插件', ok: r.ok, changed: !!r.changed, message: r.message });
+              }
+
+              const failed = steps.filter((s) => !s.ok);
+              const changedAny = steps.some((s) => s.changed);
+              const after = gitStatus(root);
+              sendJson(res, failed.length ? 400 : 200, {
+                ok: failed.length === 0,
+                changed: changedAny,
+                steps,
+                // 有东西变了才需要重启：MCP 是启动时拉起的进程，跑的还是旧代码。
+                needRestart: changedAny,
+                repo: after.ok ? after : null,
+                message: failed.length
+                  ? '部分没更新成功，下面写了原因'
+                  : changedAny
+                    ? '已更新。重启 DSH 才会加载新的工具和插件'
+                    : '全是最新，不用动',
+              });
+              return;
+            }
+
             if (payload.action === 'updateContent') {
               const liveCfg = readConfig(config);
               const result = updateContent(liveCfg);
@@ -998,14 +1074,7 @@ function registerPanelApi(ctx, config, getLab) {
           })(),
           repoGit: gitStatus(repoRoot),
           plugin: pluginInstallInfo(),
-          pluginVersion: (() => {
-            try {
-              const self = join(import.meta.dirname ?? '', '..', 'package.json');
-              return JSON.parse(readFileSync(self, 'utf8')).version || '';
-            } catch {
-              return '';
-            }
-          })(),
+          pluginVersion: selfVersion(),
           deep,
           lines: result.lines,
           tools: result.ok ? toolsFor(repoRoot, python, deep) : {},
