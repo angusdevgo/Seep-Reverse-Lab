@@ -72,6 +72,9 @@
 技能层带 watch，知识库是查询时现读，所以内容更新**不需要重启 DSH**；
 工具层（MCP 服务进程）才是必须重启的那一层。
 
+> **这份是 DSH 专属文档。** pi / Claude Code / OpenCode / Codex 的接线完全不同，
+> 四个 Agent 的对照见 [MANUAL/AGENTS.md](MANUAL/AGENTS.md)。
+
 ### 发布与分发
 
 插件怎么发、别人怎么更新、版本号怎么走、出事了怎么退 —— 见

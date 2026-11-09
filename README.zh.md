@@ -323,6 +323,8 @@ powershell -File setup\install-capabilities.ps1 -CheckOnly  # 只看现状
 
 | 智能体平台 | 核心指令 | MCP 服务配置 | 详细接入步骤 |
 |---|---|---|---|
+> 四个 Agent 的接线点、lab 在哪、更新怎么做，逐项对照见 [MANUAL/AGENTS.md](MANUAL/AGENTS.md)。
+
 | **Pi Agent** | `Tool/prompts/SYSTEM.md` | `~/.pi/agent/mcp.json` | 运行 `install.ps1` 自动写入，完成后**必须重启当前终端与 Pi 会话**。 |
 | **Claude Code** | 项目根 `CLAUDE.md` | 项目根 `.mcp.json` | 运行 `powershell .\setup\generate-configs.ps1` 自愈绝对路径后，在项目根执行 `claude`。 |
 | **DeepSeek Harness** | 项目根 `AGENTS.md`（自动生成） | `DSH-PROFILE.md` | `python setup/dsh-plugin-setup.py` 装插件包并写入路径（推荐）；旧路线 `dsh-merge.py` 保留兼容。校验：`python setup/verify-dsh.py`。 |

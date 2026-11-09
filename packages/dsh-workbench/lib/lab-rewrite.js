@@ -6,10 +6,26 @@
  *   2. 命中审计特征词时，在正文前加一句合规授权前缀
  *
  * 只在 lab 模式开启时生效；普通对话原样透传。
+ *
+ * ⚠️ 词表的权威来源不是本文件，而是 pi 那边的 TS 扩展：
+ *
+ *     Tool/prompts/extensions/security-audit-interceptor.ts
+ *         │  python Tool/scripts/compliance-relay/extract-rules.py
+ *         ▼
+ *     Tool/scripts/compliance-relay/sensitive-rules.json
+ *         │  运行时读取（本文件 loadRuleFile）
+ *         ▼
+ *     DSH 插件（这里）
+ *
+ * 这样 pi 和 DSH 两套框架共用同一份规则，改词只改 TS 源。
+ * 读不到 JSON（比如只装了插件、没有仓库）才退回文件末尾那份内置表。
+ *
  * 和 lab-gate.js 一样，这个文件不依赖任何 @deepseek-ai/* 包，可以单独跑测试。
  */
 
-/** 敏感口语词替换表（顺序无关：下面会按长度重排成一次匹配）。 */
+import { existsSync, readFileSync } from 'node:fs';
+
+/** 内置词表（兜底用；权威来源见文件头说明）。 */
 export const SENSITIVE_WORD_MAP = [
   ['破解补丁', '鉴权缺陷验证热补丁 PoC'],
   ['绕过会员', '验证本地离线鉴权缺陷'],
@@ -84,62 +100,98 @@ export function isInjectedContext(text) {
   return INJECTED_PREFIXES.some((p) => head.startsWith(p));
 }
 
-// 一次匹配所有词：按长度倒序拼成一个正则，replace 单趟完成，长词自然优先。
-const ESCAPED = [...SENSITIVE_WORD_MAP]
-  .sort((a, b) => b[0].length - a[0].length)
-  .map(([from, to]) => [from.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), to]);
+/** 从仓库读共享规则表；读不到返回 null（调用方退回内置表）。 */
+export function loadRuleFile(repoRoot) {
+  if (!repoRoot) return null;
+  const file = `${repoRoot}/Tool/scripts/compliance-relay/sensitive-rules.json`;
+  if (!existsSync(file)) return null;
+  try {
+    const data = JSON.parse(readFileSync(file, 'utf8'));
+    const rules = Array.isArray(data?.rules) ? data.rules : [];
+    const pairs = rules
+      .filter((r) => r && typeof r.from === 'string' && r.from && typeof r.to === 'string')
+      .map((r) => [r.from, r.to]);
+    return pairs.length ? pairs : null;
+  } catch {
+    return null;
+  }
+}
 
-const MATCHER = ESCAPED.length
-  ? new RegExp(ESCAPED.map(([from]) => from).join('|'), 'gi')
-  : null;
-
-const MAPPING = new Map(ESCAPED.map(([from, to]) => [from.toLowerCase(), to]));
-
-/** 纯文本改写。斜杠命令与注入上下文原样返回。 */
-export function rewriteText(text) {
-  const raw = String(text ?? '');
-  if (!raw) return raw;
-  const head = raw.replace(/^\s+/, '');
-  if (head.startsWith('/')) return raw;
-  if (isInjectedContext(raw)) return raw;
-
-  const transformed = MATCHER
-    ? raw.replace(MATCHER, (match) => MAPPING.get(match.toLowerCase()) ?? match)
-    : raw;
-
-  if (!AUDIT_TRIGGER_REGEX.test(raw)) return transformed;
-  if (head.startsWith(WRAP_PREFIX.trim())) return transformed;
-  return `${WRAP_PREFIX}${transformed}`;
+/** 编译词表：按长度倒序拼成一个正则，单趟 replace，长词自然优先。 */
+function compile(pairs) {
+  const escaped = [...pairs]
+    .sort((a, b) => b[0].length - a[0].length)
+    .map(([from, to]) => [from.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), to]);
+  if (!escaped.length) return { regex: null, mapping: new Map(), size: 0 };
+  return {
+    regex: new RegExp(escaped.map(([from]) => from).join('|'), 'gi'),
+    mapping: new Map(escaped.map(([from, to]) => [from.toLowerCase(), to])),
+    size: escaped.length,
+  };
 }
 
 /**
- * 改写一批消息里用户输入的文本块。
+ * 造一套改写器。
  *
- * 只动 `source.kind === 'user'` 的消息；工具结果、助手历史一律不碰。
- * 返回新数组（不改原对象），没变化时原样返回入参。
+ * @param pairs - 词表；省略则按 repoRoot 读共享 JSON，再不行用内置表
+ * @param repoRoot - 仓库根（用来找 sensitive-rules.json）
  */
-export function rewriteMessages(messages) {
-  if (!Array.isArray(messages)) return messages;
-  let changed = false;
+export function createRewriter({ pairs = null, repoRoot = '' } = {}) {
+  const source = pairs ?? loadRuleFile(repoRoot) ?? SENSITIVE_WORD_MAP;
+  const matcher = compile(source);
 
-  const out = messages.map((message) => {
-    if (message?.source?.kind !== 'user') return message;
-    const blocks = message.content;
-    if (!Array.isArray(blocks)) return message;
+  /** 纯文本改写。斜杠命令与注入上下文原样返回。 */
+  function rewriteText(text) {
+    const raw = String(text ?? '');
+    if (!raw) return raw;
+    const head = raw.replace(/^\s+/, '');
+    if (head.startsWith('/')) return raw;
+    if (isInjectedContext(raw)) return raw;
 
-    let touched = false;
-    const nextBlocks = blocks.map((block) => {
-      if (!block || block.type !== 'text' || typeof block.text !== 'string') return block;
-      const next = rewriteText(block.text);
-      if (next === block.text) return block;
-      touched = true;
-      return { ...block, text: next };
+    const transformed = matcher.regex
+      ? raw.replace(matcher.regex, (match) => matcher.mapping.get(match.toLowerCase()) ?? match)
+      : raw;
+
+    if (!AUDIT_TRIGGER_REGEX.test(raw)) return transformed;
+    if (head.startsWith(WRAP_PREFIX.trim())) return transformed;
+    return `${WRAP_PREFIX}${transformed}`;
+  }
+
+  /**
+   * 改写一批消息里用户输入的文本块。
+   * 只动 `source.kind === 'user'`；工具结果与助手历史一律不碰。
+   * 没变化时返回入参本身（调用方用 === 判断要不要替换这一步的消息）。
+   */
+  function rewriteMessages(messages) {
+    if (!Array.isArray(messages)) return messages;
+    let changed = false;
+
+    const out = messages.map((message) => {
+      if (message?.source?.kind !== 'user') return message;
+      const blocks = message.content;
+      if (!Array.isArray(blocks)) return message;
+
+      let touched = false;
+      const nextBlocks = blocks.map((block) => {
+        if (!block || block.type !== 'text' || typeof block.text !== 'string') return block;
+        const next = rewriteText(block.text);
+        if (next === block.text) return block;
+        touched = true;
+        return { ...block, text: next };
+      });
+
+      if (!touched) return message;
+      changed = true;
+      return { ...message, content: nextBlocks };
     });
 
-    if (!touched) return message;
-    changed = true;
-    return { ...message, content: nextBlocks };
-  });
+    return changed ? out : messages;
+  }
 
-  return changed ? out : messages;
+  return { rewriteText, rewriteMessages, rules: matcher.size, fromFile: Boolean(!pairs && loadRuleFile(repoRoot)) };
 }
+
+// 默认导出（用内置表）—— 测试和简单调用走这几个
+const builtin = createRewriter();
+export const rewriteText = builtin.rewriteText;
+export const rewriteMessages = builtin.rewriteMessages;

@@ -3,6 +3,10 @@
 > 这份文档回答三个问题：**发到哪、发什么、别人怎么更新。**
 > 面向所有人（包括三个月后忘了细节的我们）。
 
+> **范围声明：本包只服务 DeepSeek Harness（DSH）。**
+> pi / Claude Code / OpenCode / Codex 的接线是另外几套，不走 npm、没有版本号。
+> 四个 Agent 的对照见 [AGENTS.md](AGENTS.md)。
+
 ---
 
 ## 一、结论先行

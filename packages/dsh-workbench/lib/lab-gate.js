@@ -14,7 +14,7 @@
  * （见 test/lab-gate.test.mjs）。
  */
 
-import { rewriteMessages } from './lab-rewrite.js';
+import { createRewriter } from './lab-rewrite.js';
 
 /** 进入实验的口令。只认指令，不认内容 —— 聊到 APK/破解 不构成激活。 */
 export const ENTER_PATTERNS = ['lab：', 'lab:', '实验：', '进入实验：'];
@@ -57,7 +57,9 @@ export function classify(messages) {
  * @param options.enabled - 总闸初值（默认开）。关掉后口令也不认。
  * @returns 控制器：{ setEnabled, setActive, snapshot, state }
  */
-export function installLabGate(ctx, { discipline = '', enabled = true } = {}) {
+export function installLabGate(ctx, { discipline = '', enabled = true, repoRoot = '' } = {}) {
+  // 词表优先读仓库里由 TS 源生成的 sensitive-rules.json —— pi 与 DSH 共用同一份。
+  const rewriter = createRewriter({ repoRoot });
   const state = new Map();
   const fibers = new Map();
 
@@ -108,7 +110,7 @@ export function installLabGate(ctx, { discipline = '', enabled = true } = {}) {
     // 敏感口语词换成合规术语，命中审计词时补一句授权前缀。
     // 口令判定用的是改写前的原文（classify 在 next() 之前已经跑过）。
     if (decision?.kind === 'reject' || !isActive(agent)) return decision;
-    const rewritten = rewriteMessages(decision.messages ?? messages);
+    const rewritten = rewriter.rewriteMessages(decision.messages ?? messages);
     if (rewritten === (decision.messages ?? messages)) return decision;
 
     rewriteCount += 1;
@@ -171,6 +173,7 @@ export function installLabGate(ctx, { discipline = '', enabled = true } = {}) {
         sessions: agents.length,
         injecting: masterEnabled && agents.some((e) => e.active),
         hasDiscipline: discipline.length > 0,
+        impersonation: { rules: rewriter.rules, fromRepo: rewriter.fromFile },
         rewrites: rewriteCount,
         lastRewrite,
       };

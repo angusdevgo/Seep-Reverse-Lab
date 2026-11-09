@@ -1143,7 +1143,7 @@ export function apply(ctx, rawConfig = {}) {
   if (result.ok && !discipline) {
     lines.push(`${DISCIPLINE_FILE} 没读到，lab 开关降级为「只切换状态、不注入正文」。`);
   }
-  lab = installLabGate(ctx, { discipline, enabled: labGate });
+  lab = installLabGate(ctx, { discipline, enabled: labGate, repoRoot });
 
   const ok = result.ok && mounted.seep;
   if (ok) {
