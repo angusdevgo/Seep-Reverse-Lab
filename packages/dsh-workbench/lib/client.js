@@ -244,6 +244,7 @@ window.__ModuleLoader__.load({
         const [python, setPython] = React.useState(value.pythonPath || '');
         const [skills, setSkills] = React.useState(value.enableSkills !== false);
         const [labGate, setLabGate] = React.useState(value.labGate !== false);
+        const [contentRoot, setContentRoot] = React.useState(value.contentRoot || '');
         const [ida, setIda] = React.useState(value.enableIda === true);
         const [playwright, setPlaywright] = React.useState(value.enablePlaywright === true);
         // 工具路径的人工指定：editing 是被展开的那个工具 id
@@ -259,6 +260,7 @@ window.__ModuleLoader__.load({
           setPython(v.pythonPath || '');
           setSkills(v.enableSkills !== false);
           setLabGate(v.labGate !== false);
+          setContentRoot(v.contentRoot || '');
           setIda(v.enableIda === true);
           setPlaywright(v.enablePlaywright === true);
         }, [snap && snap.revision]);
@@ -269,6 +271,7 @@ window.__ModuleLoader__.load({
           python !== (saved.pythonPath || '') ||
           skills !== (saved.enableSkills !== false) ||
           labGate !== (saved.labGate !== false) ||
+          contentRoot !== (saved.contentRoot || '') ||
           ida !== (saved.enableIda === true) ||
           playwright !== (saved.enablePlaywright === true);
 
@@ -281,6 +284,7 @@ window.__ModuleLoader__.load({
               { op: 'set', path: ['pythonPath'], value: python.trim() },
               { op: 'set', path: ['enableSkills'], value: skills },
               { op: 'set', path: ['labGate'], value: labGate },
+              { op: 'set', path: ['contentRoot'], value: contentRoot.trim() },
               { op: 'set', path: ['enableIda'], value: ida },
               { op: 'set', path: ['enablePlaywright'], value: playwright },
             ];
@@ -412,6 +416,53 @@ window.__ModuleLoader__.load({
               disabled: busy || !(status && status.lab) || !labGate,
               onClick: () => void toggleLab(!(status && status.lab && status.lab.injecting)),
             }, status && status.lab && status.lab.injecting ? '退出 lab' : '进入 lab'),
+          ),
+          h(
+            'div',
+            { style: { display: 'flex', gap: 8, alignItems: 'center', fontSize: 13 } },
+            h('span', { style: { flex: 'none', width: 96, color: 'var(--dsw-alias-label-secondary)' } }, '内容目录'),
+            h('input', {
+              style: { ...S.input, flex: 1 },
+              placeholder: '留空 = 用仓库自带；填一个内容仓库的路径可单独更新',
+              value: contentRoot,
+              onChange: (e) => setContentRoot(e.target.value),
+            }),
+          ),
+          status && status.content && status.content.git
+            ? h('div', { style: { ...S.hint, fontSize: 12 } },
+                '当前内容版本：', status.content.git.commit || '未提交',
+                status.content.git.date ? `（${status.content.git.date}）` : '',
+                status.content.root ? `　目录：${status.content.root}` : '')
+            : null,
+          h(
+            'div',
+            { style: { display: 'flex', gap: 8, alignItems: 'center' } },
+            h('button', {
+              style: S.btnSmall,
+              disabled: busy,
+              title: '对内容目录执行 git pull --ff-only（不动工具仓库）',
+              onClick: async () => {
+                setBusy(true);
+                setNotice('');
+                try {
+                  const res = await fetch(API, {
+                    method: 'POST',
+                    headers: { 'content-type': 'application/json' },
+                    credentials: 'same-origin',
+                    body: JSON.stringify({ action: 'updateContent' }),
+                  });
+                  const payload = await res.json();
+                  setNotice(payload.message || (payload.ok ? '已完成' : '更新失败'));
+                  await load();
+                } catch (e) {
+                  setNotice(e && e.message ? e.message : '更新失败');
+                } finally {
+                  setBusy(false);
+                }
+              },
+            }, '更新内容'),
+            h('span', { style: { ...S.hint, fontSize: 11.5 } },
+              '只拉内容（技能/知识库/案例），不碰 561MB 的工具仓库'),
           ),
           h(
             'label',

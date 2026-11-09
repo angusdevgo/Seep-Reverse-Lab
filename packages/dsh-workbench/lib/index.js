@@ -13,7 +13,7 @@
  * 配置项在 DSH 的「设置 → 插件」里能直接填（DSH 用 Config schema 自动生成表单）。
  */
 
-import { spawnSync } from 'node:child_process';
+import { execFileSync, spawnSync } from 'node:child_process';
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { join } from 'node:path';
@@ -49,6 +49,16 @@ export const Config = z.object({
     .default(true)
     .volatile()
     .description('只在消息里出现 lab： 之后才注入作战纪律。关掉便于排查问题。'),
+  contentRoot: z
+    .string()
+    .default('')
+    .volatile()
+    .description('内容层目录（技能/知识库/案例）。留空则用仓库里的 Tool/skill 等。'),
+  contentRepo: z
+    .string()
+    .default('')
+    .volatile()
+    .description('内容层的 git 地址。填了之后面板上的「更新内容」会去拉它。'),
   enableIda: z
     .boolean()
     .default(false)
@@ -83,6 +93,8 @@ function readConfig(config = {}) {
     pythonPath: plain(config.pythonPath, ''),
     enableSkills: plain(config.enableSkills, true) !== false,
     labGate: plain(config.labGate, true) !== false,
+    contentRoot: plain(config.contentRoot, ''),
+    contentRepo: plain(config.contentRepo, ''),
     enableIda: plain(config.enableIda, false) === true,
     enablePlaywright: plain(config.enablePlaywright, false) === true,
     strict: config.strict === true,
@@ -174,6 +186,38 @@ function resolvePython(config = {}) {
   }
 
   return 'python';
+}
+
+/**
+ * 内容层目录：技能 / 知识库 / 案例。
+ *
+ * 顺序：配置里的 contentRoot → 环境变量 SEEP_CONTENT_ROOT → 空（用仓库自带的那份）。
+ * 约定布局：<root>/skill、<root>/safe-skills、<root>/kb、<root>/cases。
+ */
+function resolveContentRoot(config = {}) {
+  const fromConfig = String(config.contentRoot ?? '').trim();
+  if (fromConfig) return expand(fromConfig);
+  const fromEnv = String(process.env.SEEP_CONTENT_ROOT ?? '').trim();
+  return fromEnv ? expand(fromEnv) : '';
+}
+
+/** 读内容根的 git 状态（用于面板显示「更到哪一版了」）。 */
+function contentStatus(root) {
+  if (!root) return null;
+  if (!existsSync(join(root, '.git'))) return { inside: false, commit: '', date: '' };
+  try {
+    const commit = execFileSync('git', ['-C', root, 'rev-parse', '--short', 'HEAD'], {
+      encoding: 'utf8',
+      timeout: 10000,
+    }).trim();
+    const date = execFileSync('git', ['-C', root, 'log', '-1', '--format=%cI'], {
+      encoding: 'utf8',
+      timeout: 10000,
+    }).trim();
+    return { inside: true, commit, date };
+  } catch {
+    return { inside: true, commit: '', date: '' };
+  }
 }
 
 /**
@@ -279,7 +323,7 @@ function mountMcp(ctx, spec, mounted, lines) {
       command: spec.command,
       args: spec.args,
       cwd: spec.cwd,
-      env: { PYTHONIOENCODING: 'utf-8' },
+      env: { PYTHONIOENCODING: 'utf-8', ...(spec.env || {}) },
       toolCallTimeoutMs: spec.timeoutMs,
       failOnStartupError: false,
     });
@@ -316,7 +360,7 @@ function writeStatus(payload) {
 // 只写 mounted.skills: true 说明不了技能真的注册上了 —— 那只是「调了 ctx.plugin」。
 // 这里等 provider 就绪后问一次真实的注册表：到底能列出几个技能、叫什么。
 // 探测失败不影响使用，状态文件里保持 skills: null 即可。
-function probeSkills(ctx, repoRoot) {
+function probeSkills(ctx, repoRoot, delayMs = 1200) {
   return new Promise((resolve) => {
     let settled = false;
     const finish = (value) => {
@@ -360,7 +404,7 @@ function probeSkills(ctx, repoRoot) {
           finish(null);
         }
       }, 6000);
-    }, 1200);
+    }, delayMs);
   });
 }
 
@@ -436,6 +480,70 @@ function writeUserPath(repoRoot, toolId, value) {
  * 快速扫一遍工具在哪。只做「找得到吗」，不真启动 —— 真启动是面板上「深度检测」按钮的事。
  * 状态用 tool_resolver.py 的同一套词汇，免得两处说法不一致。
  */
+/**
+ * 更新内容层。
+ *
+ * 只做一件确定的事：内容根是 git 仓库就 `git pull --ff-only`；不是就返回原因，
+ * 不去猜、不去下载压缩包 —— 猜错的更新比不更新更糟。
+ *
+ * 返回 { ok, before, after, changed, files, message }。
+ */
+function updateContent(config = {}) {
+  const root = resolveContentRoot(config);
+  if (!root) {
+    return { ok: false, message: '还没配内容目录。填一个内容仓库的本地路径，或直接留空用仓库自带的。' };
+  }
+  if (!existsSync(root)) {
+    return { ok: false, message: `内容目录不存在：${root}` };
+  }
+  if (!existsSync(join(root, '.git'))) {
+    return {
+      ok: false,
+      message: `${root} 不是 git 仓库，没法自动更新（可以手动覆盖文件，或把它改成 git clone 出来的目录）。`,
+    };
+  }
+
+  const head = (args) =>
+    execFileSync('git', ['-C', root, ...args], { encoding: 'utf8', timeout: 20000 }).trim();
+
+  let before = '';
+  try {
+    before = head(['rev-parse', 'HEAD']);
+  } catch {
+    /* 空仓库 */
+  }
+
+  try {
+    const out = execFileSync('git', ['-C', root, 'pull', '--ff-only', '--no-rebase'], {
+      encoding: 'utf8',
+      timeout: 120000,
+    });
+    const after = head(['rev-parse', 'HEAD']);
+    const changed = Boolean(before) && before !== after;
+    let files = 0;
+    if (changed) {
+      try {
+        files = Number(head(['rev-list', '--count', `${before}..${after}`])) || 0;
+      } catch {
+        files = 0;
+      }
+    }
+    return {
+      ok: true,
+      before: before.slice(0, 7),
+      after: after.slice(0, 7),
+      changed,
+      commits: files,
+      message: changed ? `已更新到 ${after.slice(0, 7)}（${files} 个提交）` : '已经是最新',
+      output: String(out).trim().split(/\r?\n/).slice(-3).join(' / '),
+    };
+  } catch (error) {
+    const text = error instanceof Error ? error.message : String(error);
+    const firstLine = text.split(/\r?\n/)[0];
+    return { ok: false, message: `git pull 失败：${firstLine}`, output: text.slice(0, 400) };
+  }
+}
+
 function scanTools(repoRoot) {
   let registry = [];
   try {
@@ -617,6 +725,13 @@ function registerPanelApi(ctx, config, getLab) {
               sendJson(res, 400, { ok: false, error: '工作台路径还没配好，先修好路径再改工具' });
               return;
             }
+            if (payload.action === 'updateContent') {
+              const liveCfg = readConfig(config);
+              const result = updateContent(liveCfg);
+              sendJson(res, result.ok ? 200 : 400, result);
+              return;
+            }
+
             const labForPost = typeof getLab === 'function' ? getLab() : null;
             // 面板/小卡片上的 Lab 开关走这里，改的是内存里的运行时状态，
             // 不写磁盘、不重启：关掉立刻停止注入，打开立刻生效。
@@ -662,6 +777,17 @@ function registerPanelApi(ctx, config, getLab) {
 
         // lab 控制器在 apply() 里才创建，这里用 getter 取，别把它闭包丢了。
         const lab = typeof getLab === 'function' ? getLab() : null;
+        // ?skills=1：现问一次技能注册表。更新内容后用它确认新技能有没有被扫到。
+        if (/[?&]skills=1/.test(String(req.url ?? ''))) {
+          const probeRoot = resolveRoot(readConfig(config));
+          probeSkills(ctx, probeRoot, 0)
+            .then((found) => sendJson(res, 200, { ok: Boolean(found), skills: found }))
+            .catch((error) =>
+              sendJson(res, 500, { ok: false, error: error instanceof Error ? error.message : String(error) }),
+            );
+          return;
+        }
+
         const deep = /[?&]verify=1/.test(String(req.url ?? ''));
         const live = readConfig(config);
         const result = inspect(live);
@@ -684,6 +810,10 @@ function registerPanelApi(ctx, config, getLab) {
           lab: lab ? lab.snapshot() : null,
           skillsEnabled: live.enableSkills,
           optionalMcp: { ida: live.enableIda, playwright: live.enablePlaywright },
+          content: (() => {
+            const root = resolveContentRoot(live);
+            return { root, repo: String(live.contentRepo || ''), git: contentStatus(root) };
+          })(),
           deep,
           lines: result.lines,
           tools: result.ok ? toolsFor(repoRoot, python, deep) : {},
@@ -725,6 +855,7 @@ export function apply(ctx, rawConfig = {}) {
         command: python,
         args: [join(repoRoot, 'Tool', 'mcp', 'seep_mcp_server.py')],
         cwd: repoRoot,
+        env: resolveContentRoot(config) ? { SEEP_CONTENT_ROOT: resolveContentRoot(config) } : undefined,
         timeoutMs: SEEP_TIMEOUT_MS,
       },
       mounted,
@@ -786,12 +917,15 @@ export function apply(ctx, rawConfig = {}) {
 
     if (config.enableSkills !== false) {
       try {
-        ctx.plugin(SkillFilesystem, {
-          customSkillDirs: [
-            join(repoRoot, 'Tool', 'skill'),
-            join(repoRoot, 'Tool', 'skill', 'safe-skills'),
-          ],
-        });
+        // 技能优先读内容目录（如果配了且目录存在），否则用仓库自带的那份。
+        const contentRoot = resolveContentRoot(config);
+        const contentSkills = contentRoot
+          ? [join(contentRoot, 'skill'), join(contentRoot, 'safe-skills')].filter((d) => existsSync(d))
+          : [];
+        const skillDirs = contentSkills.length
+          ? contentSkills
+          : [join(repoRoot, 'Tool', 'skill'), join(repoRoot, 'Tool', 'skill', 'safe-skills')];
+        ctx.plugin(SkillFilesystem, { customSkillDirs: skillDirs });
         ctx.plugin(ToolSkill, {});
         mounted.skills = true;
       } catch (error) {
@@ -874,6 +1008,10 @@ export function apply(ctx, rawConfig = {}) {
     mounted,
     skillsEnabled: config.enableSkills !== false,
     optionalMcp: { ida: config.enableIda === true, playwright: config.enablePlaywright === true },
+    content: (() => {
+      const root = resolveContentRoot(config);
+      return { root, git: contentStatus(root), repo: String(config.contentRepo || '') };
+    })(),
     skills: null,
     labGate,
     lab: lab ? lab.snapshot() : null,

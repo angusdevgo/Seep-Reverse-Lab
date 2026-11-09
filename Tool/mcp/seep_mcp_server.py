@@ -64,8 +64,30 @@ APKTOOL_JAR = os.path.join(SAFE_DIR, "apktool", "apktool.jar")
 # 不存在跨平台启动脚本；早期这里还定义过一个 APKTOOL_BAT，在 Unix 上恒指向不存在的
 # 文件，容易让人误判 "apktool 缺失"，已移除。
 
-KB_DIR = os.path.join(TOOL_DIR, "reverselab", "kb")
-LLMS_TXT = os.path.join(TOOL_DIR, "reverselab", "docs", "llms.txt")
+# 内容层（知识库 / 案例 / 技能）可以放在仓库之外，方便单独更新：
+#   SEEP_CONTENT_ROOT=<目录>，约定布局：
+#       <root>/kb/     知识库（等价于 Tool/mcp/Tool/reverselab/kb）
+#       <root>/cases/  案例
+#       <root>/skill/  技能（插件那边挂载技能时用）
+# 没设这个环境变量就还是读仓库里的那份，行为完全不变。
+CONTENT_ROOT = os.environ.get("SEEP_CONTENT_ROOT", "").strip()
+
+
+def _content_dir(name: str, fallback: str) -> str:
+    """优先用外置内容目录；没有就退回仓库内的路径。"""
+    if CONTENT_ROOT:
+        candidate = os.path.join(CONTENT_ROOT, name)
+        if os.path.isdir(candidate):
+            return candidate
+    return fallback
+
+
+KB_DIR = _content_dir("kb", os.path.join(TOOL_DIR, "reverselab", "kb"))
+# 案例在 <repo>/Tool/cases（BASE_DIR 是 <repo>/Tool/mcp）
+CASES_DIR = _content_dir("cases", os.path.join(os.path.dirname(BASE_DIR), "cases"))
+LLMS_TXT = os.path.join(KB_DIR, "..", "docs", "llms.txt")
+if not os.path.isfile(LLMS_TXT):
+    LLMS_TXT = os.path.join(TOOL_DIR, "reverselab", "docs", "llms.txt")
 HOOK_TEMPLATES_DIR = os.path.join(SAFE_DIR, "hook-mcp", "templates")
 
 # 外部 Android 工具箱（Frida/objection/frida-dexdump/APKiD/Aotopsy）。

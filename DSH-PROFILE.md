@@ -22,6 +22,41 @@
 存在则**先试插件包路线**，失败才回退旧路线（两条不能同时上，否则 MCP 会挂两份）。
 跳过该步骤用 `-SkipDsh`（Windows）/ `--skip-dsh`（Unix）。
 
+### 内容层单独更新（不碰 561MB 的工具仓库）
+
+工具和内容可以分开住：
+
+| 层 | 放哪 | 更新方式 |
+| :--- | :--- | :--- |
+| 工具（jadx / apktool / radare2 / node_modules） | 仓库 `Tool/mcp/Tool/safe` | `git pull`（561MB，改得少） |
+| **内容（技能 / 知识库 / 案例）** | **独立的 git 仓库**，例如 `D:\seep-content` | 面板上一键，或 `git pull` |
+
+内容仓库的约定布局（目录名固定，缺哪个就退回仓库自带的那份）：
+
+```
+<内容目录>/
+  skill/          # 与 Tool/skill 同级，每个子目录一个 SKILL.md
+  safe-skills/    # 可选
+  kb/             # 等价于 Tool/mcp/Tool/reverselab/kb
+  cases/          # 等价于 Tool/cases
+```
+
+配置两条就够（面板「配置」区）：
+
+- **内容目录**：`contentRoot`，填本地路径。留空 = 用仓库自带的。
+- 想让它能被命令拉：那个目录本身得是 `git clone` 出来的（面板上的「更新内容」执行 `git pull --ff-only`）。
+
+**实测结果（都是真的跑出来的）**
+
+| 动作 | 结果 |
+| :--- | :--- |
+| 换 `contentRoot` 后启动 | 技能注册表只剩内容仓的（`testlab-content`），不再扫仓库那份 |
+| 内容仓里跑 `git pull`（1 个提交） | 新 KB 条目 `apk-reverse/second.md` 立刻能搜到 |
+| 同上，内容仓新加一个技能 | 注册表**立刻**变成 3 个，含 `hot-added-skill` —— **不用重启** |
+
+技能层带 watch，知识库是查询时现读，所以内容更新**不需要重启 DSH**；
+工具层（MCP 服务进程）才是必须重启的那一层。
+
 ### 更新什么要怎么做（一张表说清）
 
 **结论先说：所有内容都靠仓库更新（`git pull`），插件包本身不是下载源。**

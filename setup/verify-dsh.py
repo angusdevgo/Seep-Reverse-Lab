@@ -325,9 +325,17 @@ def check_skills(rep, status):
     # 注册表里除我们的 10 个，还会有 DSH 自带的（沙箱诊断等），所以只要求我们的都在。
     runtime = ((status or {}).get("skills") or {})
     seen = set(runtime.get("names") or [])
+
+    # 配了外置内容目录时，技能是从那边挂的，仓库自带的根本没装 ——
+    # 这时候拿仓库的技能名去比，会冤枉成「没注册」。
+    content_root = ((status or {}).get("content") or {}).get("root") or ""
     expected = set()
-    for rel in ("Tool/skill", "Tool/skill/safe-skills"):
-        d = os.path.join(ROOT, *rel.split("/"))
+    roots = (
+        [os.path.join(content_root, "skill"), os.path.join(content_root, "safe-skills")]
+        if content_root
+        else [os.path.join(ROOT, *rel.split("/")) for rel in ("Tool/skill", "Tool/skill/safe-skills")]
+    )
+    for d in roots:
         if not os.path.isdir(d):
             continue
         for child in os.listdir(d):
@@ -352,7 +360,8 @@ def check_skills(rep, status):
     elif missing:
         detail = "注册表 %d 个，缺：%s" % (len(seen), ", ".join(missing[:4]))
     else:
-        detail = "注册表 %d 个（仓库 %d 个全在）" % (len(seen), len(expected))
+        where = "内容目录" if content_root else "仓库"
+        detail = "注册表 %d 个（%s %d 个全在）" % (len(seen), where, len(expected))
 
     rep.add(G, "F1", "技能真的注册进 DSH 注册表（不只是挂了个插件）", 5, registered, detail,
             "重启 DSH；仍有缺失看 dsh 启动日志里的 [seep-workbench] 技能行")
