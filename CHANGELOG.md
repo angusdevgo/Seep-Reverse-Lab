@@ -74,6 +74,33 @@ pi 上的 `lab：` 是靠扩展实现的。DSH 上现在也在插件里实现了
 改完路径不会自动重挂 MCP，需要重启 DSH；技能 / lab 开关对下一个会话生效。
 面板上已直接写明。
 
+### 可选 MCP：IDA 与 Playwright
+
+插件原来只挂 `seep` + `js-reverse`。`seep_ida_status` 一直报 Offline 不是坏了，
+是 DSH 里压根没挂 IDA 的 MCP。
+
+现在两个可选服务都支持，开关有三处（等价）：
+
+```powershell
+python setup\dsh-plugin-setup.py --with-ida --with-playwright
+```
+
+- 面板：设置 → Seep 工作台 → 勾「额外挂 IDA MCP / Playwright MCP」
+- 配置文件：`enableIda: true` / `enablePlaywright: true`
+
+实测（dsh-seep）：
+
+| 服务 | 结果 |
+| :--- | :--- |
+| ida | 48 个工具，进程是 `IDA\python311\python.exe ...\ida_pro_mcp\server.py` |
+| playwright | 25 个工具，`npx -y @playwright/mcp@latest` |
+
+四个都挂上时日志是：`已接线 seep / js-reverse / playwright / ida / 技能`。
+
+IDA 的解析顺序：`SEEP_IDA_ROOT` → `setup/tool-registry.json` 的 ida 候选目录 →
+找 `<root>/python311/python.exe` 与 `.../site-packages/ida_pro_mcp/server.py`。
+找不到只记一条提示，不影响其它服务启动。
+
 ### 技能「挂上了」与「真的注册上了」不是一回事
 
 排查时发现：`mounted.skills = true` 只说明插件调了 `ctx.plugin(SkillFilesystem)`，

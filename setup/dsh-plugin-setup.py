@@ -114,7 +114,8 @@ def quote_yaml(value: str) -> str:
     return "'" + str(value).replace("'", "''") + "'"
 
 
-def build_entry(root: str, skills: bool, lab_gate: bool) -> str:
+def build_entry(root: str, skills: bool, lab_gate: bool,
+                with_ida: bool = False, with_playwright: bool = False) -> str:
     lines = [
         "- id: %s" % ENTRY_ID,
         "  config:",
@@ -124,6 +125,11 @@ def build_entry(root: str, skills: bool, lab_gate: bool) -> str:
         lines.append("    enableSkills: false")
     if not lab_gate:
         lines.append("    labGate: false")
+    # 可选的额外 MCP。默认不挂，省得多几十个工具占上下文。
+    if with_ida:
+        lines.append("    enableIda: true")
+    if with_playwright:
+        lines.append("    enablePlaywright: true")
     return "\n".join(lines) + "\n"
 
 
@@ -183,6 +189,12 @@ def report_status(root: str, profile: str, version: str) -> int:
     if configured and os.path.normcase(os.path.normpath(configured)) != os.path.normcase(os.path.normpath(root)):
         print("                         ⚠️ 与当前仓库不一致（本仓库是 %s）" % root)
 
+    print("  可选 MCP             : %s" % (
+        ", ".join(x for x in (
+            "ida" if re.search(r"^\s*enableIda:\s*true", body, re.M) else "",
+            "playwright" if re.search(r"^\s*enablePlaywright:\s*true", body, re.M) else "",
+        )) or "只挂 seep + js-reverse"))
+
     legacy = LEGACY_BEGIN in body
     print("  旧路线残留           : %s" % ("有（会把 MCP 挂两份，重跑本脚本会清掉）" if legacy else "无"))
 
@@ -211,6 +223,8 @@ def main(argv=None) -> int:
     ap.add_argument("--no-lab-gate", action="store_true", help="关掉 lab 开关")
     ap.add_argument("--dry-run", action="store_true", help="只打印，不实际改动")
     ap.add_argument("--check", action="store_true", help="只报告状态，不改任何文件")
+    ap.add_argument("--with-ida", action="store_true", help="额外挂 IDA Pro MCP（需本机已装 IDA）")
+    ap.add_argument("--with-playwright", action="store_true", help="额外挂 Playwright MCP（走 npx）")
     args = ap.parse_args(argv)
 
     root = os.path.abspath(args.root)
@@ -269,7 +283,8 @@ def main(argv=None) -> int:
     # 2) 写路径
     patch_dir = os.path.join(dsh_home(), "profiles", args.profile)
     patch = os.path.join(patch_dir, "cordis.patch.yml")
-    entry = build_entry(root, skills=not args.no_skills, lab_gate=not args.no_lab_gate)
+    entry = build_entry(root, skills=not args.no_skills, lab_gate=not args.no_lab_gate,
+                        with_ida=args.with_ida, with_playwright=args.with_playwright)
 
     if not os.path.isdir(patch_dir):
         print("  [FAIL] profile 目录不存在：%s" % patch_dir)

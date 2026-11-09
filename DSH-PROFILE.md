@@ -34,7 +34,13 @@ python setup\dsh-plugin-setup.py --check                   # 只报状态，不�
 python setup\dsh-plugin-setup.py --no-skills               # 不在 DSH 里列技能
 python setup\dsh-plugin-setup.py --no-lab-gate             # 关掉 lab 开关
 python setup\dsh-plugin-setup.py --dry-run                 # 只看会改什么
+python setup\dsh-plugin-setup.py --with-playwright         # 额外挂 Playwright MCP（+25 工具）
+python setup\dsh-plugin-setup.py --with-ida                # 额外挂 IDA MCP（+48 工具，需本机有 IDA）
 ```
+
+默认只挂 `seep` + `js-reverse`（62 个工具）。那两个可选的不默认开：
+IDA 要本机装了 IDA、Playwright 走 npx 要联网，且多几十个工具会挤上下文。
+面板里也能直接勾选，效果一样。
 
 `--check` 会报：包装了没、路径写了没、配置里的路径跟当前仓库一不一致、
 **有没有旧路线残留**、插件上次启动时接线了哪些。排查先跑它。

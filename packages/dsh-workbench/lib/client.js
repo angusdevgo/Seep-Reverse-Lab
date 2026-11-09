@@ -172,6 +172,8 @@ window.__ModuleLoader__.load({
         const [python, setPython] = React.useState(value.pythonPath || '');
         const [skills, setSkills] = React.useState(value.enableSkills !== false);
         const [labGate, setLabGate] = React.useState(value.labGate !== false);
+        const [ida, setIda] = React.useState(value.enableIda === true);
+        const [playwright, setPlaywright] = React.useState(value.enablePlaywright === true);
 
         // 宿主值变了就同步草稿（按 revision，避免把正在输入的字冲掉）
         React.useEffect(() => {
@@ -180,6 +182,8 @@ window.__ModuleLoader__.load({
           setPython(v.pythonPath || '');
           setSkills(v.enableSkills !== false);
           setLabGate(v.labGate !== false);
+          setIda(v.enableIda === true);
+          setPlaywright(v.enablePlaywright === true);
         }, [snap && snap.revision]);
 
         const saved = value;
@@ -187,7 +191,9 @@ window.__ModuleLoader__.load({
           root !== (saved.repoRoot || '') ||
           python !== (saved.pythonPath || '') ||
           skills !== (saved.enableSkills !== false) ||
-          labGate !== (saved.labGate !== false);
+          labGate !== (saved.labGate !== false) ||
+          ida !== (saved.enableIda === true) ||
+          playwright !== (saved.enablePlaywright === true);
 
         const save = async () => {
           setBusy(true);
@@ -198,6 +204,8 @@ window.__ModuleLoader__.load({
               { op: 'set', path: ['pythonPath'], value: python.trim() },
               { op: 'set', path: ['enableSkills'], value: skills },
               { op: 'set', path: ['labGate'], value: labGate },
+              { op: 'set', path: ['enableIda'], value: ida },
+              { op: 'set', path: ['enablePlaywright'], value: playwright },
             ];
             let okAccepted;
             try {
@@ -303,6 +311,18 @@ window.__ModuleLoader__.load({
             { style: { display: 'flex', gap: 8, alignItems: 'center', fontSize: 13 } },
             h('input', { type: 'checkbox', checked: labGate, onChange: (e) => setLabGate(e.target.checked) }),
             '启用 lab 开关（只有消息里出现 lab： 才注入作战纪律）',
+          ),
+          h(
+            'label',
+            { style: { display: 'flex', gap: 8, alignItems: 'center', fontSize: 13 } },
+            h('input', { type: 'checkbox', checked: playwright, onChange: (e) => setPlaywright(e.target.checked) }),
+            '额外挂 Playwright MCP（浏览器自动化，多 25 个工具）',
+          ),
+          h(
+            'label',
+            { style: { display: 'flex', gap: 8, alignItems: 'center', fontSize: 13 } },
+            h('input', { type: 'checkbox', checked: ida, onChange: (e) => setIda(e.target.checked) }),
+            '额外挂 IDA MCP（本机要装 IDA + ida_pro_mcp）',
           ),
           h(
             'div',

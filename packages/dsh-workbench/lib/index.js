@@ -49,6 +49,16 @@ export const Config = z.object({
     .default(true)
     .volatile()
     .description('只在消息里出现 lab： 之后才注入作战纪律。关掉便于排查问题。'),
+  enableIda: z
+    .boolean()
+    .default(false)
+    .volatile()
+    .description('额外挂 IDA Pro MCP（需要本机已装 IDA + ida_pro_mcp）。'),
+  enablePlaywright: z
+    .boolean()
+    .default(false)
+    .volatile()
+    .description('额外挂 Playwright MCP（浏览器自动化，走 npx）。'),
 });
 
 /**
@@ -73,6 +83,8 @@ function readConfig(config = {}) {
     pythonPath: plain(config.pythonPath, ''),
     enableSkills: plain(config.enableSkills, true) !== false,
     labGate: plain(config.labGate, true) !== false,
+    enableIda: plain(config.enableIda, false) === true,
+    enablePlaywright: plain(config.enablePlaywright, false) === true,
     strict: config.strict === true,
   };
 }
@@ -89,6 +101,8 @@ const DISCIPLINE_FILE = 'Tool/prompts/SYSTEM.md';
 /** 纯 stdio 服务，jadx 全量反编译、HLS 解密都要几分钟，不能用 DSH 的 60 秒默认值。 */
 const SEEP_TIMEOUT_MS = 900000;
 const JS_REVERSE_TIMEOUT_MS = 600000;
+const PLAYWRIGHT_TIMEOUT_MS = 600000;
+const IDA_TIMEOUT_MS = 600000;
 
 function readVersion(repoRoot) {
   try {
@@ -160,6 +174,37 @@ function resolvePython(config = {}) {
   }
 
   return 'python';
+}
+
+/**
+ * 找 IDA 的 MCP 服务端。IDA 自带的 python311 里装了 ida_pro_mcp 才能用。
+ *
+ * 顺序：SEEP_IDA_ROOT 环境变量 → setup/tool-registry.json 的 ida 候选目录。
+ * 返回 { python, server } 或 null（null 表示这台机器上没有可用的 IDA，不是错误）。
+ */
+function resolveIda(config = {}) {
+  const roots = [];
+  const fromEnv = String(process.env.SEEP_IDA_ROOT ?? '').trim();
+  if (fromEnv) roots.push(fromEnv);
+
+  try {
+    const registry = JSON.parse(
+      readFileSync(join(resolveRoot(config), 'setup', 'tool-registry.json'), 'utf8'),
+    );
+    const list = Array.isArray(registry) ? registry : registry.tools ?? [];
+    const entry = list.find((t) => t && t.id === 'ida');
+    for (const candidate of entry?.candidates ?? []) roots.push(expand(candidate));
+  } catch {
+    // 读不到注册表就只认环境变量
+  }
+
+  for (const root of roots) {
+    if (!root || !existsSync(root)) continue;
+    const python = join(root, 'python311', process.platform === 'win32' ? 'python.exe' : 'bin/python3');
+    const server = join(root, 'python311', 'Lib', 'site-packages', 'ida_pro_mcp', 'server.py');
+    if (existsSync(python) && existsSync(server)) return { python, server };
+  }
+  return null;
 }
 
 /**
@@ -495,7 +540,11 @@ function registerPanelApi(ctx, config) {
         const repoRoot = result.repoRoot;
         const python = resolvePython(live);
         const mountedNow = result.ok && existsSync(join(repoRoot, 'Tool', 'mcp', 'seep_mcp_server.py'));
-        const wired = mountedNow ? 'seep / js-reverse / 技能' : '无';
+        const wired = mountedNow
+          ? ['seep', 'js-reverse', live.enablePlaywright ? 'playwright' : '', live.enableIda ? 'ida' : '', '技能']
+              .filter(Boolean)
+              .join(' / ')
+          : '无';
 
         sendJson(res, 200, {
           ok: Boolean(mountedNow),
@@ -505,6 +554,7 @@ function registerPanelApi(ctx, config) {
           wired,
           labGate: live.labGate,
           skillsEnabled: live.enableSkills,
+          optionalMcp: { ida: live.enableIda, playwright: live.enablePlaywright },
           deep,
           lines: result.lines,
           tools: result.ok ? toolsFor(repoRoot, python, deep) : {},
@@ -552,6 +602,45 @@ export function apply(ctx, rawConfig = {}) {
       lines,
     );
 
+    if (config.enablePlaywright === true) {
+      mountMcp(
+        ctx,
+        {
+          key: 'playwright',
+          serverName: 'playwright',
+          command: 'npx',
+          args: ['-y', '@playwright/mcp@latest'],
+          cwd: repoRoot,
+          timeoutMs: PLAYWRIGHT_TIMEOUT_MS,
+        },
+        mounted,
+        lines,
+      );
+    }
+
+    if (config.enableIda === true) {
+      const ida = resolveIda(config);
+      if (!ida) {
+        lines.push(
+          '要挂 IDA MCP，但没找到 IDA（设 SEEP_IDA_ROOT，或确认 IDA 目录下有 python311/Lib/site-packages/ida_pro_mcp）。',
+        );
+      } else {
+        mountMcp(
+          ctx,
+          {
+            key: 'ida',
+            serverName: 'ida',
+            command: ida.python,
+            args: [ida.server],
+            cwd: repoRoot,
+            timeoutMs: IDA_TIMEOUT_MS,
+          },
+          mounted,
+          lines,
+        );
+      }
+    }
+
     if (config.enableSkills !== false) {
       try {
         ctx.plugin(SkillFilesystem, {
@@ -593,6 +682,8 @@ export function apply(ctx, rawConfig = {}) {
     const wired = [
       mounted.seep ? 'seep' : '',
       mounted.jsReverse ? 'js-reverse' : '',
+      mounted.playwright ? 'playwright' : '',
+      mounted.ida ? 'ida' : '',
       mounted.skills ? '技能' : '',
     ].filter(Boolean);
     console.error(
@@ -640,6 +731,7 @@ export function apply(ctx, rawConfig = {}) {
     python: result.ok ? resolvePython(config) : '',
     mounted,
     skillsEnabled: config.enableSkills !== false,
+    optionalMcp: { ida: config.enableIda === true, playwright: config.enablePlaywright === true },
     skills: null,
     labGate,
     lines,

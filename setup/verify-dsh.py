@@ -373,6 +373,28 @@ def check_skills(rep, status):
             "Tool/skill 与 Tool/skill/safe-skills", "重新克隆仓库")
 
 
+def check_optional_mcp(rep, status):
+    """可选的第二个 MCP（ida / playwright）：挂了就报 READY，没开就说清楚。
+
+    不计分：这两个是「有更好」，缺了不影响 seep 本身。
+    """
+    status = status or {}
+    mounted = status.get("mounted") or {}
+    wanted = status.get("optionalMcp") or {}
+
+    for key, label, hint in (
+        ("playwright", "playwright", "python setup/dsh-plugin-setup.py --with-playwright"),
+        ("ida", "ida", "python setup/dsh-plugin-setup.py --with-ida"),
+    ):
+        if mounted.get(key):
+            rep.add_optional("可选 MCP", "READY", label, "已在 DSH 里挂上")
+        elif wanted.get(key):
+            rep.add_optional("可选 MCP", "DEGRADED", label,
+                             "配置里开了但没挂上（看 dsh 启动日志的 [seep-workbench] 提示）")
+        else:
+            rep.add_optional("可选 MCP", "OPTIONAL", label, "没开；要挂：%s" % hint)
+
+
 def check_assets(rep):
     """第 3 组：仓库资产（20 分）"""
     G = "仓库资产"
@@ -546,6 +568,7 @@ def main(argv=None) -> int:
     check_mcp(rep, status, args.skip_spawn)
     check_lab_gate(rep)
     check_skills(rep, status)
+    check_optional_mcp(rep, status)
     check_assets(rep)
     check_instructions(rep)
     check_runtime(rep)
