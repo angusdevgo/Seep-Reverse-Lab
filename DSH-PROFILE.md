@@ -39,6 +39,14 @@ python setup\dsh-plugin-setup.py --dry-run                 # 只看会改什么
 `--check` 会报：包装了没、路径写了没、配置里的路径跟当前仓库一不一致、
 **有没有旧路线残留**、插件上次启动时接线了哪些。排查先跑它。
 
+> **只装 DSH 的话，还要补一条 `generate-configs`**：全新 clone 里没有
+> `setup/cordis.generated.yml`（它是生成物，不进 git）。插件路线用不到它，
+> 但 `verify.ps1` 会拿它当一项核心检查，不生成就是 65/66。
+>
+> ```powershell
+> powershell -ExecutionPolicy Bypass -File setup\generate-configs.ps1
+> ```
+
 它做的事：
 
 1. `dsh plugin --profile web remove seep-dsh-workbench`（没装过时失败属正常）
