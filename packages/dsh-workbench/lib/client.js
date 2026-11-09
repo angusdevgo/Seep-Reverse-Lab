@@ -417,6 +417,56 @@ window.__ModuleLoader__.load({
               onClick: () => void toggleLab(!(status && status.lab && status.lab.injecting)),
             }, status && status.lab && status.lab.injecting ? '退出 lab' : '进入 lab'),
           ),
+          status && status.repoGit && status.repoGit.ok
+            ? h(
+                'div',
+                {
+                  style: {
+                    display: 'flex', flexDirection: 'column', gap: 4,
+                    padding: '8px 10px', borderRadius: 8,
+                    background: 'var(--dsw-alias-bg-layer-1)',
+                    border: '0.5px solid var(--dsw-alias-border-l1)',
+                  },
+                },
+                h('div', { style: { display: 'flex', gap: 8, alignItems: 'center', fontSize: 12.5 } },
+                  h('span', { style: { fontWeight: 600 } }, '工作台仓库'),
+                  h('span', { style: { color: 'var(--dsw-alias-label-tertiary)' } },
+                    `${status.repoGit.branch || '-'} @ ${status.repoGit.commit || '-'}`),
+                  status.repoGit.behind > 0
+                    ? h('span', { style: { color: 'var(--dsw-alias-state-warn-primary, #c9a227)' } },
+                        `落后 ${status.repoGit.behind} 个提交`)
+                    : h('span', { style: { color: 'var(--dsw-alias-state-success-primary)' } }, '已是最新'),
+                  status.repoGit.ahead > 0
+                    ? h('span', { style: { color: 'var(--dsw-alias-label-tertiary)' } },
+                        `本地领先 ${status.repoGit.ahead}`)
+                    : null,
+                  status.repoGit.dirty > 0
+                    ? h('span', { style: { color: 'var(--dsw-alias-state-warn-primary, #c9a227)' } },
+                        `本地改动 ${status.repoGit.dirty} 个文件`)
+                    : null,
+                  h('span', { style: { marginLeft: 'auto' } }),
+                  h('button', {
+                    style: S.btnSmall, disabled: busy,
+                    title: 'git fetch 后对比，不改任何文件',
+                    onClick: () => void checkRepo(),
+                  }, '对比'),
+                  h('button', {
+                    style: S.btnSmallPrimary, disabled: busy,
+                    title: 'git pull --ff-only：把仓库更新到远端最新',
+                    onClick: () => void updateRepo(),
+                  }, '更新工作台'),
+                ),
+                status.repoGit.commits && status.repoGit.commits.length
+                  ? h('div', {
+                      style: {
+                        fontSize: 11.5, lineHeight: '17px',
+                        color: 'var(--dsw-alias-label-tertiary)',
+                        maxHeight: 92, overflow: 'auto', whiteSpace: 'pre-wrap',
+                      },
+                    }, status.repoGit.commits.join('\n'))
+                  : null,
+              )
+            : null,
           h(
             'div',
             { style: { display: 'flex', gap: 8, alignItems: 'center', fontSize: 13 } },
@@ -485,6 +535,53 @@ window.__ModuleLoader__.load({
             h('span', { style: { ...S.hint, marginLeft: 'auto' } }, '改完需要重启 DSH 才生效'),
           ),
         );
+
+        // 只对比不更新：fetch 后看落后几个提交、差哪几条
+        const checkRepo = async () => {
+          setBusy(true);
+          setNotice('');
+          try {
+            const res = await fetch(API, {
+              method: 'POST',
+              headers: { 'content-type': 'application/json' },
+              credentials: 'same-origin',
+              body: JSON.stringify({ action: 'checkRepo' }),
+            });
+            const payload = await res.json();
+            if (payload.ok && payload.repo) {
+              setStatus((prev) => (prev ? { ...prev, repoGit: payload.repo } : prev));
+              setNotice(payload.repo.behind > 0
+                ? `落后 ${payload.repo.behind} 个提交，可以点「更新工作台」`
+                : '已经是最新');
+            } else {
+              setNotice(payload.error || '对比失败');
+            }
+          } catch (e) {
+            setNotice(e && e.message ? e.message : '对比失败');
+          } finally {
+            setBusy(false);
+          }
+        };
+
+        const updateRepo = async () => {
+          setBusy(true);
+          setNotice('');
+          try {
+            const res = await fetch(API, {
+              method: 'POST',
+              headers: { 'content-type': 'application/json' },
+              credentials: 'same-origin',
+              body: JSON.stringify({ action: 'updateRepo' }),
+            });
+            const payload = await res.json();
+            setNotice(payload.message || (payload.ok ? '已完成' : '更新失败'));
+            await load();
+          } catch (e) {
+            setNotice(e && e.message ? e.message : '更新失败');
+          } finally {
+            setBusy(false);
+          }
+        };
 
         const saveToolPath = async (id, path) => {
           setToolBusy(id);

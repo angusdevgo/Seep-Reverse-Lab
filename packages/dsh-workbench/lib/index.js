@@ -477,9 +477,94 @@ function writeUserPath(repoRoot, toolId, value) {
 }
 
 /**
- * 快速扫一遍工具在哪。只做「找得到吗」，不真启动 —— 真启动是面板上「深度检测」按钮的事。
- * 状态用 tool_resolver.py 的同一套词汇，免得两处说法不一致。
+ * 读一个 git 目录的状态：分支、落后/领先多少、工作区脏不脏、差哪些提交。
+ *
+ * 「对比现有文件和仓库文件」就靠它 —— 先 fetch 再看，不改任何文件。
+ * 失败一律返回 error，不让面板崩。
  */
+function gitStatus(root, { fetch = false } = {}) {
+  if (!root || !existsSync(root)) return { ok: false, error: '目录不存在' };
+  if (!existsSync(join(root, '.git'))) return { ok: false, error: '不是 git 仓库' };
+
+  const run = (args) =>
+    execFileSync('git', ['-C', root, ...args], { encoding: 'utf8', timeout: 30000 }).trim();
+  const lines = (text) => String(text).split(/\r?\n/).filter(Boolean);
+
+  try {
+    if (fetch) {
+      try {
+        execFileSync('git', ['-C', root, 'fetch', '--quiet'], { encoding: 'utf8', timeout: 60000 });
+      } catch {
+        // 没网 / 没凭据都不能挡住读本地状态
+      }
+    }
+
+    const branch = run(['rev-parse', '--abbrev-ref', 'HEAD']);
+    const commit = run(['rev-parse', '--short', 'HEAD']);
+    const date = run(['log', '-1', '--format=%cI']);
+    const dirty = lines(run(['status', '--porcelain'])).length;
+
+    let upstream = '';
+    let behind = 0;
+    let ahead = 0;
+    let commits = [];
+    try {
+      upstream = run(['rev-parse', '--abbrev-ref', '--symbolic-full-name', '@{u}']);
+      behind = Number(run(['rev-list', '--count', 'HEAD..@{u}'])) || 0;
+      ahead = Number(run(['rev-list', '--count', '@{u}..HEAD'])) || 0;
+      if (behind > 0) commits = lines(run(['log', '--oneline', '--no-decorate', 'HEAD..@{u}', '-10']));
+    } catch {
+      // 还没关联远端分支，就只报本地状态
+    }
+
+    return { ok: true, branch, commit, date, dirty, upstream, behind, ahead, commits };
+  } catch (error) {
+    const text = error instanceof Error ? error.message : String(error);
+    return { ok: false, error: text.split(/\r?\n/)[0] };
+  }
+}
+
+/**
+ * 对任意 git 目录「先看再拉」：fetch → 报告落后多少 → pull --ff-only。
+ *
+ * 只快进，不合并、不 rebase、不丢本地改动 —— 更新失败比更新出错好。
+ */
+function updateGitDir(root, label) {
+  if (!root) return { ok: false, message: `${label}还没配路径` };
+  const before = gitStatus(root);
+  if (!before.ok) return { ok: false, message: `${label}不是可用的 git 仓库：${before.error}` };
+
+  let pulled = '';
+  try {
+    pulled = execFileSync('git', ['-C', root, 'pull', '--ff-only', '--no-rebase'], {
+      encoding: 'utf8',
+      timeout: 180000,
+    });
+  } catch (error) {
+    const text = error instanceof Error ? error.message : String(error);
+    return {
+      ok: false,
+      message: `${label}更新失败：${text.split(/\r?\n/)[0]}`,
+      detail: text.slice(0, 400),
+      before,
+    };
+  }
+
+  const after = gitStatus(root);
+  const changed = before.commit !== after.commit;
+  return {
+    ok: true,
+    changed,
+    before: before.commit,
+    after: after.commit,
+    pending: before.behind,
+    message: changed
+      ? `${label}已更新：${before.commit} → ${after.commit}${before.behind ? `（${before.behind} 个提交）` : ''}`
+      : `${label}已经是最新（${after.commit}）`,
+    detail: String(pulled).trim().split(/\r?\n/).slice(-2).join(' / '),
+  };
+}
+
 /**
  * 更新内容层。
  *
@@ -544,6 +629,10 @@ function updateContent(config = {}) {
   }
 }
 
+/**
+ * 快速扫一遍工具在哪。只做「找得到吗」，不真启动 —— 真启动是面板上「深度检测」按钮的事。
+ * 状态用 tool_resolver.py 的同一套词汇，免得两处说法不一致。
+ */
 function scanTools(repoRoot) {
   let registry = [];
   try {
@@ -732,6 +821,19 @@ function registerPanelApi(ctx, config, getLab) {
               return;
             }
 
+            // 更新工作台仓库本体（工具、MCP、插件代码、技能…都在里面）。
+            if (payload.action === 'updateRepo') {
+              const result = updateGitDir(root, '工作台仓库');
+              sendJson(res, result.ok ? 200 : 400, result);
+              return;
+            }
+
+            // 只看不拉：fetch 之后告诉面板落后多少个提交、差哪几条。
+            if (payload.action === 'checkRepo') {
+              sendJson(res, 200, { ok: true, repo: gitStatus(root, { fetch: true }) });
+              return;
+            }
+
             const labForPost = typeof getLab === 'function' ? getLab() : null;
             // 面板/小卡片上的 Lab 开关走这里，改的是内存里的运行时状态，
             // 不写磁盘、不重启：关掉立刻停止注入，打开立刻生效。
@@ -814,6 +916,7 @@ function registerPanelApi(ctx, config, getLab) {
             const root = resolveContentRoot(live);
             return { root, repo: String(live.contentRepo || ''), git: contentStatus(root) };
           })(),
+          repoGit: gitStatus(repoRoot),
           deep,
           lines: result.lines,
           tools: result.ok ? toolsFor(repoRoot, python, deep) : {},
