@@ -13,7 +13,7 @@
  * 配置项在 DSH 的「设置 → 插件」里能直接填（DSH 用 Config schema 自动生成表单）。
  */
 
-import { execFileSync, spawnSync } from 'node:child_process';
+import { execFileSync, spawn, spawnSync } from 'node:child_process';
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { join } from 'node:path';
@@ -718,6 +718,87 @@ function updatePlugin() {
   }
 }
 
+/**
+ * 面板里点「重启 DSH」走这里。
+ *
+ * 为什么需要一个「帮手进程」而不是自己重启自己：
+ *   node 进程没法原地重启，必须有人等它死了再把新的拉起来。
+ *   所以我们 spawn 一个脱离父进程的小脚本，它轮询老 PID 是否消失，
+ *   老进程一退出就按**完全相同的命令行**把 DSH 重新拉起来。
+ *
+ * 命令行从 process.argv 原样复制（含 --profile web 之类的参数），
+ * 这样用户当初怎么启动的，重启后还是怎么启动。
+ *
+ * 失败不静默：日志写到 ~/.dsh/seep-workbench.restart.log，面板上也会回一条
+ * 「没起来就手动敲 xxx」。
+ */
+function scheduleRestart(delayMs = 800) {
+  const argv = process.argv.slice(1);
+  const pid = process.pid;
+  const home = String(process.env.DSH_HOME ?? '').trim() || join(homedir(), '.dsh');
+  const logFile = join(home, 'seep-workbench.restart.log');
+
+  // 帮手脚本：等老进程退出 → 等一下让端口释放 → 原样拉起
+  const helper = `
+const { spawn } = require('node:child_process');
+const fs = require('node:fs');
+const argv = JSON.parse(process.env.SEEP_RESTART_ARGV);
+const oldPid = Number(process.env.SEEP_RESTART_PID);
+const logFile = process.env.SEEP_RESTART_LOG;
+const note = (m) => { try { fs.appendFileSync(logFile, new Date().toISOString() + ' ' + m + '\n'); } catch {} };
+const alive = () => { try { process.kill(oldPid, 0); return true; } catch { return false; } };
+const t0 = Date.now();
+const wait = () => {
+  if (alive() && Date.now() - t0 < 20000) return setTimeout(wait, 250);
+  note('old process gone, starting new dsh');
+  setTimeout(() => {
+    try {
+      const child = spawn(process.execPath, argv, { detached: true, stdio: 'ignore', env: process.env, cwd: process.cwd() });
+      child.unref();
+      note('spawned pid ' + child.pid);
+    } catch (e) { note('spawn failed: ' + e.message); }
+    process.exit(0);
+  }, ${delayMs});
+};
+note('waiting for pid ' + oldPid);
+wait();
+`;
+
+  try {
+    writeFileSync(logFile, '');
+  } catch {
+    /* 日志写不了不影响重启 */
+  }
+
+  try {
+    const child = spawn(process.execPath, ['-e', helper], {
+      detached: true,
+      stdio: 'ignore',
+      cwd: process.cwd(),
+      env: {
+        ...process.env,
+        SEEP_RESTART_ARGV: JSON.stringify(argv),
+        SEEP_RESTART_PID: String(pid),
+        SEEP_RESTART_LOG: logFile,
+      },
+    });
+    child.unref();
+  } catch (error) {
+    const text = error instanceof Error ? error.message : String(error);
+    return {
+      ok: false,
+      message: `重启帮手没起来：${text.split(/\r?\n/)[0]}。请手动重启：dsh ${argv.slice(1).join(' ')}`,
+    };
+  }
+
+  return {
+    ok: true,
+    message: '正在重启 DSH，页面会在十几秒后自动回来（如果没回来，手动敲 dsh 重启）',
+    command: `dsh ${argv.slice(1).join(' ')}`,
+    log: logFile,
+  };
+}
+
 function scanTools(repoRoot) {
   let registry = [];
   try {
@@ -981,6 +1062,17 @@ function registerPanelApi(ctx, config, getLab) {
             if (payload.action === 'updatePlugin') {
               const result = updatePlugin();
               sendJson(res, result.ok ? 200 : 400, result);
+              return;
+            }
+
+            // 面板里点「重启 DSH」：先把响应发出去，再让进程走掉。
+            // 顺序不能反 —— 先 exit 的话浏览器只会看到连接被重置，拿不到任何提示。
+            if (payload.action === 'restart') {
+              const plan = scheduleRestart();
+              sendJson(res, plan.ok ? 200 : 500, plan);
+              if (plan.ok) {
+                setTimeout(() => process.exit(0), 600);
+              }
               return;
             }
 

@@ -242,6 +242,10 @@ window.__ModuleLoader__.load({
         const value = (snap && snap.value) || {};
         // 一键更新的逐条结果：[{ label, ok, skipped, message }]
         const [updateSteps, setUpdateSteps] = React.useState(null);
+        // 更新后要不要显示「重启」按钮：只有真有文件变化才出现，避免多一个没用的按钮
+        const [needRestart, setNeedRestart] = React.useState(false);
+        const [restarting, setRestarting] = React.useState(false);
+        const [restartMsg, setRestartMsg] = React.useState('');
         const [root, setRoot] = React.useState(value.repoRoot || '');
         const [python, setPython] = React.useState(value.pythonPath || '');
         const [skills, setSkills] = React.useState(value.enableSkills !== false);
@@ -460,6 +464,24 @@ window.__ModuleLoader__.load({
                         } }, `${s.ok ? (s.skipped ? '– ' : '✓ ') : '✕ '}${s.label}：${s.message}`)),
                     )
                   : null,
+                // 有东西更新了才问「要不要重启」；没更新就不打扰。
+                needRestart
+                  ? h(
+                      'div',
+                      { style: { display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' } },
+                      h('span', { style: { ...S.hint, fontSize: 11.5, flex: 1 } },
+                        '文件已就位，但跑着的还是旧进程。重启后新工具才生效。'),
+                      h('button', {
+                        style: S.btnSmallPrimary,
+                        disabled: restarting,
+                        title: '会断掉当前会话，页面大约十几秒后自己回来',
+                        onClick: () => void restartDsh(),
+                      }, restarting ? '重启中…' : '重启 DSH'),
+                    )
+                  : null,
+                needRestart && restartMsg
+                  ? h('div', { style: { fontSize: 11.5, color: 'var(--dsw-alias-label-tertiary)' } }, restartMsg)
+                  : null,
                 status.repoGit.commits && status.repoGit.commits.length
                   ? h('div', {
                       style: {
@@ -524,6 +546,7 @@ window.__ModuleLoader__.load({
             });
             const payload = await res.json();
             setUpdateSteps(payload.steps || []);
+            setNeedRestart(Boolean(payload.needRestart));
             setNotice(payload.message || (payload.ok ? '已完成' : '没更新成功'));
             await load();
           } catch (e) {
@@ -532,6 +555,42 @@ window.__ModuleLoader__.load({
           } finally {
             setBusy(false);
           }
+        };
+
+        // 点「重启 DSH」：先拿到「正在重启」的回复，再轮询等它活过来，然后自己刷新页面。
+        // 拿不到回复（进程已经走了）也继续轮询 —— 那种情况通常说明重启成功了。
+        const restartDsh = async () => {
+          setRestarting(true);
+          setRestartMsg('正在重启，页面会自己回来…');
+          try {
+            await fetch(API, {
+              method: 'POST',
+              headers: { 'content-type': 'application/json' },
+              credentials: 'same-origin',
+              body: JSON.stringify({ action: 'restart' }),
+            });
+          } catch {
+            /* 重启时连接断掉是正常的，继续等 */
+          }
+
+          const deadline = Date.now() + 90000;
+          while (Date.now() < deadline) {
+            await new Promise((r) => setTimeout(r, 2000));
+            try {
+              const res = await fetch(API, { credentials: 'same-origin', cache: 'no-store' });
+              if (res.ok) {
+                setRestartMsg('已重启，正在刷新页面…');
+                await new Promise((r) => setTimeout(r, 600));
+                if (typeof location !== 'undefined' && location.reload) location.reload();
+                return;
+              }
+            } catch {
+              /* 还没起来 */
+            }
+          }
+
+          setRestarting(false);
+          setRestartMsg('90 秒还没回来。手动重启一次：在终端按 Ctrl+C，再输入 dsh 启动。');
         };
 
         const saveToolPath = async (id, path) => {
@@ -549,6 +608,8 @@ window.__ModuleLoader__.load({
               setToolNotice(`${id}: ${payload.error || '保存失败'}`);
             } else {
               setToolNotice(`${id}: ${path ? '已指定路径' : '已恢复自动查找'}`);
+              // 工具路径是开机时解析的，改完必须重启才认新的 —— 顺手把重启入口亮出来
+              setNeedRestart(true);
               await load();
               setEditing('');
             }
