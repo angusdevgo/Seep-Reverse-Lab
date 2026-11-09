@@ -11,18 +11,19 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/angusdevgo/seep-reverse-lab"><img src="https://img.shields.io/badge/Release-v1.13.0-brightgreen.svg?style=for-the-badge&logo=github" alt="Release"></a>
+  <a href="https://github.com/angusdevgo/seep-reverse-lab"><img src="https://img.shields.io/badge/Release-v1.15.0-brightgreen.svg?style=for-the-badge&logo=github" alt="Release"></a>
   <a href="https://github.com/angusdevgo/seep-reverse-lab/blob/main/LICENSE"><img src="https://img.shields.io/badge/License-GPL--3.0-blue.svg?style=for-the-badge" alt="License"></a>
+  <a href="https://www.npmjs.com/package/seep-dsh-workbench"><img src="https://img.shields.io/npm/v/seep-dsh-workbench?style=for-the-badge&logo=npm&label=DSH%20插件" alt="npm"></a>
   <img src="https://img.shields.io/badge/Platform-Windows%20%7C%20Android%20%7C%20Linux-0078D6?style=for-the-badge&logo=windows" alt="Platform">
   <img src="https://img.shields.io/badge/Architecture-x86%20%7C%20x64%20%7C%20ARM64-orange?style=for-the-badge" alt="Architecture">
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/MCP%20工具-23%20已集成-purple?style=for-the-badge&logo=fastapi" alt="MCP Tools">
-  <img src="https://img.shields.io/badge/健康体检-52%2F52%20全绿通过-brightgreen?style=for-the-badge&logo=checkmarx" alt="Verifier">
-  <img src="https://img.shields.io/badge/实战知识库-289%20篇战术笔记-teal?style=for-the-badge" alt="Knowledge Base">
+  <img src="https://img.shields.io/badge/MCP%20工具-38%20已集成-purple?style=for-the-badge&logo=fastapi" alt="MCP Tools">
+  <img src="https://img.shields.io/badge/健康体检-64%2F64%20全绿通过-brightgreen?style=for-the-badge&logo=checkmarx" alt="Verifier">
+  <img src="https://img.shields.io/badge/实战知识库-294%20篇战术笔记-teal?style=for-the-badge" alt="Knowledge Base">
   <img src="https://img.shields.io/badge/脱敏范式-14%20大案例%20(A~N)-blue?style=for-the-badge" alt="Paradigms">
-  <img src="https://img.shields.io/badge/MANUAL%20SOP-9%20份专项手册-red?style=for-the-badge" alt="MANUAL SOPs">
+  <img src="https://img.shields.io/badge/MANUAL%20SOP-14%20份专项手册-red?style=for-the-badge" alt="MANUAL SOPs">
   <a href="https://linux.do/"><img src="https://img.shields.io/badge/社区-LINUX%20DO-23272A?style=for-the-badge&logo=discourse" alt="LINUX DO"></a>
 </p>
 
@@ -120,7 +121,7 @@
   <img src="docs/images/agent-workflow.png" alt="Seep 智能体全自动逆向与决策链路实录" width="880">
 </p>
 
-部署完成后，直接在 Agent 对话框发一句大白话：
+部署完成后（DSH 装法见 [INSTALL.md 路线 B](INSTALL.md#路线-bdeepseek-harness)），直接在 Agent 对话框发一句大白话：
 
 ```
 lab：分析 FooBar.apk，找到会员验证并绕过
@@ -136,6 +137,9 @@ Agent 自主完成：
 6. 飞行模式断网确认 ✓ → **`seep_gen_security_report`** → 三段式审计报告交付
 
 > 典型客户端应用全程耗时：**8–20 分钟，完全无人值守**。
+
+> **DSH 用户**：输入框底部点一次 **`Lab`**（变绿）等同于在消息里写 `lab：`；
+> 状态随时可在 **设置 → Seep 工作台** 看，`python setup/verify-dsh.py` 应报 `102 / 102`。
 
 ---
 
@@ -207,7 +211,7 @@ Seep\ (251 MB)
 │       └── compliance-relay\      ← 🌐 链路层合规转译中继（纯标准库，三协议）
 │
 ├── setup\                         ← 安装、修复、更新、卸载与校验脚本集
-└── MANUAL\                        ← 9 份战术专项 SOP 手册
+└── MANUAL\                        ← 14 份战术专项 SOP 手册
     ├── PREREQUISITES.md           ← 环境与依赖预要求指南
     ├── IDA-PRO.md                 ← IDA Pro 商业软件接入指南（支持 idalib 原生与传统 stdio 双模式）
     ├── ANTI-DEBUG.md              ← 反调试绕过字典与代理 DLL 框架
@@ -319,21 +323,37 @@ powershell -File setup\install-capabilities.ps1 -CheckOnly  # 只看现状
 > Unix 需先装 PowerShell 7。详见 [CROSS-PLATFORM.md](MANUAL/CROSS-PLATFORM.md)。
 > 详见 [MANUAL/DEPLOYMENT.md — 外部能力包](MANUAL/DEPLOYMENT.md#5-外部能力包为什么需要单独一步)。
 
-### 3. 多 Agent 接入方式
+### 3. 两个 Agent，两条接线
 
-| 智能体平台 | 核心指令 | MCP 服务配置 | 详细接入步骤 |
+本工作台只支持并验证两个 Agent。**内容只有一份，接线各管各的。**
+
+| Agent | 指令入口 | 接线物 | 装法 |
 |---|---|---|---|
-> 四个 Agent 的接线点、lab 在哪、更新怎么做，逐项对照见 [MANUAL/AGENTS.md](MANUAL/AGENTS.md)。
+| **Pi Agent** | `Tool/prompts/SYSTEM.md` → `~/.pi/agent/seep-system.md` | `~/.pi/agent/mcp.json` + 技能**副本** | `powershell -File setup/install-pi.ps1` |
+| **DeepSeek Harness** | 项目根 `AGENTS.md`（自动生成） | **插件包** `seep-dsh-workbench` | `python setup/dsh-plugin-setup.py` |
 
-| **Pi Agent** | `Tool/prompts/SYSTEM.md` | `~/.pi/agent/mcp.json` | 运行 `install.ps1` 自动写入，完成后**必须重启当前终端与 Pi 会话**。 |
-| **DeepSeek Harness** | 项目根 `AGENTS.md`（自动生成） | `DSH-PROFILE.md` | `python setup/dsh-plugin-setup.py` 装插件包并写入路径（推荐）；旧路线 `dsh-merge.py` 保留兼容。校验：`python setup/verify-dsh.py`。 |
+**DSH 插件已发布到 npm**，装的时候有两种选法：
 
-> 📖 **咨询级部署与全套排障手册**：关于四大 Agent 的具体配置细则、常见报错（`No module named mcp`、执行策略受限、Java环境缺省等）的解决方案，请详阅 [**MANUAL/DEPLOYMENT.md**](MANUAL/DEPLOYMENT.md)。
+```bash
+# A. 从 npm 装（推荐给使用者：以后能在面板点「更新插件」）
+python setup/dsh-plugin-setup.py --from-npm
+
+# B. 用仓库里的本地目录（推荐给改代码的人：改完重启就生效）
+python setup/dsh-plugin-setup.py
+```
+
+> 两者都要先 clone 仓库 —— 561 MB 的工具本体在仓库里，不进 npm 包（包只有 45 KB 接线代码）。
+> `--from-npm` 额外支持 `--with-playwright`（多 25 个浏览器工具）、`--with-ida`（多 48 个 IDA 工具）。
+
+接线差异、lab 在哪、更新怎么做的逐项对照见 [MANUAL/AGENTS.md](MANUAL/AGENTS.md)。
+
+> 📖 **排障手册**：`No module named mcp`、执行策略受限、Java 环境缺省等常见问题，见 [**MANUAL/DEPLOYMENT.md**](MANUAL/DEPLOYMENT.md)。
 
 ### 4. 已有用户如何更新
 
 已经部署过？**不需要重新克隆或手动拷贝文件**。更新脚本是**幂等且无损**的 —— 你的模型凭据与自行添加的 MCP 条目永不会被覆盖。
 
+- **DSH 面板方式**：设置 → Seep 工作台 → **一键更新**（同时拉仓库、内容层、插件），有变化时会出现 **重启 DSH** 按钮，点一下自动重启，不用回终端；
 - **最简方式（双击批处理）**：Windows 用户直接双击项目根目录下的 **`update.bat`** 即可全自动执行；
 - **智能对话方式**：在支持的 Agent 会话中直接对 AI 发送 **“更新工作台”**，Agent 会原地自动调用更新脚本并向你汇报；
 - **命令行方式**：
@@ -403,6 +423,8 @@ powershell -ExecutionPolicy Bypass -File ./setup/uninstall.ps1          # 再执
 ## 🎮 操作工作流与 Lab Mode
 
 ### Lab Mode 协议（会话级触发）
+
+> **DSH 用户**：输入框右侧模型选择器左边有一个 **`Lab`** 按钮 —— 灰底灰字表示未进入，点一下变绿底白字即进入；再点退出。只影响当前会话，不写磁盘、不重启。
 ```
 激活：  lab：                          # 或：lab：分析 FooBar.exe
 退出：  退出实验

@@ -11,16 +11,17 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/angusdevgo/seep-reverse-lab"><img src="https://img.shields.io/badge/Release-v1.13.0-brightgreen.svg?style=for-the-badge&logo=github" alt="Release"></a>
+  <a href="https://github.com/angusdevgo/seep-reverse-lab"><img src="https://img.shields.io/badge/Release-v1.15.0-brightgreen.svg?style=for-the-badge&logo=github" alt="Release"></a>
   <a href="https://github.com/angusdevgo/seep-reverse-lab/blob/main/LICENSE"><img src="https://img.shields.io/badge/License-GPL--3.0-blue.svg?style=for-the-badge" alt="License"></a>
+  <a href="https://www.npmjs.com/package/seep-dsh-workbench"><img src="https://img.shields.io/npm/v/seep-dsh-workbench?style=for-the-badge&logo=npm&label=DSH%20plugin" alt="npm"></a>
   <img src="https://img.shields.io/badge/Platform-Windows%20%7C%20Android%20%7C%20Linux-0078D6?style=for-the-badge&logo=windows" alt="Platform">
   <img src="https://img.shields.io/badge/Architecture-x86%20%7C%20x64%20%7C%20ARM64-orange?style=for-the-badge" alt="Architecture">
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/MCP%20Tools-23%20Integrated-purple?style=for-the-badge&logo=fastapi" alt="MCP Tools">
-  <img src="https://img.shields.io/badge/Verifier-52%2F52%20Passed-brightgreen?style=for-the-badge&logo=checkmarx" alt="Verifier">
-  <img src="https://img.shields.io/badge/Knowledge%20Base-289%20Journals-teal?style=for-the-badge" alt="Knowledge Base">
+  <img src="https://img.shields.io/badge/MCP%20Tools-38%20Integrated-purple?style=for-the-badge&logo=fastapi" alt="MCP Tools">
+  <img src="https://img.shields.io/badge/Verifier-64%2F64%20Passed-brightgreen?style=for-the-badge&logo=checkmarx" alt="Verifier">
+  <img src="https://img.shields.io/badge/Knowledge%20Base-294%20Journals-teal?style=for-the-badge" alt="Knowledge Base">
   <img src="https://img.shields.io/badge/Paradigms-14%20Cases%20(A~N)-blue?style=for-the-badge" alt="Paradigms">
   <img src="https://img.shields.io/badge/MANUAL%20SOPs-9%20Tactical%20Guides-red?style=for-the-badge" alt="MANUAL SOPs">
   <a href="https://linux.do/"><img src="https://img.shields.io/badge/Community-LINUX%20DO-23272A?style=for-the-badge&logo=discourse" alt="LINUX DO"></a>
@@ -326,14 +327,34 @@ powershell -File setup\install-capabilities.ps1 -CheckOnly  # report only, no di
 > See [CROSS-PLATFORM.md](MANUAL/CROSS-PLATFORM.md).
 > See [MANUAL/DEPLOYMENT.md — external capability packages](MANUAL/DEPLOYMENT.md#5-外部能力包为什么需要单独一步).
 
-### 3. Multi-Agent Setup
+### 3. Two Agents, Two Wirings
 
-| Agent | Instruction File | MCP Config | Setup Procedure |
+This workbench supports and verifies exactly two agents. **There is one copy of the content; the wiring is per-agent.**
+
+| Agent | Instruction entry | What gets wired | Install |
 |---|---|---|---|
-| **Pi Agent** | `Tool/prompts/SYSTEM.md` | `~/.pi/agent/mcp.json` | `install.ps1` writes user configs & skills automatically. **Restart Pi** after installation. |
-| **DeepSeek Harness** | project-root `AGENTS.md` (generated) | `DSH-PROFILE.md` | `python setup/dsh-plugin-setup.py` installs the bundle and writes the path (recommended); the older `dsh-merge.py` route is kept for compatibility. Verify with `python setup/verify-dsh.py`. |
+| **Pi Agent** | `Tool/prompts/SYSTEM.md` → `~/.pi/agent/seep-system.md` | `~/.pi/agent/mcp.json` + **copied** skills | `powershell -File setup/install-pi.ps1` |
+| **DeepSeek Harness** | project-root `AGENTS.md` (generated) | **bundle** `seep-dsh-workbench` | `python setup/dsh-plugin-setup.py` |
 
-> 📖 **Comprehensive Multi-Agent Guide**: For detailed step-by-step setup, cross-platform caveats, and exhaustive troubleshooting FAQ, see [**MANUAL/DEPLOYMENT.md**](MANUAL/DEPLOYMENT.md).
+**The DSH bundle is published on npm.** Two ways to install it:
+
+```bash
+# A. from npm (for users: enables the in-panel "Update plugin" button)
+python setup/dsh-plugin-setup.py --from-npm
+
+# B. from the local folder in this repo (for people editing the code: restart picks up changes)
+python setup/dsh-plugin-setup.py
+```
+
+> Both require cloning the repo first — the 561 MB toolchain lives in the repo and is **not** in the npm
+> package (the package is only 45 KB of wiring). `--from-npm` also accepts `--with-playwright`
+> (+25 browser tools) and `--with-ida` (+48 IDA tools).
+
+Line-by-line comparison of the two wirings, where `lab` lives, and how updates differ:
+[MANUAL/AGENTS.md](MANUAL/AGENTS.md).
+
+> 📖 **Troubleshooting**: `No module named mcp`, execution-policy restrictions, missing Java, and more —
+> see [**MANUAL/DEPLOYMENT.md**](MANUAL/DEPLOYMENT.md).
 
 ### 4. Updating an Existing Installation
 
@@ -407,7 +428,9 @@ Run the 9-dimension health verifier (52 checks) against `MANUAL/DEPLOYMENT-CHECK
 
 ## 🎮 Workflow & Lab Mode
 
-### Lab Mode Protocol (Session-Scoped Trigger)
+### Lab Mode Protocol
+
+> **DSH users**: a **`Lab`** button sits left of the model selector. Grey = off, click once to turn it green (on), click again to leave. Session-scoped only — nothing written to disk, no restart. (Session-Scoped Trigger)
 ```
 Activate:   lab:                          # or: lab: analyze FooBar.exe
 Deactivate: exit lab
