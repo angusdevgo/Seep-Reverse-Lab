@@ -633,6 +633,80 @@ function updateContent(config = {}) {
  * 快速扫一遍工具在哪。只做「找得到吗」，不真启动 —— 真启动是面板上「深度检测」按钮的事。
  * 状态用 tool_resolver.py 的同一套词汇，免得两处说法不一致。
  */
+/**
+ * 这个插件是怎么装进来的。
+ *
+ *   file: / link:  → 开发者模式（硬链接或本地 tgz），改代码即生效，没有「更新」概念
+ *   版本号/范围     → 从 npm 装的，`dsh plugin update` 才有意义
+ */
+function pluginInstallInfo() {
+  const home = String(process.env.DSH_HOME ?? '').trim() || join(homedir(), '.dsh');
+  const profile = String(process.env.SEEP_DSH_PROFILE ?? '').trim() || 'web';
+  const pkgFile = join(home, 'profiles', profile, 'package.json');
+
+  let spec = '';
+  try {
+    const data = JSON.parse(readFileSync(pkgFile, 'utf8'));
+    spec = String((data.dependencies || {})['seep-dsh-workbench'] ?? '');
+  } catch {
+    spec = '';
+  }
+
+  const local = spec.startsWith('file:') || spec.startsWith('link:');
+  return {
+    spec,
+    local,
+    profile,
+    mode: local
+      ? spec.endsWith('.tgz')
+        ? 'tgz 本地包（不会自动更新，换新版要重新 add）'
+        : '开发者模式（本地目录硬链接，改代码即生效）'
+      : spec
+        ? 'npm（可以自动更新）'
+        : '未知来源',
+    updatable: Boolean(spec) && !local,
+  };
+}
+
+/**
+ * 从 npm 更新插件。
+ *
+ * 只对 npm 来源有效 —— 本地文件/目录安装没有远端可拉，直说，不去猜。
+ * 更新完必须重启 DSH：插件代码是启动时加载的。
+ */
+function updatePlugin() {
+  const info = pluginInstallInfo();
+  if (!info.updatable) {
+    return {
+      ok: false,
+      message: `当前是${info.mode}，没有可拉取的远端。要自动更新请改成 npm 安装：dsh plugin add --profile ${info.profile} seep-dsh-workbench`,
+      install: info,
+    };
+  }
+
+  try {
+    const out = execFileSync(
+      process.platform === 'win32' ? 'dsh.cmd' : 'dsh',
+      ['plugin', '--profile', info.profile, 'add', 'seep-dsh-workbench@latest'],
+      { encoding: 'utf8', timeout: 180000, shell: process.platform === 'win32' },
+    );
+    return {
+      ok: true,
+      message: '插件已更新到最新版，重启 DSH 生效',
+      detail: String(out).trim().split(/\r?\n/).slice(-2).join(' / '),
+      install: pluginInstallInfo(),
+    };
+  } catch (error) {
+    const text = error instanceof Error ? error.message : String(error);
+    return {
+      ok: false,
+      message: `更新失败：${text.split(/\r?\n/)[0]}`,
+      detail: text.slice(0, 400),
+      install: info,
+    };
+  }
+}
+
 function scanTools(repoRoot) {
   let registry = [];
   try {
@@ -828,6 +902,12 @@ function registerPanelApi(ctx, config, getLab) {
               return;
             }
 
+            if (payload.action === 'updatePlugin') {
+              const result = updatePlugin();
+              sendJson(res, result.ok ? 200 : 400, result);
+              return;
+            }
+
             // 只看不拉：fetch 之后告诉面板落后多少个提交、差哪几条。
             if (payload.action === 'checkRepo') {
               sendJson(res, 200, { ok: true, repo: gitStatus(root, { fetch: true }) });
@@ -917,6 +997,15 @@ function registerPanelApi(ctx, config, getLab) {
             return { root, repo: String(live.contentRepo || ''), git: contentStatus(root) };
           })(),
           repoGit: gitStatus(repoRoot),
+          plugin: pluginInstallInfo(),
+          pluginVersion: (() => {
+            try {
+              const self = join(import.meta.dirname ?? '', '..', 'package.json');
+              return JSON.parse(readFileSync(self, 'utf8')).version || '';
+            } catch {
+              return '';
+            }
+          })(),
           deep,
           lines: result.lines,
           tools: result.ok ? toolsFor(repoRoot, python, deep) : {},

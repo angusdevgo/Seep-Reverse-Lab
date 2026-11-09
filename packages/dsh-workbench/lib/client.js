@@ -417,6 +417,24 @@ window.__ModuleLoader__.load({
               onClick: () => void toggleLab(!(status && status.lab && status.lab.injecting)),
             }, status && status.lab && status.lab.injecting ? '退出 lab' : '进入 lab'),
           ),
+          status && status.plugin
+            ? h(
+                'div',
+                { style: { display: 'flex', gap: 8, alignItems: 'center', fontSize: 12.5, flexWrap: 'wrap' } },
+                h('span', { style: { fontWeight: 600 } }, '插件'),
+                h('span', { style: { color: 'var(--dsw-alias-label-tertiary)' } },
+                  `v${status.pluginVersion || '?'}　${status.plugin.mode}`),
+                h('span', { style: { marginLeft: 'auto' } }),
+                h('button', {
+                  style: status.plugin.updatable ? S.btnSmallPrimary : S.btnSmall,
+                  disabled: busy || !status.plugin.updatable,
+                  title: status.plugin.updatable
+                    ? '从 npm 拉最新版（更新完要重启 DSH）'
+                    : '本地安装没有远端可拉：改仓库代码即生效，无需更新',
+                  onClick: () => void updatePlugin(),
+                }, '更新插件'),
+              )
+            : null,
           status && status.repoGit && status.repoGit.ok
             ? h(
                 'div',
@@ -558,6 +576,26 @@ window.__ModuleLoader__.load({
             }
           } catch (e) {
             setNotice(e && e.message ? e.message : '对比失败');
+          } finally {
+            setBusy(false);
+          }
+        };
+
+        const updatePlugin = async () => {
+          setBusy(true);
+          setNotice('');
+          try {
+            const res = await fetch(API, {
+              method: 'POST',
+              headers: { 'content-type': 'application/json' },
+              credentials: 'same-origin',
+              body: JSON.stringify({ action: 'updatePlugin' }),
+            });
+            const payload = await res.json();
+            setNotice(payload.message || (payload.ok ? '已完成' : '更新失败'));
+            await load();
+          } catch (e) {
+            setNotice(e && e.message ? e.message : '更新失败');
           } finally {
             setBusy(false);
           }

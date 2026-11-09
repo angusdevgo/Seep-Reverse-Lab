@@ -391,6 +391,11 @@ def check_optional_mcp(rep, status):
     mounted = status.get("mounted") or {}
     wanted = status.get("optionalMcp") or {}
 
+    plugin = status.get("plugin") or {}
+    if plugin:
+        rep.add_optional("插件来源", "READY" if plugin.get("updatable") else "OPTIONAL",
+                         "安装方式", "%s（%s）" % (plugin.get("mode", "-"), plugin.get("spec", "")))
+
     lab = status.get("lab") or {}
     if lab:
         rep.add_optional("lab 运行状态", "READY" if lab.get("enabled") else "OPTIONAL", "lab 总闸",
