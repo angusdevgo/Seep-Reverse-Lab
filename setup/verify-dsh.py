@@ -252,10 +252,10 @@ def check_config(rep, profile, status):
             a = io.open(installed_client, "rb").read()
             b = io.open(client_entry, "rb").read()
             if a != b:
-                drift = "profile 副本与仓库不一致（硬链接被切断，改了代码不会生效）"
+                drift = "profile 里的插件与仓库代码不一致（本地装法多是硬链接断了）"
         except OSError as exc:
             drift = "读不到文件：%s" % exc
-    rep.add(G, "A8", "profile 里的插件副本与仓库同步（硬链接没断）", 2, not drift,
+    rep.add(G, "A8", "装进 profile 的插件与仓库代码一致（没被旧副本卡住）", 2, not drift,
             drift or "一致",
             "python setup/dsh-plugin-setup.py --root . 重装插件，恢复硬链接")
 
