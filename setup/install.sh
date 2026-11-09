@@ -291,6 +291,18 @@ else
     step "7/7  外部能力包（已跳过 --skip-capabilities）"
 fi
 
+# ---------------------------------------------------------------- 6c. DSH 完整度评分
+# verify.sh 查的是仓库资产本身；DSH 的接线是否到位是另一张表（6 组 22 项）。
+DSH_HOME_DIR="${DSH_HOME:-$HOME/.dsh}"
+if [ -d "$DSH_HOME_DIR" ] && [ -f "$SCRIPT_DIR/verify-dsh.py" ] && [ -n "$PY_BIN" ]; then
+    step "6c/7  DSH 接线完整度评分"
+    if "$PY_BIN" "$SCRIPT_DIR/verify-dsh.py" 2>&1 | sed 's/^/    /'; then
+        ok "DSH 完整度满分"
+    else
+        warn "DSH 完整度未满分，看上面的缺失清单（不阻塞其它 Agent）"
+    fi
+fi
+
 # ---------------------------------------------------------------- 汇总
 echo -e "\n${CYAN}================================================================================${RESET}"
 if [ ${#FAILED[@]} -eq 0 ]; then

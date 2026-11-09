@@ -252,6 +252,18 @@ if (-not $SkipTools) {
 Write-Step '执行官方基准完备性自检 (verify.ps1 -Detailed)'
 & (Join-Path $ScriptDir 'verify.ps1') -Detailed
 
+# DSH 装了才跑 DSH 专属完整度（6 组 22 项 100 分）——
+# verify.ps1 查的是仓库资产本身，DSH 的接线是否到位是另一张表。
+$dshHomeForScore = if ($env:DSH_HOME) { $env:DSH_HOME } else { Join-Path $env:USERPROFILE '.dsh' }
+if ((Test-Path $dshHomeForScore) -and (Test-Path (Join-Path $ScriptDir 'verify-dsh.py'))) {
+    Write-Step 'DSH 接线完整度评分 (verify-dsh.py)'
+    $dshScorePy = if ($env:SEEP_PYTHON) { $env:SEEP_PYTHON } else { $script:VerifyPython }
+    if (-not $dshScorePy) { $dshScorePy = 'python' }
+    $scoreOut = & $dshScorePy (Join-Path $ScriptDir 'verify-dsh.py') 2>&1
+    $scoreOut | ForEach-Object { Write-Host "  $_" -ForegroundColor DarkGray }
+    if ($LASTEXITCODE -ne 0) { Write-Warn 'DSH 完整度未满分，看上面的缺失清单（不阻塞其它 Agent）' }
+}
+
 # ---------------------------------------------------------------- 总结
 Write-Host "`n=================================================================" -ForegroundColor White
 if ($script:Failed.Count -eq 0) {

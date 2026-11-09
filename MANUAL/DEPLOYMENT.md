@@ -150,7 +150,7 @@ DSH 通过 `@deepseek-ai/dsh-mcp-client` 桥接外部 MCP，配置以 **Cordis O
 4. **指令来源**：项目根 `AGENTS.md` 由 `generate-configs` 从 `Tool/prompts/AGENTS.md`
    复制生成，DSH 会自动读取，无需手工 `cp`。
 
-5. **校验**：
+5. **校验**（`install.ps1` / `install.sh` 装完会自动跑一次，下面三条是手动复查）：
    ```bash
    python setup/verify-dsh.py                # 完整度评分，6 组 22 项 100 分
    cat "$DSH_HOME/seep-workbench.status.json"   # 插件自己写出的运行状态
