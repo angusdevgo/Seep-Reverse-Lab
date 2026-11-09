@@ -237,15 +237,32 @@ fi
 if [ "$SKIP_DSH" = 0 ]; then
     DSH_HOME_DIR="${DSH_HOME:-$HOME/.dsh}"
     if [ -d "$DSH_HOME_DIR" ]; then
-        step "6b/7  挂载 DeepSeek Harness MCP 补丁"
-        if [ -f "$SCRIPT_DIR/dsh-merge.py" ]; then
-            if "$PY_BIN" "$SCRIPT_DIR/dsh-merge.py" --root "$ROOT" 2>&1 | sed 's/^/    /'; then
-                ok "DSH cordis.patch.yml 已挂载（自定义配置保留）"
+        # 优先走插件包路线（1.14.0 起）：装包 + 把路径写进 profile。
+        PLUGIN_OK=0
+        if [ -f "$SCRIPT_DIR/dsh-plugin-setup.py" ] && command -v dsh >/dev/null 2>&1; then
+            step "6b/7  安装 DeepSeek Harness 插件包（推荐路线）"
+            SKILLS_ARG=""
+            [ "$DSH_SKILLS" = "none" ] && SKILLS_ARG="--no-skills"
+            if "$PY_BIN" "$SCRIPT_DIR/dsh-plugin-setup.py" --root "$ROOT" $SKILLS_ARG 2>&1 | sed 's/^/    /'; then
+                ok "DSH 插件已安装，工作台路径已写入配置"
+                PLUGIN_OK=1
             else
-                warn "DSH 挂载失败（不影响其他 Agent）"
+                warn "插件安装失败，回退到旧路线"
             fi
-        else
-            warn "缺少 setup/dsh-merge.py，跳过 DSH 挂载"
+        fi
+
+        # 旧路线只在插件路线不可用时才用 —— 两条同时上会挂两份 MCP。
+        if [ "$PLUGIN_OK" = 0 ]; then
+            step "6b/7  挂载 DeepSeek Harness MCP 补丁（旧路线）"
+            if [ -f "$SCRIPT_DIR/dsh-merge.py" ]; then
+                if "$PY_BIN" "$SCRIPT_DIR/dsh-merge.py" --root "$ROOT" 2>&1 | sed 's/^/    /'; then
+                    ok "DSH cordis.patch.yml 已挂载（自定义配置保留）"
+                else
+                    warn "DSH 挂载失败（不影响其他 Agent）"
+                fi
+            else
+                warn "缺少 setup/dsh-merge.py，跳过 DSH 挂载"
+            fi
         fi
     else
         info "未检测到 DSH（$DSH_HOME_DIR），跳过"

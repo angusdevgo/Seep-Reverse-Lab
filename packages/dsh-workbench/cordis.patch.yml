@@ -1,0 +1,15 @@
+# Seep 工作台 —— DeepSeek Harness 接线补丁
+#
+# 这个包只做「接线」，不装工具。
+# 真正的工具（jadx / radare2 / apktool … 共 659 MB）在你自己 clone 的仓库里。
+#
+# 这里只声明插件自己一条。MCP 服务和技能目录都由 lib/index.js 在运行时按配置挂载，
+# 所以在 DSH 设置里改路径就能生效，不用改这个文件、也不用动环境变量。
+#
+# 需要填的东西只有一个：工作台仓库路径。位置在
+#   设置 → 插件 → seep-workbench-boot → 工作台仓库路径
+# 留空时退回环境变量 SEEP_ROOT，方便命令行用户。
+
+- insert:
+    - id: seep-workbench-boot
+      name: 'seep-dsh-workbench'

@@ -1,0 +1,24 @@
+{
+  "name": "seep-dsh-workbench",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Seep 工作台的 DeepSeek Harness 接线包（只装接线，不装工具）",
+  "type": "module",
+  "main": "lib/index.js",
+  "exports": {
+    ".": "./lib/index.js"
+  },
+  "files": [
+    "lib",
+    "cordis.patch.yml",
+    "README.md"
+  ],
+  "engines": {
+    "dsh": ">=0.2.2-rc.1"
+  },
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    }
+  }
+}

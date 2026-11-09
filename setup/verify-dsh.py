@@ -4,9 +4,13 @@
 
 回答一个问题：**工作台在 DSH 上到底部署全了没有，缺什么。**
 
-分母不是「pi 上有什么」，而是「DSH 上本来应该有什么」——
-DSH 只有 AGENTS.md 指令层，没有 skill 加载器，所以 skill 数量按 N/A 处理，
-不计入分母。这一点搞错的话，任何 DSH 部署都会被算成「缺了 10 个 skill」。
+分母不是「pi 上有什么」，而是「DSH 上本来应该有什么」：
+DSH 自带技能机制（dsh-skill + dsh-skill-filesystem + dsh-tool-skill），
+格式与 pi 一致（<name>/SKILL.md + frontmatter），所以 10 个技能计入分母。
+
+1.14.0 起接线改由插件包完成：DSH 里的「设置 → 插件」填路径，
+插件在运行时挂 MCP 与技能，并把结果写到 $DSH_HOME/seep-workbench.status.json。
+本脚本读那份状态文件，而不是去猜合成配置。
 
 用法:
     python setup/verify-dsh.py                  # 默认 profile=web
@@ -38,9 +42,11 @@ EXPECT_KB = 294             # 知识库篇数下限
 EXPECT_CASES = 14           # 脱敏案例数下限
 EXPECT_MANUALS = 7          # MANUAL/ 战术手册数下限
 EXPECT_SKILLS = 10          # 技能源目录的唯一名数量
-MIN_TIMEOUT_MS = 300000     # 长任务所需的最低超时（DSH 默认 60s 会杀任务）
 
 OPTIONAL_TOOLS = ["ida", "playwright", "ffmpeg", "frida", "apkid", "aotopsy"]
+
+PLUGIN_PKG = "seep-dsh-workbench"   # 插件包名
+STATUS_FILE = "seep-workbench.status.json"
 
 
 # ---------------------------------------------------------------- 基础工具
@@ -58,6 +64,46 @@ def find_dsh():
         if p:
             return p
     return None
+
+
+def profile_dir(profile):
+    return os.path.join(dsh_home(), "profiles", profile)
+
+
+def plugin_installed(profile):
+    """插件包是否已装进这个 profile（新路线的唯一判据）。"""
+    pj = os.path.join(profile_dir(profile), "package.json")
+    if not os.path.isfile(pj):
+        return False
+    try:
+        data = json.loads(io.open(pj, encoding="utf-8", errors="replace").read())
+    except (ValueError, OSError):
+        return False
+    bundles = (((data.get("dsh") or {}).get("profile") or {}).get("bundles")) or []
+    return PLUGIN_PKG in bundles
+
+
+def read_status():
+    """读插件写出的状态文件。插件没跑过就没这个文件。"""
+    p = os.path.join(dsh_home(), STATUS_FILE)
+    if not os.path.isfile(p):
+        return None
+    try:
+        st = json.loads(io.open(p, encoding="utf-8", errors="replace").read())
+    except (ValueError, OSError):
+        return None
+    if not isinstance(st, dict):
+        return None
+    st["_path"] = p
+    return st
+
+
+def same_path(a, b):
+    if not a or not b:
+        return False
+    na = os.path.normcase(os.path.normpath(str(a)))
+    nb = os.path.normcase(os.path.normpath(str(b)))
+    return na == nb
 
 
 def run(cmd, timeout=60, env_extra=None, stdin_text=None, shell=False):
@@ -138,86 +184,80 @@ class Report:
 
 # ---------------------------------------------------------------- 检查项
 
-def check_config(rep, profile, composed):
-    """第 1 组：DSH 配置层（25 分）"""
-    G = "配置层"
-    home = dsh_home()
-    patch = os.path.join(home, "profiles", profile, "cordis.patch.yml")
-    if not os.path.isfile(patch):
-        patch = os.path.join(home, "cordis.patch.yml")
+def check_config(rep, profile, status):
+    """第 1 组：DSH 配置层（20 分）
 
-    # A1 标记块
+    1.14.0 起接线不走「往 profile patch 里塞条目」，而是装一个插件包：
+    包本身 declare 接线方式，路径在设置面板里填。所以这一组查的是：
+    包装了没、跑过没、指向对不对、lab 开关开没开。
+    """
+    G = "配置层"
+    installed = plugin_installed(profile)
+
+    # A1 插件包已装进 profile
+    rep.add(G, "A1", "插件包 %s 已装进 profile" % PLUGIN_PKG, 8, installed,
+            "dsh.profile.bundles 含 %s" % PLUGIN_PKG if installed
+            else "未装；旧路线的 marker 块不算数（两种路线同时用会挂两份 MCP）",
+            "dsh plugin --profile %s add file:<仓库>/packages/dsh-workbench" % profile)
+
+    # A2 插件跑过（有状态文件）
+    rep.add(G, "A2", "插件已启动并写出状态文件", 5, bool(status),
+            status["_path"] if status else "没找到 %s" % os.path.join(dsh_home(), STATUS_FILE),
+            "启动一次 dsh --profile %s，再重新跑本脚本" % profile)
+
+    # A3 状态 ok 且指向当前仓库
+    repo_root = (status or {}).get("repoRoot") or ""
+    ok3 = bool(status) and status.get("ok") is True and same_path(repo_root, ROOT)
+    rep.add(G, "A3", "状态 ok 且路径指向当前仓库", 4, ok3,
+            "repoRoot=%s, ok=%s" % (repo_root or "空", (status or {}).get("ok")),
+            "在 DSH 设置 → 插件 → seep-workbench-boot 里把路径改成：%s" % ROOT)
+
+    # A4 lab 开关
+    lab = (status or {}).get("labGate")
+    rep.add(G, "A4", "lab 开关已启用（只在 lab： 之后注入纪律）", 3, lab is True,
+            "labGate=%s" % lab,
+            "设置 → 插件 → seep-workbench-boot → lab 开关 打开")
+
+    # 旧路线残留：不扣分，但会重复挂载
+    patch = os.path.join(profile_dir(profile), "cordis.patch.yml")
     body = ""
     if os.path.isfile(patch):
         body = io.open(patch, encoding="utf-8", errors="replace").read()
-    has_block = ">>> seep-workbench" in body
-    rep.add(G, "A1", "cordis.patch.yml 含 seep-workbench 标记块", 5, has_block,
-            patch if os.path.isfile(patch) else "文件不存在: %s" % patch,
-            "python setup/dsh-merge.py --profile %s" % profile)
-
-    # A2 / A3 composed 里有 serverName
-    rep.add(G, "A2", "合成配置里有 serverName: seep", 4, "serverName: seep" in composed,
-            "见 dsh --dump-config", "重跑 dsh-merge.py 或检查 profile 名")
-    rep.add(G, "A3", "合成配置里有 serverName: js-reverse", 3, "serverName: js-reverse" in composed,
-            "见 dsh --dump-config", "重跑 dsh-merge.py")
-
-    # A4 超时
-    seep_block = ""
-    m = re.search(r"serverName: seep(.{0,1200})", composed, re.S)
-    if m:
-        seep_block = m.group(1)
-    tmo = re.search(r"toolCallTimeoutMs:\s*(\d+)", seep_block)
-    tmo_val = int(tmo.group(1)) if tmo else 0
-    rep.add(G, "A4", "seep 的 toolCallTimeoutMs ≥ %d" % MIN_TIMEOUT_MS, 4,
-            tmo_val >= MIN_TIMEOUT_MS,
-            "实测 %s（DSH 默认 60000，会杀掉 jadx/HLS/AOT 长任务）" % (tmo_val or "未设置"),
-            "重跑 dsh-merge.py，或手动加 toolCallTimeoutMs: 900000")
-
-    # A5 cwd 钉住
-    repo_posix = ROOT.replace("\\", "/")
-    has_cwd = "cwd:" in seep_block and (repo_posix in seep_block or ROOT in seep_block)
-    rep.add(G, "A5", "seep 的 cwd 指向仓库根", 2, has_cwd,
-            "seep_mcp_server.py 用相对路径找内置工具，cwd 错了就找不到",
-            "重跑 dsh-merge.py（会写入 --root 解析出的绝对路径）")
-
-    # A6 failOnStartupError
-    rep.add(G, "A6", "failOnStartupError: false（单服务故障不拖垮整栈）", 2,
-            "failOnStartupError: false" in composed, "", "重跑 dsh-merge.py")
+    if ">>> seep-workbench" in body:
+        rep.add_optional("旧路线残留", "DEGRADED",
+                         "profile patch 里还有 dsh-merge.py 写的 marker 块",
+                         "删掉那块，否则 MCP 会被挂两份")
 
 
-def check_mcp(rep, composed, skip_spawn):
-    """第 2 组：MCP 可用性（30 分）"""
+def check_mcp(rep, status, skip_spawn):
+    """第 2 组：MCP 可用性（25 分）
+
+    命令和参数从插件写出的状态文件里取 —— 校验的就是插件真正会启动的东西，
+    而不是从 YAML 里猜。
+    """
     G = "MCP 可用性"
 
+    if not status or not status.get("repoRoot"):
+        for key, label, w in (("B1", "seep 能 initialize", 7), ("B2", "seep 工具数", 8),
+                              ("B3", "js-reverse 能 initialize", 5), ("B4", "js-reverse 工具数", 5)):
+            rep.add(G, key, label, w, False, "插件还没跑过 / 没填路径",
+                    "先跑 setup/verify-dsh.py 的 A2、A3 两项")
+        return
+
     if skip_spawn:
-        for key, label, w in (("B1", "seep 能 initialize", 6), ("B2", "seep tools/list 工具数", 8),
-                              ("B3", "js-reverse 能 initialize", 5), ("B4", "js-reverse tools/list 工具数", 6)):
+        for key, label, w in (("B1", "seep 能 initialize", 7), ("B2", "seep 工具数", 8),
+                              ("B3", "js-reverse 能 initialize", 5), ("B4", "js-reverse 工具数", 5)):
             rep.add(G, key, label, w, False, "已跳过（--skip-spawn）", "去掉 --skip-spawn 重跑")
         return
 
-    # 从 composed 中抠出每个 server 的 command/args
-    def extract(server):
-        m = re.search(r"serverName: %s(.*?)(?=\n- id:|\n    - id:|\Z)" % re.escape(server), composed, re.S)
-        if not m:
-            return None, None
-        blk = m.group(1)
-        cmd = re.search(r"command:\s*(.+)", blk)
-        args = re.findall(r"^\s*-\s+>-\s*\n\s*(.+)$|^\s*-\s+'?([^'\n]+)'?\s*$", blk, re.M)
-        argv = [a or b for a, b in args]
-        argv = [x.strip().strip("'\"") for x in argv if x and not x.startswith("serverName")]
-        return (cmd.group(1).strip() if cmd else None), argv
+    root = status["repoRoot"]
+    py = status.get("python") or "python"
+    entry = os.path.join(root, "Tool", "mcp", "seep_mcp_server.py")
 
-    for server, key_init, key_tools, expect, w_init, w_tools in (
-        ("seep", "B1", "B2", EXPECT_SEEP_TOOLS, 6, 8),
-        ("js-reverse", "B3", "B4", EXPECT_JS_TOOLS, 5, 6),
+    for server, cmd, argv, key_init, key_tools, expect, w_init, w_tools in (
+        ("seep", py, [entry], "B1", "B2", EXPECT_SEEP_TOOLS, 7, 8),
+        ("js-reverse", "npx", ["-y", "js-reverse-mcp"], "B3", "B4", EXPECT_JS_TOOLS, 5, 5),
     ):
-        cmd, argv = extract(server)
-        if not cmd:
-            rep.add(G, key_init, "%s 能 initialize" % server, w_init, False,
-                    "合成配置里找不到 %s" % server, "python setup/dsh-merge.py --profile web")
-            rep.add(G, key_tools, "%s 工具数" % server, w_tools, False, "同上", "同上")
-            continue
-
         tools, err = spawn_tools(cmd, argv)
         ok_init = tools is not None
         rep.add(G, key_init, "%s 能 initialize" % server, w_init, ok_init,
@@ -227,34 +267,21 @@ def check_mcp(rep, composed, skip_spawn):
                 "实测 %d" % n, "工具数偏少通常意味着仓库不完整或启动的是旧副本")
 
 
-def check_skills(rep, composed):
+def check_skills(rep, status):
     """第 3 组：技能层（15 分）
 
-    DSH 自带 skill 机制：dsh-skill-filesystem 负责发现，dsh-tool-skill 负责把
-    catalog 和加载工具给到模型。两者在 web profile 里默认 disabled，需要显式开启。
-    开启后 DSH 与 pi 一样能看到这 10 个技能 —— 所以这一组不是「有没有」，
-    而是「开没开、根指对没指对」。
+    DSH 自带 skill 机制（dsh-skill / dsh-skill-filesystem / dsh-tool-skill），
+    bundle 格式与 pi 一致，所以 10 个技能是能真的被 DSH 看到的。
+    web profile 默认把后面两个关掉，插件负责在运行时打开并指到两个技能根。
     """
     G = "技能层"
 
-    def entry_block(eid):
-        m = re.search(r"^- id: " + re.escape(eid) + r"\n(.*?)(?=\n- id:|\Z)", composed, re.S)
-        return m.group(1) if m else ""
+    enabled = (status or {}).get("skillsEnabled") is True
+    mounted = bool(((status or {}).get("mounted") or {}).get("skills"))
+    rep.add(G, "F1", "插件已挂载技能层（skill-filesystem + tool-skill）", 5, enabled and mounted,
+            "skillsEnabled=%s, mounted.skills=%s" % (enabled, mounted),
+            "设置 → 插件 → seep-workbench-boot → 「列出技能」打开，重启 DSH")
 
-    fs = entry_block("skill-filesystem")
-    fs_on = bool(fs) and "disabled: false" in fs
-    rep.add(G, "F1", "skill-filesystem 已启用（DSH 的技能发现 provider）", 5, fs_on,
-            "disabled: false" if fs_on else ("未找到该条目" if not fs else "仍是 disabled: true"),
-            "python setup/generate-configs.py --root . --dsh-skills all 然后重跑 dsh-merge.py")
-
-    ts = entry_block("tool-skill")
-    ts_on = bool(ts) and "disabled: false" in ts
-    rep.add(G, "F2", "tool-skill 已启用（模型的 skill 加载工具 + 目录）", 4, ts_on,
-            "disabled: false" if ts_on else ("未找到该条目" if not ts else "仍是 disabled: true"),
-            "同上：重新生成配置后重跑 dsh-merge.py")
-
-    roots_ok = ("/Tool/skill" in fs or chr(92) + "Tool" + chr(92) + "skill" in fs) and "safe-skills" in fs
-    # 实际能被 DSH 发现的技能数（每个根下的直接子目录里含 SKILL.md 的）
     found = 0
     for rel in ("Tool/skill", "Tool/skill/safe-skills"):
         d = os.path.join(ROOT, *rel.split("/"))
@@ -262,9 +289,13 @@ def check_skills(rep, composed):
             for child in os.listdir(d):
                 if os.path.isfile(os.path.join(d, child, "SKILL.md")):
                     found += 1
-    rep.add(G, "F3", "customSkillDirs 覆盖两个技能根", 6, roots_ok,
-            "实际可发现 %d 个技能（期望 10）" % found,
-            "确认 cordis.generated.yml 里两个根路径都指向当前仓库")
+    rep.add(G, "F2", "仓库里可发现 ≥ %d 个技能" % EXPECT_SKILLS, 6, found >= EXPECT_SKILLS,
+            "实测 %d 个" % found, "重新克隆仓库；技能包格式：<名称>/SKILL.md + frontmatter")
+
+    roots = all(os.path.isdir(os.path.join(ROOT, *rel.split("/")))
+                for rel in ("Tool/skill", "Tool/skill/safe-skills"))
+    rep.add(G, "F3", "两个技能根都在仓库里", 4, roots,
+            "Tool/skill 与 Tool/skill/safe-skills", "重新克隆仓库")
 
 
 def check_assets(rep):
@@ -406,12 +437,12 @@ def emit_text(rep, profile, composed_ok):
         for it in failed:
             print("    · [%s] %s" % (it["key"], it["label"]))
         print()
-        print("  \033[33m注意：本表的分母是「DSH 上应该有什么」，不含 skill。\033[0m")
-        print("  DSH 没有 skill 加载器，10 个 skill 不参与计分；它们的价值通过")
-        print("  AGENTS.md + Tool/prompts/SYSTEM.md 的指令层体现（见第 4 组）。")
+        print("  \033[33m注意：本表的分母是「DSH 上应该有什么」，不是「pi 上有什么」。\033[0m")
+        print("  长任务超时、cwd、failOnStartupError 这些接线细节现在由插件负责，")
+        print("  不再体现在合成配置里 —— 所以本表不查它们，改查状态文件的 mounted 标记。")
     else:
-        print("  \033[32m全部通过。但这个分数只说明「配置与资产就位」，\033[0m")
-        print("  \033[32m不代表模型会遵守 lab: 闸门 —— 那是指令层的事，需人工抽验。\033[0m")
+        print("  \033[32m全部通过。但这个分数只说明「接线与资产就位」，\033[0m")
+        print("  \033[32m不代表模型会遵守 lab： 闸门 —— 那要靠实际发一条消息抽验。\033[0m")
     print()
 
 
@@ -435,9 +466,10 @@ def main(argv=None) -> int:
             composed_ok = True
 
     rep = Report()
-    check_config(rep, args.profile, composed)
-    check_mcp(rep, composed, args.skip_spawn or not composed_ok)
-    check_skills(rep, composed)
+    status = read_status()
+    check_config(rep, args.profile, status)
+    check_mcp(rep, status, args.skip_spawn)
+    check_skills(rep, status)
     check_assets(rep)
     check_instructions(rep)
     check_runtime(rep)

@@ -168,18 +168,39 @@ Write-Step '生成多 Agent 配置文件 (.mcp.json / opencode.jsonc / cordis.ge
 if (-not $SkipDsh) {
     $dshHome = if ($env:DSH_HOME) { $env:DSH_HOME } else { Join-Path $env:USERPROFILE '.dsh' }
     if (Test-Path $dshHome) {
-        Write-Step '挂载 DeepSeek Harness MCP 补丁'
-        $dshMerge = Join-Path $ScriptDir 'dsh-merge.py'
+        # 优先走插件包路线（1.14.0 起）：装包 + 把路径写进 profile，
+        # 之后由插件在运行时自己挂 MCP 与技能，不再往 patch 里塞一大堆条目。
+        $dshPlugin = Join-Path $ScriptDir 'dsh-plugin-setup.py'
         $dshPy = if ($env:SEEP_PYTHON) { $env:SEEP_PYTHON } else { 'python' }
-        if (Test-Path $dshMerge) {
+        $dshCli = Get-Command dsh -ErrorAction SilentlyContinue
+        $pluginOk = $false
+
+        if ((Test-Path $dshPlugin) -and $dshCli) {
+            Write-Step '安装 DeepSeek Harness 插件包（推荐路线）'
+            $skillsArg = if ($DshSkills -eq 'none') { @('--no-skills') } else { @() }
             try {
-                & $dshPy $dshMerge --root $Root 2>&1 | ForEach-Object { Write-Host "    $_" -ForegroundColor DarkGray }
-                if ($LASTEXITCODE -eq 0) { Write-Ok 'DSH cordis.patch.yml 已挂载（自定义配置保留）' }
-                else { Write-Warn "DSH 挂载返回码 $LASTEXITCODE（不影响其他 Agent）" }
+                & $dshPy $dshPlugin --root $Root @skillsArg 2>&1 |
+                    ForEach-Object { Write-Host "    $_" -ForegroundColor DarkGray }
+                if ($LASTEXITCODE -eq 0) { Write-Ok 'DSH 插件已安装，工作台路径已写入配置'; $pluginOk = $true }
+                else { Write-Warn "插件安装返回码 $LASTEXITCODE，回退到旧路线" }
             }
-            catch { Write-Warn "DSH 挂载失败：$($_.Exception.Message)（不影响其他 Agent）" }
+            catch { Write-Warn "插件安装失败：$($_.Exception.Message)，回退到旧路线" }
         }
-        else { Write-Warn '缺少 setup\dsh-merge.py，跳过 DSH 挂载' }
+
+        # 旧路线只在插件路线不可用时才用 —— 两条同时上会挂两份 MCP。
+        if (-not $pluginOk) {
+            Write-Step '挂载 DeepSeek Harness MCP 补丁（旧路线）'
+            $dshMerge = Join-Path $ScriptDir 'dsh-merge.py'
+            if (Test-Path $dshMerge) {
+                try {
+                    & $dshPy $dshMerge --root $Root 2>&1 | ForEach-Object { Write-Host "    $_" -ForegroundColor DarkGray }
+                    if ($LASTEXITCODE -eq 0) { Write-Ok 'DSH cordis.patch.yml 已挂载（自定义配置保留）' }
+                    else { Write-Warn "DSH 挂载返回码 $LASTEXITCODE（不影响其他 Agent）" }
+                }
+                catch { Write-Warn "DSH 挂载失败：$($_.Exception.Message)（不影响其他 Agent）" }
+            }
+            else { Write-Warn '缺少 setup\dsh-merge.py，跳过 DSH 挂载' }
+        }
     }
     else {
         Write-Info "未检测到 DSH（$dshHome），跳过；装了 DSH 后重跑本脚本即可自动挂载"
