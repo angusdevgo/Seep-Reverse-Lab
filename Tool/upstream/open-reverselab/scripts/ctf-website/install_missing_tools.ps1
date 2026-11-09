@@ -1,4 +1,4 @@
-﻿<#
+<#
 .SYNOPSIS
     Plan or install missing CTF-website tools for ReverseLab.
 
