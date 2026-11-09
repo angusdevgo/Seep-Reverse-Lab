@@ -234,6 +234,31 @@ def check_config(rep, profile, status):
             "声明=%s, client.js=%s" % (declared, os.path.isfile(client_entry)),
             "重新 clone 仓库；面板文件在 packages/dsh-workbench/lib/client.js")
 
+    # A8 装进 profile 的那份 client.js 必须和仓库一致。
+    #
+    # 为什么需要这条：pnpm 的 file: 安装本来靠硬链接，改仓库即生效。
+    # 但只要有人用 `git checkout -- <文件>` 还原过一次，硬链接就被切断，
+    # profile 里变成一份**不会再更新的副本** —— 于是"我改了代码却没反应"，
+    # 排查半天。这条把它变成一眼可见的红灯。
+    installed = os.path.join(profile_dir(profile), "node_modules", "seep-dsh-workbench")
+    installed_client = os.path.join(installed, "lib", "client.js")
+    drift = ""
+    if not os.path.isfile(installed_client):
+        drift = "profile 里没有 client.js（插件没装进 profile）"
+    elif not os.path.isfile(client_entry):
+        drift = "仓库里没有 client.js"
+    else:
+        try:
+            a = io.open(installed_client, "rb").read()
+            b = io.open(client_entry, "rb").read()
+            if a != b:
+                drift = "profile 副本与仓库不一致（硬链接被切断，改了代码不会生效）"
+        except OSError as exc:
+            drift = "读不到文件：%s" % exc
+    rep.add(G, "A8", "profile 里的插件副本与仓库同步（硬链接没断）", 2, not drift,
+            drift or "一致",
+            "python setup/dsh-plugin-setup.py --root . 重装插件，恢复硬链接")
+
     # 旧路线残留：不扣分，但会重复挂载
     patch = os.path.join(profile_dir(profile), "cordis.patch.yml")
     body = ""
