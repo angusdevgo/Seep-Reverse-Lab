@@ -74,6 +74,34 @@ pi 上的 `lab：` 是靠扩展实现的。DSH 上现在也在插件里实现了
 改完路径不会自动重挂 MCP，需要重启 DSH；技能 / lab 开关对下一个会话生效。
 面板上已直接写明。
 
+### 入口从「三层菜单」变成「一眼就能看到」
+
+以前看状态要去 更多 → 设置 → Seep 工作台，太绕。现在多了一个常驻小圆点：
+
+- 新会话时它在输入框上方那一行（`conversation.hero.options`，工作区 / 标准模式 旁边）
+- 有对话时它在输入框右侧（`conversation.input.right`）
+- 圆点颜色直接给结论：绿=就绪，黄=有工具缺，红=没接上
+- 点开是张小卡片：版本、已接线、lab 开关、工具就绪/缺失、仓库路径 + 重新检查
+
+完整面板仍在设置里（改路径、20 个工具逐条看、指定工具路径）。
+
+### 工具不在默认路径？可以自己填
+
+原来只有 11 个工具有环境变量可指，其余 9 个（jadx / apktool / radare2 / nuclei / ffuf …）
+只能靠 PATH 或我们的候选表 —— 装在别处就判 MISSING。
+
+现在所有工具都能人工指定，三种写法等价：
+
+```powershell
+python Tool/mcp/tool_resolver.py --set jadx "D:/tools/jadx/bin/jadx.bat"
+```
+
+- 面板：某个工具行点「指定路径」→ 填 → 保存（假的路径会被拒，DSH 不会崩）
+- 文件：`<仓库>/setup/tool-paths.local.json`（已加进 .gitignore）
+
+解析链变成 `user → env → bundled → cache → path → candidates`，人工的永远优先。
+填错只提示不判死，会继续沿链往下找。
+
 ### 可选 MCP：IDA 与 Playwright
 
 插件原来只挂 `seep` + `js-reverse`。`seep_ida_status` 一直报 Offline 不是坏了，

@@ -20,6 +20,7 @@ window.__ModuleLoader__.load({
   id: 'seep-dsh-workbench',
   factory: (require) => {
     const React = require('react');
+    const ReactDOM = require('react-dom');
     const h = React.createElement;
 
     const NS = 'seep-workbench';
@@ -89,13 +90,84 @@ window.__ModuleLoader__.load({
         color: 'var(--dsw-alias-label-primary-foreground)',
         flex: 'none',
       },
+      // 工具行右侧的小按钮：比主按钮矮一档，免得挤爆一行
+      btnSmall: {
+        height: 24,
+        padding: '0 10px',
+        fontSize: 12,
+        borderRadius: 6,
+        cursor: 'pointer',
+        border: '0.5px solid var(--dsw-alias-border-l3)',
+        background: 'transparent',
+        color: 'var(--dsw-alias-label-secondary)',
+        flex: 'none',
+        whiteSpace: 'nowrap',
+      },
+      btnSmallPrimary: {
+        height: 24,
+        padding: '0 12px',
+        fontSize: 12,
+        borderRadius: 6,
+        cursor: 'pointer',
+        border: 'none',
+        background: 'var(--dsw-alias-button-primary-fill)',
+        color: 'var(--dsw-alias-label-primary-foreground)',
+        flex: 'none',
+        whiteSpace: 'nowrap',
+      },
+      editRow: {
+        display: 'flex',
+        alignItems: 'center',
+        gap: 8,
+        padding: '8px 0 8px 24px',
+        borderBottom: '0.5px solid var(--dsw-alias-border-l1)',
+      },
+      quickBtn: {
+        display: 'flex',
+        alignItems: 'center',
+        gap: 6,
+        height: 28,
+        padding: '0 10px',
+        fontSize: 12.5,
+        borderRadius: 14,
+        cursor: 'pointer',
+        border: '0.5px solid var(--dsw-alias-border-l3)',
+        background: 'transparent',
+        color: 'var(--dsw-alias-label-secondary)',
+        flex: 'none',
+        whiteSpace: 'nowrap',
+      },
+      popover: {
+        position: 'fixed',
+        right: 24,
+        bottom: 96,
+        width: 380,
+        zIndex: 2147483000,
+        padding: 14,
+        borderRadius: 12,
+        border: '0.5px solid var(--dsw-alias-border-l2)',
+        background: 'var(--dsw-alias-bg-layer-0)',
+        boxShadow: '0 8px 32px rgba(0,0,0,.18)',
+      },
+      iconBtn: {
+        border: 'none',
+        background: 'transparent',
+        cursor: 'pointer',
+        fontSize: 16,
+        lineHeight: '16px',
+        color: 'var(--dsw-alias-label-tertiary)',
+        padding: 0,
+      },
+      kv: { display: 'flex', gap: 8 },
+      k: { color: 'var(--dsw-alias-label-tertiary)', flex: 'none', width: 62 },
+      v: { color: 'var(--dsw-alias-label-primary)' },
       hint: { fontSize: 12, lineHeight: '18px', color: 'var(--dsw-alias-label-tertiary)', margin: 0 },
       err: { fontSize: 12, lineHeight: '18px', color: 'var(--dsw-alias-state-error-primary)', margin: 0 },
       okc: { fontSize: 12, lineHeight: '18px', color: 'var(--dsw-alias-state-success-primary)', margin: 0 },
       list: { listStyle: 'none', margin: 0, padding: 0, display: 'flex', flexDirection: 'column' },
       item: {
         display: 'grid',
-        gridTemplateColumns: '16px 104px 74px 1fr',
+        gridTemplateColumns: '16px 104px 60px 1fr auto',
         alignItems: 'center',
         gap: 8,
         fontSize: 12.5,
@@ -174,6 +246,11 @@ window.__ModuleLoader__.load({
         const [labGate, setLabGate] = React.useState(value.labGate !== false);
         const [ida, setIda] = React.useState(value.enableIda === true);
         const [playwright, setPlaywright] = React.useState(value.enablePlaywright === true);
+        // 工具路径的人工指定：editing 是被展开的那个工具 id
+        const [editing, setEditing] = React.useState('');
+        const [draft, setDraft] = React.useState('');
+        const [toolNotice, setToolNotice] = React.useState('');
+        const [toolBusy, setToolBusy] = React.useState('');
 
         // 宿主值变了就同步草稿（按 revision，避免把正在输入的字冲掉）
         React.useEffect(() => {
@@ -334,6 +411,31 @@ window.__ModuleLoader__.load({
           ),
         );
 
+        const saveToolPath = async (id, path) => {
+          setToolBusy(id);
+          setToolNotice('');
+          try {
+            const res = await fetch(API, {
+              method: 'POST',
+              headers: { 'content-type': 'application/json' },
+              credentials: 'same-origin',
+              body: JSON.stringify({ tool: id, path }),
+            });
+            const payload = await res.json();
+            if (!payload.ok) {
+              setToolNotice(`${id}: ${payload.error || '保存失败'}`);
+            } else {
+              setToolNotice(`${id}: ${path ? '已指定路径' : '已恢复自动查找'}`);
+              await load();
+              setEditing('');
+            }
+          } catch (error) {
+            setToolNotice(`${id}: ${error && error.message ? error.message : '保存失败'}`);
+          } finally {
+            setToolBusy('');
+          }
+        };
+
         // ---- 工具清单
         const tools = status && status.tools ? Object.entries(status.tools) : [];
         const toolCard = tools.length === 0 ? null : h(
@@ -358,8 +460,11 @@ window.__ModuleLoader__.load({
             { style: S.list },
             tools.map(([id, t]) =>
               h(
+                React.Fragment,
+                { key: id },
+                h(
                 'li',
-                { key: id, style: S.item },
+                { style: S.item },
                 h('span', null, GLYPH[t.state] || '?'),
                 h('span', { style: S.mono }, id),
                 h('span', { style: { color: COLOR[t.state] || 'inherit', fontSize: 11.5 } }, t.state),
@@ -369,13 +474,52 @@ window.__ModuleLoader__.load({
                     overflow: 'hidden',
                     textOverflow: 'ellipsis',
                     whiteSpace: 'nowrap',
+                    flex: 1,
+                    minWidth: 0,
                   },
                   title: t.detail || t.path || '',
                 }, t.detail || t.path || ''),
+                h(
+                  'button',
+                  {
+                    style: S.btnSmall,
+                    onClick: () => {
+                      setEditing(editing === id ? '' : id);
+                      setDraft(t.source === 'user' ? (t.path || '') : '');
+                      setToolNotice('');
+                    },
+                  },
+                  t.source === 'user' ? '改路径' : '指定路径',
+                ),
+                ),
+                editing === id
+                  ? h(
+                      'li',
+                      { style: S.editRow },
+                      h('input', {
+                        style: { ...S.input, flex: 1 },
+                        placeholder: '工具的可执行文件或安装目录，例如 D:/tools/jadx/bin/jadx.bat',
+                        value: draft,
+                        onChange: (e) => setDraft(e.target.value),
+                      }),
+                      h('button', {
+                        style: S.btnSmallPrimary,
+                        disabled: toolBusy === id,
+                        onClick: () => saveToolPath(id, draft),
+                      }, '保存'),
+                      h('button', {
+                        style: S.btnSmall,
+                        disabled: toolBusy === id || !t.path,
+                        onClick: () => saveToolPath(id, ''),
+                      }, '恢复自动'),
+                    )
+                  : null,
               ),
             ),
           ),
           h('p', { style: S.hint }, '缺的不是核心项（○ OPTIONAL）就不用管；❌ MISSING 才要装。'),
+          h('p', { style: S.hint }, '工具装在别处？点「指定路径」填进去，会写进 setup/tool-paths.local.json（不进 git），下次开机按它找。'),
+          toolNotice ? h('p', { style: S.hint }, toolNotice) : null,
         );
 
         // ---- 兜底说明卡
@@ -407,6 +551,110 @@ window.__ModuleLoader__.load({
       };
     }
 
+    // ---------------------------------------------------------------- 输入框右侧的常驻入口
+    // 为什么要有：设置面板要点三层才到（更多 → 设置 → Seep 工作台），
+    // 平时只想瞄一眼「接上了没」的时候太绕。这个入口贴在输入框右侧，
+    // 一点就出小卡片；完整面板仍然在设置里。
+    function makeQuickEntry(ctx) {
+      return function QuickEntry() {
+        const [open, setOpen] = React.useState(false);
+        const [status, setStatus] = React.useState(null);
+        const [busy, setBusy] = React.useState(false);
+        const [error, setError] = React.useState('');
+
+        const load = React.useCallback(async () => {
+          setBusy(true);
+          setError('');
+          try {
+            setStatus(await fetchStatus(false));
+          } catch (e) {
+            setError(e && e.message ? e.message : '接口没响应');
+          } finally {
+            setBusy(false);
+          }
+        }, []);
+
+        // 一进来就读一次：小圆点要在没点开的时候也有意义（绿=就绪，黄=有缺，红=没接上）
+        React.useEffect(() => {
+          if (!status) void load();
+        }, [status, load]);
+
+        const tools = (status && status.tools) ? Object.values(status.tools) : [];
+        const missing = tools.filter((t) => t.state === 'MISSING');
+        const ready = tools.filter((t) => t.state === 'READY').length;
+        const ok = status && status.ok;
+
+        const dot = !status ? '#9aa0a6' : ok && missing.length === 0 ? '#1a9e5c' : ok ? '#c9a227' : '#d33a3a';
+
+        // 浮层挂到 body：输入区有 overflow/transform，留在原地会被裁掉。
+        const popover = open && ReactDOM.createPortal(
+          h(
+            'div',
+            {
+              style: S.popover,
+              onMouseDown: (e) => e.stopPropagation(),
+            },
+            h(
+              'div',
+              { style: { display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 } },
+              h('span', { style: { width: 8, height: 8, borderRadius: 4, background: dot, flex: 'none' } }),
+              h('span', { style: { fontSize: 13, fontWeight: 600 } }, 'Seep 工作台'),
+              h('span', {
+                style: { marginLeft: 'auto', fontSize: 12, color: 'var(--dsw-alias-label-tertiary)' },
+              }, ok ? '就绪' : '未就绪'),
+              h('button', { style: S.iconBtn, onClick: () => setOpen(false), title: '收起' }, '×'),
+            ),
+            error
+              ? h('p', { style: S.err }, error)
+              : status
+                ? h(
+                    'div',
+                    { style: { display: 'flex', flexDirection: 'column', gap: 4, fontSize: 12.5 } },
+                    h('div', { style: S.kv }, h('span', { style: S.k }, '版本'), h('span', { style: S.v }, status.version || '-')),
+                    h('div', { style: S.kv }, h('span', { style: S.k }, '已接线'), h('span', { style: S.v }, status.wired || '-')),
+                    h('div', { style: S.kv }, h('span', { style: S.k }, 'lab 开关'), h('span', { style: S.v }, status.labGate ? '已启用' : '已关闭')),
+                    h('div', { style: S.kv }, h('span', { style: S.k }, '工具'), h('span', { style: S.v }, `${ready} 就绪${missing.length ? ` / ${missing.length} 缺失：${missing.map((m) => m.id).join(', ')}` : ''}`)),
+                    h('div', { style: { ...S.kv, alignItems: 'flex-start' } }, h('span', { style: S.k }, '仓库'), h('span', { style: { ...S.v, wordBreak: 'break-all' } }, status.repoRoot || '-')),
+                  )
+                : h('p', { style: S.hint }, busy ? '正在读状态…' : '还没读到状态'),
+
+            h(
+              'div',
+              { style: { display: 'flex', gap: 8, marginTop: 10 } },
+              h('button', { style: S.btnSmall, disabled: busy, onClick: () => void load() }, busy ? '检查中…' : '重新检查'),
+              h('button', {
+                style: S.btnSmall,
+                onClick: () => {
+                  const root = (status && status.repoRoot) || '<仓库路径>';
+                  void navigator.clipboard?.writeText(`cd "${root}"
+python setup/verify-dsh.py`);
+                },
+              }, '复制校验命令'),
+            ),
+            h('p', { style: { ...S.hint, marginTop: 8 } },
+              '完整面板：设置 → Seep 工作台（改路径、看全部 20 个工具、指定工具路径）'),
+          ),
+          document.body,
+        );
+
+        return h(
+          React.Fragment,
+          null,
+          h(
+            'button',
+            {
+              style: S.quickBtn,
+              title: 'Seep 工作台状态',
+              onClick: () => setOpen((v) => !v),
+            },
+            h('span', { style: { width: 7, height: 7, borderRadius: 4, background: dot, flex: 'none' } }),
+            'Seep',
+          ),
+          popover,
+        );
+      };
+    }
+
     // ---------------------------------------------------------------- 入口
 
     /** 这半侧需要的客户端服务。 */
@@ -427,6 +675,23 @@ window.__ModuleLoader__.load({
             label: () => 'Seep 工作台',
           },
           Panel,
+        ),
+      );
+
+      // 入口〇：小按钮，两处都放同一个组件
+      //   · conversation.hero.options —— 新会话时输入框上方那一行（工作区 / 标准模式 旁边）
+      //   · conversation.input.right —— 有对话时输入框右侧（上面那行只在空会话出现）
+      const QuickEntry = makeQuickEntry(ctx);
+      ctx.slots.inject('conversation.hero.options', () =>
+        ctx.slots.register(
+          { name: 'conversation.hero.options', id: `${NS}-hero`, order: 20 },
+          QuickEntry,
+        ),
+      );
+      ctx.slots.inject('conversation.input.right', () =>
+        ctx.slots.register(
+          { name: 'conversation.input.right', id: `${NS}-quick`, order: 20 },
+          QuickEntry,
         ),
       );
 

@@ -384,6 +384,55 @@ function whichInPath(names) {
 }
 
 /**
+ * 读 setup/tool-paths.local.json（面板里给某个工具手填的路径）。
+ * 文件不存在时返回空对象 —— 绝大多数人不会用它。
+ */
+function readUserPaths(repoRoot) {
+  try {
+    const raw = JSON.parse(readFileSync(join(repoRoot, 'setup', 'tool-paths.local.json'), 'utf8'));
+    const tools = raw?.tools;
+    return tools && typeof tools === 'object' ? tools : {};
+  } catch {
+    return {};
+  }
+}
+
+/**
+ * 写入/清除某个工具的人工路径。
+ *
+ * 只接受「存在」的路径，写之前先把目录/文件判一遍，免得面板里点了保存却存了个错路径。
+ * 返回 { ok, tools, error }。
+ */
+function writeUserPath(repoRoot, toolId, value) {
+  const id = String(toolId ?? '').trim();
+  if (!id) return { ok: false, error: '缺少工具 id' };
+  const file = join(repoRoot, 'setup', 'tool-paths.local.json');
+  const current = readUserPaths(repoRoot);
+  const raw = String(value ?? '').trim();
+
+  if (raw) {
+    const expanded = expand(raw);
+    if (!existsSync(expanded)) return { ok: false, error: `路径不存在：${expanded}` };
+    current[id] = raw;
+  } else {
+    delete current[id];
+  }
+
+  try {
+    mkdirSync(join(file, '..'), { recursive: true });
+    writeFileSync(
+      file,
+      `${JSON.stringify({ _comment: '人工指定的工具路径（面板或命令写入，留空即恢复自动查找）。本文件不进 git。', tools: current }, null, 2)}
+`,
+      'utf8',
+    );
+  } catch (error) {
+    return { ok: false, error: `写入失败：${error instanceof Error ? error.message : String(error)}` };
+  }
+  return { ok: true, tools: current };
+}
+
+/**
  * 快速扫一遍工具在哪。只做「找得到吗」，不真启动 —— 真启动是面板上「深度检测」按钮的事。
  * 状态用 tool_resolver.py 的同一套词汇，免得两处说法不一致。
  */
@@ -397,6 +446,7 @@ function scanTools(repoRoot) {
   }
 
   const out = {};
+  const userPaths = readUserPaths(repoRoot);
   for (const tool of registry) {
     const id = tool?.id;
     if (!id) continue;
@@ -404,7 +454,15 @@ function scanTools(repoRoot) {
     let path = '';
     let source = '';
 
-    if (envName && existsSync(envName)) {
+    const manual = String(userPaths[id] ?? '').trim();
+    if (manual) {
+      const expandedManual = expand(manual);
+      if (existsSync(expandedManual)) {
+        path = expandedManual;
+        source = 'user';
+      }
+    }
+    if (!path && envName && existsSync(envName)) {
       path = envName;
       source = 'env';
     }
@@ -530,10 +588,63 @@ function registerPanelApi(ctx, config) {
           sendJson(res, 403, { ok: false, error: 'only loopback' });
           return;
         }
-        if (req.method !== 'GET' && req.method !== 'HEAD') {
-          sendJson(res, 405, { ok: false, error: 'GET only' });
+        // POST：面板里给某个工具手填路径。只接受本机回环，写的是仓库内的覆盖文件。
+        if (req.method === 'POST') {
+          try {
+          const chunks = [];
+          let size = 0;
+          req.on('data', (chunk) => {
+            size += chunk.length;
+            if (size > 8192) {
+              req.destroy();
+              return;
+            }
+            chunks.push(chunk);
+          });
+          req.on('end', () => {
+            let payload = {};
+            try {
+              payload = JSON.parse(Buffer.concat(chunks).toString('utf8') || '{}');
+            } catch {
+              sendJson(res, 400, { ok: false, error: '请求体不是合法 JSON' });
+              return;
+            }
+            const liveConfig = readConfig(config);
+            const root = resolveRoot(liveConfig);
+            const check = inspect(liveConfig);
+            if (!check.ok) {
+              sendJson(res, 400, { ok: false, error: '工作台路径还没配好，先修好路径再改工具' });
+              return;
+            }
+            const saved = writeUserPath(root, payload.tool, payload.path);
+            if (!saved.ok) {
+              sendJson(res, 400, saved);
+              return;
+            }
+            sendJson(res, 200, {
+              ok: true,
+              tools: saved.tools,
+              scanned: scanTools(root),
+            });
+          });
+          } catch (error) {
+            // 刚才这里抛过一次未捕获异常，直接把整个 dsh 进程带走了。
+            // 写个路径而已，出错就回 500，不要牵连宿主。
+            console.error('[seep-workbench] 写工具路径失败:', error);
+            try {
+              sendJson(res, 500, { ok: false, error: '写入失败（看 dsh 日志）' });
+            } catch {
+              /* 响应可能已经发过 */
+            }
+          }
           return;
         }
+
+        if (req.method !== 'GET' && req.method !== 'HEAD') {
+          sendJson(res, 405, { ok: false, error: 'GET / POST only' });
+          return;
+        }
+
         const deep = /[?&]verify=1/.test(String(req.url ?? ''));
         const live = readConfig(config);
         const result = inspect(live);

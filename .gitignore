@@ -74,3 +74,5 @@ node_modules/
 
 # 探活/任务工作区产物（工具运行时自动生成，不进仓库）
 Tool/mcp/probe/
+# 人工指定的工具路径（每台机器不同，不进仓库）
+setup/tool-paths.local.json

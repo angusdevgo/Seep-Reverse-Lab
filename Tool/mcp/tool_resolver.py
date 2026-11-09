@@ -35,7 +35,7 @@ import subprocess
 import sys
 from typing import Any, Dict, List, Optional
 
-DEFAULT_CHAIN = ["env", "bundled", "cache", "path", "candidates"]
+DEFAULT_CHAIN = ["user", "env", "bundled", "cache", "path", "candidates"]
 
 
 # ---------------------------------------------------------------- 路径工具
@@ -89,6 +89,49 @@ def cache_path() -> str:
     return os.path.join(os.path.expanduser("~"), ".seep", "tools.json")
 
 
+def user_paths_path(repo_root: str) -> str:
+    """人工指定的工具路径。
+
+    放仓库里而不是用户目录，理由是：工作台可以 clone 多份，每份的路径选择
+    互不干扰；而且这个文件在 .gitignore 里，不会进仓库也不会泄漏本机路径。
+    """
+    return os.path.join(repo_root, "setup", "tool-paths.local.json")
+
+
+def load_user_paths(repo_root: str) -> Dict[str, str]:
+    path = user_paths_path(repo_root)
+    if not os.path.isfile(path):
+        return {}
+    try:
+        with open(path, "r", encoding="utf-8") as fh:
+            data = json.load(fh)
+    except (OSError, ValueError):
+        return {}
+    tools = data.get("tools") if isinstance(data, dict) else None
+    if not isinstance(tools, dict):
+        return {}
+    return {k: v for k, v in tools.items() if isinstance(v, str) and v.strip()}
+
+
+def save_user_path(repo_root: str, tool_id: str, value: str) -> Dict[str, str]:
+    """写入/清除一个工具的人工路径（value 为空字符串即为清除）。"""
+    path = user_paths_path(repo_root)
+    current = load_user_paths(repo_root)
+    if value and value.strip():
+        current[tool_id] = value.strip()
+    else:
+        current.pop(tool_id, None)
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    payload = {
+        "_comment": "人工指定的工具路径（面板或命令写入，留空即恢复自动查找）。本文件不进 git。",
+        "tools": current,
+    }
+    with open(path, "w", encoding="utf-8", newline="\n") as fh:
+        json.dump(payload, fh, ensure_ascii=False, indent=2)
+        fh.write("\n")
+    return current
+
+
 def load_registry(repo_root: str) -> List[dict]:
     try:
         with io.open(registry_path(repo_root), encoding="utf-8") as f:
@@ -131,11 +174,31 @@ def resolve_one(tool: dict, cache: Dict[str, Any], repo_root: str) -> Dict[str, 
     source = None
     warn: List[str] = []
 
+    user_paths = load_user_paths(repo_root)
+
     for layer in chain:
         if path:
             break
 
-        if layer == "env":
+        if layer == "user":
+            raw = user_paths.get(tid)
+            if not raw:
+                continue
+            exp = expand_pattern(raw, repo_root)
+            if not os.path.exists(exp):
+                # 人工填错了要显眼：这条不进候选链，直接报出来
+                warn.append("tool-paths.local.json 里 %s 的路径不存在: %s" % (tid, exp))
+                continue
+            if os.path.isdir(exp):
+                hit = find_in_root(tool, exp)
+                if hit:
+                    path, source = hit, "user"
+                else:
+                    warn.append("目录里没找到可执行文件: %s" % exp)
+            else:
+                path, source = exp, "user"
+
+        elif layer == "env":
             env_name = tool.get("env")
             if not env_name:
                 continue
@@ -364,6 +427,31 @@ def main(argv=None) -> int:
         i = argv.index("--tool")
         only = [a for a in argv[i + 1:] if not a.startswith("--")]
     root = find_repo_root(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+    # --set <id> <path> / --clear <id>：人工指定工具路径（写 setup/tool-paths.local.json）
+    if "--set" in argv or "--clear" in argv:
+        flag = "--set" if "--set" in argv else "--clear"
+        i = argv.index(flag)
+        rest = [a for a in argv[i + 1:] if not a.startswith("--")]
+        if not rest:
+            print("用法: --set <tool_id> <path>  或  --clear <tool_id>")
+            return 2
+        tid = rest[0]
+        value = rest[1] if flag == "--set" and len(rest) > 1 else ""
+        if flag == "--set" and not value:
+            print("用法: --set <tool_id> <path>")
+            return 2
+        current = save_user_path(root, tid, value)
+        print("[ok] 已写入 %s" % user_paths_path(root))
+        print("     当前人工路径: %s" % (json.dumps(current, ensure_ascii=False) if current else "（空）"))
+        # 立刻复核这条，让人知道填对了没
+        rep = external_tool_report(root, verify=False, only=[tid])
+        t = rep["tools"].get(tid) or {}
+        print("     %s -> %s（来源 %s）" % (tid, t.get("state"), t.get("source") or "-"))
+        if t.get("detail"):
+            print("     %s" % t["detail"])
+        return 0
+
     rep = external_tool_report(root, verify=verify, only=only or None)
 
     # --state <id>：给 shell 脚本用，只打印一个四态词，省掉在 verify.sh 里内联 Python
