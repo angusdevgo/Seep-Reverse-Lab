@@ -56,7 +56,7 @@
 ```json
 // ~/.dsh/profiles/web/package.json
 "dependencies": {
-  "seep-dsh-workbench": "file:C:/Users/Angus/Desktop/dsh-seep/packages/dsh-workbench"
+  "seep-dsh-workbench": "file:<仓库路径>/packages/dsh-workbench"
 }
 ```
 
@@ -78,7 +78,7 @@
 
 | 改了什么 | 怎么生效 |
 | :--- | :--- |
-| 插件代码 | 面板「更新插件」或 `dsh plugin add --profile web seep-dsh-workbench@latest` |
+| 插件代码 | 面板「更新插件」或 `dsh plugin --profile web add seep-dsh-workbench@latest` |
 | 技能 / 知识库 / 案例 | 面板「更新工作台」（`git pull`）或手动 `git pull` |
 | 工具 | 同上，然后**重启 DSH** |
 
@@ -89,7 +89,7 @@
 ### 模式 C：本地 tgz
 
 ```bash
-dsh plugin add --profile web "file:C:\...\seep-dsh-workbench-1.15.0.tgz"
+dsh plugin --profile web add "file:C:\...\seep-dsh-workbench-1.15.0.tgz"
 ```
 
 - ✅ 内网 / 无 npm 环境可用
@@ -218,7 +218,7 @@ python setup/pack-plugin.py
 #   → dist/seep-dsh-workbench-x.y.z.tgz
 
 # 3. 试装（可选，建议每次做）
-dsh plugin add --profile webtest "file:<tgz 绝对路径>"
+dsh plugin --profile webtest add "file:<tgz 绝对路径>"
 
 # 4. 发布
 npm publish packages/dsh-workbench --access public
@@ -240,7 +240,7 @@ gh release create vx.y.z dist/seep-dsh-workbench-x.y.z.tgz --notes-file CHANGELO
 dsh plugin remove --profile web seep-dsh-workbench
 
 # 2. 从 npm 装
-dsh plugin add --profile web seep-dsh-workbench
+dsh plugin --profile web add seep-dsh-workbench
 
 # 3. 确认装法已变
 cat ~/.dsh/profiles/web/package.json | grep seep-dsh
@@ -253,7 +253,7 @@ python setup/verify-dsh.py    # 应仍是 100 / 100
 
 ```bash
 dsh plugin remove --profile web seep-dsh-workbench
-dsh plugin add --profile web "file:<仓库>/packages/dsh-workbench"
+dsh plugin --profile web add "file:<仓库>/packages/dsh-workbench"
 ```
 
 切换后必须**重启 DSH**，并确认状态文件里 `mounted` 没有重复项。

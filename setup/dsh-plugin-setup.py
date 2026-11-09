@@ -225,6 +225,13 @@ def main(argv=None) -> int:
     ap.add_argument("--check", action="store_true", help="只报告状态，不改任何文件")
     ap.add_argument("--with-ida", action="store_true", help="额外挂 IDA Pro MCP（需本机已装 IDA）")
     ap.add_argument("--with-playwright", action="store_true", help="额外挂 Playwright MCP（走 npx）")
+    ap.add_argument(
+        "--from-npm",
+        action="store_true",
+        help="从 npm 装插件包（而不是用仓库里的本地目录）。"
+             "区别：npm 装法以后能在面板点「更新插件」自动拉新版；"
+             "本地目录装法改代码即生效，但没有远端可拉。",
+    )
     args = ap.parse_args(argv)
 
     root = os.path.abspath(args.root)
@@ -236,6 +243,7 @@ def main(argv=None) -> int:
     print("=" * 70)
     print("  仓库    : %s" % root)
     print("  插件包  : %s" % bundle)
+    print("  装法    : %s" % ("npm（可自动更新）" if args.from_npm else "本地目录（改代码即生效）"))
     print("  DSH_HOME: %s" % dsh_home())
     print("  profile : %s" % args.profile)
     print()
@@ -262,9 +270,12 @@ def main(argv=None) -> int:
         return report_status(root, args.profile, version)
 
     # 1) 装包。file: 是硬链接，升级时必须 remove 再 add，否则新加的文件不会出现。
+    # npm 装法要的是包名 + 版本范围，不是路径；本地装法要 file: + 绝对路径。
+    spec = "%s@latest" % PKG_NAME if args.from_npm else "file:" + bundle
+
     if args.dry_run:
         print("  [dry-run] 会执行：dsh plugin --profile %s remove %s" % (args.profile, PKG_NAME))
-        print("  [dry-run] 会执行：dsh plugin --profile %s add file:%s" % (args.profile, bundle))
+        print("  [dry-run] 会执行：dsh plugin --profile %s add %s" % (args.profile, spec))
     else:
         rc, _, err = run([dsh, "plugin", "--profile", args.profile, "remove", PKG_NAME])
         # 没装过时 remove 会失败，属于正常情况，不当错误
@@ -272,13 +283,20 @@ def main(argv=None) -> int:
             print("  [warn] 卸载旧包没成功（通常说明本来就没装）：%s" % (err or "").strip()[:120])
 
         print("  正在装包 …")
-        rc, out, err = run([dsh, "plugin", "--profile", args.profile, "add", "file:" + bundle])
+        rc, out, err = run([dsh, "plugin", "--profile", args.profile, "add", spec])
         if rc != 0:
             print("  [FAIL] 装包失败：")
             for line in ((err or out or "").strip().splitlines()[:8]):
                 print("         %s" % line)
+            if args.from_npm:
+                print()
+                print("         从 npm 装失败常见原因：")
+                print("           · 没联网 / npm 源不可达")
+                print("           · 这个包还没发布：%s" % PKG_NAME)
+                print("         想先用本地目录装（不需要 npm）：")
+                print("           python setup/dsh-plugin-setup.py --root .")
             return 1
-        print("  [ok] 插件包装好了")
+        print("  [ok] 插件包装好了（%s）" % ("npm" if args.from_npm else "本地目录"))
 
     # 2) 写路径
     patch_dir = os.path.join(dsh_home(), "profiles", args.profile)

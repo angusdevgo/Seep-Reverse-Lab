@@ -151,13 +151,26 @@ python setup/dsh-plugin-setup.py --with-ida           # 多挂 48 个 IDA 工具
 python setup/dsh-plugin-setup.py --root D:\新位置\seep # 仓库搬家后重跑这条
 ```
 
+### 两种装法，差别只在「以后怎么更新」
+
+| | 默认（本地目录） | `--from-npm` |
+| :--- | :--- | :--- |
+| 命令 | `python setup/dsh-plugin-setup.py` | `python setup/dsh-plugin-setup.py --from-npm` |
+| 插件从哪来 | 仓库里的 `packages/dsh-workbench/` | npm 上的 `seep-dsh-workbench` |
+| 改了 `lib/*.js` | **重启就生效**（硬链接） | 不生效，要等发新版 |
+| 面板「更新插件」 | 灰色不可点 | **可点，自动拉新版** |
+| 适合谁 | 想改代码 / 没网 | 只想用，不想管插件版本 |
+
+> 两者都需要先 clone 仓库 —— 561 MB 的工具本体在仓库里，不进 npm 包。
+> 装完想换装法，直接跑另一条命令即可（脚本会自动卸掉旧的再装新的）。
+
 ### 怎么验
 
 ```bash
 python setup/verify-dsh.py
 ```
 
-要看到 `100.0% (100 / 100 分)`。它查的是 DSH 专属接线：
+要看到 `100.0% (102 / 102 分)`。它查的是 DSH 专属接线：
 插件装了没、MCP 能不能真起来（**真的启动数工具**，不是看配置）、技能进没进注册表、面板在不在。
 
 ### 装完必须做

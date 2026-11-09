@@ -138,7 +138,7 @@ def build(out_dir: str) -> str:
     print("  sha256 : %s" % digest)
     print("  输出   : %s" % target)
     print()
-    print("  安装：dsh plugin add --profile web \"file:%s\"" % target)
+    print("  安装：dsh plugin --profile web add \"file:%s\"" % target)
     print("  发布：npm publish packages/dsh-workbench")
     return target
 

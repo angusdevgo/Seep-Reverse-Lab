@@ -92,7 +92,7 @@ cd seep && git pull                                  # 更工具/技能/知识�
 从 GitHub Release 下载 `seep-dsh-workbench-<版本>.tgz`，然后：
 
 ```bash
-dsh plugin add --profile web "file:D:/下载/seep-dsh-workbench-0.3.0.tgz"
+dsh plugin --profile web add "file:D:/下载/seep-dsh-workbench-0.3.0.tgz"
 ```
 
 更新 = 下载新 tgz 再执行一遍。**没有自动更新**，这是选这条路的代价。
@@ -100,7 +100,7 @@ dsh plugin add --profile web "file:D:/下载/seep-dsh-workbench-0.3.0.tgz"
 ### 3. 自己改代码的（我们）
 
 ```bash
-dsh plugin add --profile web "file:<仓库>/packages/dsh-workbench"
+dsh plugin --profile web add "file:<仓库>/packages/dsh-workbench"
 ```
 
 `file:` 安装是**硬链接** —— 改仓库文件，插件立刻跟着变，不用重装。
@@ -157,7 +157,7 @@ powershell -File setup/verify.ps1 -Detailed   # 看「脱敏」那几行是否�
 python setup/pack-plugin.py
 
 # 5. 本地试装（用真包，不用 file:）
-dsh plugin add --profile web "file:<刚才的 tgz>"
+dsh plugin --profile web add "file:<刚才的 tgz>"
 dsh --profile web --dump-config | grep seep-workbench   # 确认插进加载链了
 
 # 6. 发布
@@ -174,7 +174,7 @@ npm publish packages/dsh-workbench                       # 或 npm publish --acc
 
 | 情况 | 怎么退 |
 | :--- | :--- |
-| 新版本插件有问题 | `dsh plugin add --profile web seep-dsh-workbench@0.2.2`（装回旧版） |
+| 新版本插件有问题 | `dsh plugin --profile web add seep-dsh-workbench@0.2.2`（装回旧版） |
 | 插件完全起不来 | `dsh plugin remove --profile web seep-dsh-workbench`，DSH 恢复干净状态 |
 | 配置被改坏 | 插件写过的东西只有两处：profile 的 `cordis.patch.yml`（有 `.bak`）和 `setup/tool-paths.local.json` |
 | 想彻底重来 | 删 `~/.dsh/profiles/web`，重新 `dsh --profile web` 让它自建 |

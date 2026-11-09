@@ -690,7 +690,7 @@ function updatePlugin() {
   if (!info.updatable) {
     return {
       ok: false,
-      message: `当前是${info.mode}，没有可拉取的远端。要自动更新请改成 npm 安装：dsh plugin add --profile ${info.profile} seep-dsh-workbench`,
+      message: `当前是${info.mode}，没有可拉取的远端。要自动更新请改成 npm 安装：dsh plugin --profile ${info.profile} add seep-dsh-workbench`,
       install: info,
     };
   }
