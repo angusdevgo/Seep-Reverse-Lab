@@ -4,6 +4,12 @@
  * 状态只活在内存里：进程退出即销毁，不写磁盘。所以不会残留到第二天，
  * 窗口 A 开了也不影响窗口 B。
  *
+ * 两道开关，作用不同：
+ *   · enabled  —— 总闸。关掉之后连 `lab：` 口令都不认，什么都不触发。
+ *   · active   —— 本会话是否在实验模式（决定纪律正文注不注入）。
+ *
+ * 三个入口都能改它们：面板/小卡片上的开关（走宿主 API）、对话框里发 `lab：` / `退出实验`。
+ *
  * 这个文件刻意不依赖任何 @deepseek-ai/* 包，好处是可以脱离 DSH 单独跑测试
  * （见 test/lab-gate.test.mjs）。
  */
@@ -46,21 +52,30 @@ export function classify(messages) {
  *
  * @param ctx - Cordis 上下文，需要 on() 方法
  * @param options.discipline - 纪律正文；空串表示降级（只切状态、不注入）
- * @returns {{ state: Map<object, {active:boolean, since:number}> }}
+ * @param options.enabled - 总闸初值（默认开）。关掉后口令也不认。
+ * @returns 控制器：{ setEnabled, setActive, snapshot, state }
  */
-export function installLabGate(ctx, { discipline = '' } = {}) {
+export function installLabGate(ctx, { discipline = '', enabled = true } = {}) {
   const state = new Map();
   const fibers = new Map();
+
+  // 进程级的总闸与「强制进入」意图。
+  // forced=true 表示用户直接用面板/卡片开的，之后新建的会话也应该接着进。
+  let masterEnabled = enabled !== false;
+  let forced = false;
+
+  /** 这个会话现在到底算不算在实验模式里。 */
+  const isActive = (agent) => masterEnabled && state.get(agent)?.active === true;
 
   // 每个会话注册一条自己的提示词分节：开=正文，关=空串。
   // 分节注册在 agent 作用域里，所以天然只影响这个会话。
   ctx.on('agent/created', ({ agent }) => {
-    state.set(agent, { active: false, since: 0 });
+    state.set(agent, { active: masterEnabled && forced, since: masterEnabled && forced ? Date.now() : 0 });
     const fiber = agent.ctx.inject(['systemPrompt'], (scope) => {
       scope.systemPrompt.section({
         name: 'seep:lab-discipline',
         order: DISCIPLINE_SECTION_ORDER,
-        text: () => (state.get(agent)?.active === true ? discipline : ''),
+        text: () => (isActive(agent) ? discipline : ''),
       });
     });
     fibers.set(agent, fiber);
@@ -69,7 +84,8 @@ export function installLabGate(ctx, { discipline = '' } = {}) {
   // 只观察，不拦消息：永远把决定权交回给后面的监听者。
   ctx.on('agent/pre-step', ({ agent, messages }, next) => {
     const current = state.get(agent);
-    if (current !== undefined) {
+    // 总闸关着的时候连口令都不认 —— 「什么都不触发」就应该是真的什么都不触发。
+    if (current !== undefined && masterEnabled) {
       const verdict = classify(messages);
       if (verdict === 'enter' && !current.active) {
         current.active = true;
@@ -77,6 +93,8 @@ export function installLabGate(ctx, { discipline = '' } = {}) {
       } else if (verdict === 'exit' && current.active) {
         current.active = false;
         current.since = 0;
+        // 口令退出时把「强制进入」也撤掉，否则下一个新会话又自动进来
+        forced = false;
       }
     }
     return next();
@@ -92,5 +110,43 @@ export function installLabGate(ctx, { discipline = '' } = {}) {
     }
   });
 
-  return { state };
+  const controller = {
+    /** 总闸。关 = 全部归零（已开的会话也立刻停止注入）。 */
+    setEnabled(value) {
+      masterEnabled = value !== false;
+      if (!masterEnabled) {
+        forced = false;
+        for (const entry of state.values()) {
+          entry.active = false;
+          entry.since = 0;
+        }
+      }
+      return controller.snapshot();
+    },
+    /** 手动进入/退出。进入会记成「强制」，新建会话也接着进。 */
+    setActive(value) {
+      const on = value === true && masterEnabled;
+      forced = on;
+      for (const entry of state.values()) {
+        entry.active = on;
+        entry.since = on ? Date.now() : 0;
+      }
+      return controller.snapshot();
+    },
+    /** 当前状态（给面板和 API 用）。 */
+    snapshot() {
+      const agents = [...state.values()];
+      return {
+        enabled: masterEnabled,
+        forced,
+        activeSessions: agents.filter((e) => e.active).length,
+        sessions: agents.length,
+        injecting: masterEnabled && agents.some((e) => e.active),
+        hasDiscipline: discipline.length > 0,
+      };
+    },
+    state,
+  };
+
+  return controller;
 }

@@ -578,12 +578,13 @@ function sendJson(res, code, payload) {
  * 注册 /seep-workbench/api。web profile 才有 webServer，其它 profile 静默跳过。
  * 用 ctx.inject 声明依赖，这样服务晚到也能挂上，服务没有就整个跳过。
  */
-function registerPanelApi(ctx, config) {
+function registerPanelApi(ctx, config, getLab) {
   ctx.inject(['webServer'], (scope) => {
     scope.webServer.register({
       kind: 'exact',
       path: API_PATH,
       handler: (req, res) => {
+        try {
         if (!allowedPeer(req)) {
           sendJson(res, 403, { ok: false, error: 'only loopback' });
           return;
@@ -616,6 +617,20 @@ function registerPanelApi(ctx, config) {
               sendJson(res, 400, { ok: false, error: '工作台路径还没配好，先修好路径再改工具' });
               return;
             }
+            const labForPost = typeof getLab === 'function' ? getLab() : null;
+            // 面板/小卡片上的 Lab 开关走这里，改的是内存里的运行时状态，
+            // 不写磁盘、不重启：关掉立刻停止注入，打开立刻生效。
+            if (payload.action === 'lab') {
+              if (!labForPost) {
+                sendJson(res, 409, { ok: false, error: 'lab 开关没装上' });
+                return;
+              }
+              if (typeof payload.enabled === 'boolean') labForPost.setEnabled(payload.enabled);
+              if (typeof payload.active === 'boolean') labForPost.setActive(payload.active);
+              sendJson(res, 200, { ok: true, lab: labForPost.snapshot() });
+              return;
+            }
+
             const saved = writeUserPath(root, payload.tool, payload.path);
             if (!saved.ok) {
               sendJson(res, 400, saved);
@@ -645,6 +660,8 @@ function registerPanelApi(ctx, config) {
           return;
         }
 
+        // lab 控制器在 apply() 里才创建，这里用 getter 取，别把它闭包丢了。
+        const lab = typeof getLab === 'function' ? getLab() : null;
         const deep = /[?&]verify=1/.test(String(req.url ?? ''));
         const live = readConfig(config);
         const result = inspect(live);
@@ -664,12 +681,26 @@ function registerPanelApi(ctx, config) {
           python,
           wired,
           labGate: live.labGate,
+          lab: lab ? lab.snapshot() : null,
           skillsEnabled: live.enableSkills,
           optionalMcp: { ida: live.enableIda, playwright: live.enablePlaywright },
           deep,
           lines: result.lines,
           tools: result.ok ? toolsFor(repoRoot, python, deep) : {},
         });
+        } catch (error) {
+          // 宿主把 handler 的异常统一变成 400 空响应，什么线索都不给。
+          // 自己兜住并回报具体原因，否则排查只能靠猜。
+          console.error('[seep-workbench] 面板接口出错:', error);
+          try {
+            sendJson(res, 500, {
+              ok: false,
+              error: `接口出错：${error instanceof Error ? error.message : String(error)}`,
+            });
+          } catch {
+            /* 响应已经发过了 */
+          }
+        }
       },
     });
   });
@@ -680,6 +711,7 @@ export function apply(ctx, rawConfig = {}) {
   const result = inspect(config);
   const repoRoot = result.repoRoot;
   const mounted = { seep: false, jsReverse: false, skills: false };
+  let lab = null;
   const lines = [...result.lines];
 
   if (result.ok) {
@@ -770,23 +802,22 @@ export function apply(ctx, rawConfig = {}) {
     }
   }
 
-  // 纪律正文只在 lab 开关打开时才需要。读一次缓存住，文件没了就降级。
+  // 纪律正文读一次缓存住；文件没了就降级成「只切状态、不注入正文」。
+  // 不管配置里开关是开是关都要读：面板上的开关能随时把它打开，那时得立刻有正文可用。
   let discipline = '';
   const labGate = config.labGate !== false;
-  if (labGate) {
-    const file = join(repoRoot || '', DISCIPLINE_FILE);
-    if (repoRoot && existsSync(file)) {
-      try {
-        discipline = readFileSync(file, 'utf8');
-      } catch {
-        discipline = '';
-      }
+  const disciplineFile = join(repoRoot || '', DISCIPLINE_FILE);
+  if (repoRoot && existsSync(disciplineFile)) {
+    try {
+      discipline = readFileSync(disciplineFile, 'utf8');
+    } catch {
+      discipline = '';
     }
-    if (result.ok && !discipline) {
-      lines.push(`${DISCIPLINE_FILE} 没读到，lab 开关降级为「只切换状态、不注入正文」。`);
-    }
-    installLabGate(ctx, { discipline });
   }
+  if (result.ok && !discipline) {
+    lines.push(`${DISCIPLINE_FILE} 没读到，lab 开关降级为「只切换状态、不注入正文」。`);
+  }
+  lab = installLabGate(ctx, { discipline, enabled: labGate });
 
   const ok = result.ok && mounted.seep;
   if (ok) {
@@ -828,7 +859,7 @@ export function apply(ctx, rawConfig = {}) {
 
   if (typeof ctx?.inject === 'function') {
     try {
-      registerPanelApi(ctx, rawConfig);
+      registerPanelApi(ctx, rawConfig, () => lab);
     } catch (error) {
       lines.push(`面板接口没挂上：${error instanceof Error ? error.message : String(error)}`);
     }
@@ -845,6 +876,7 @@ export function apply(ctx, rawConfig = {}) {
     optionalMcp: { ida: config.enableIda === true, playwright: config.enablePlaywright === true },
     skills: null,
     labGate,
+    lab: lab ? lab.snapshot() : null,
     lines,
   };
   writeStatus(status);

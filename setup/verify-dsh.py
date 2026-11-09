@@ -382,6 +382,12 @@ def check_optional_mcp(rep, status):
     mounted = status.get("mounted") or {}
     wanted = status.get("optionalMcp") or {}
 
+    lab = status.get("lab") or {}
+    if lab:
+        rep.add_optional("lab 运行状态", "READY" if lab.get("enabled") else "OPTIONAL", "lab 总闸",
+                         "开（%s）" % ("当前已进入" if lab.get("injecting") else "当前未进入")
+                         if lab.get("enabled") else "关（连 lab： 口令也不认）")
+
     for key, label, hint in (
         ("playwright", "playwright", "python setup/dsh-plugin-setup.py --with-playwright"),
         ("ida", "ida", "python setup/dsh-plugin-setup.py --with-ida"),

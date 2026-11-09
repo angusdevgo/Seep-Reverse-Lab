@@ -20,7 +20,8 @@ let pass = 0;
 function ok(label, cond) {
   assert.ok(cond, label);
   pass += 1;
-  console.log(`  ✓ ${label}`);
+
+console.log(`  ✓ ${label}`);
 }
 
 /** 假 ctx：只实现插件用到的那两个方法。 */
@@ -136,5 +137,36 @@ ctx3.handlers.get('agent/created')({ agent: agentD });
 const sectionD = agentD.sections.get('seep:lab-discipline');
 await say(ctx3, agentD, 'lab：看看');
 ok('降级时状态照切、正文为空', sectionD.text() === '');
+
+// ---------------- 控制器：总闸与手动开关 ----------------
+await (async () => {
+const c = makeCtx();
+const ctl = installLabGate(c, { discipline: DISCIPLINE, enabled: true });
+const a1 = makeAgent();
+c.handlers.get('agent/created')({ agent: a1 });
+const sec = a1.sections.get('seep:lab-discipline');
+
+ok('默认不进 lab', sec.text() === '' && ctl.snapshot().injecting === false);
+
+ctl.setActive(true);
+ok('手动开启后立刻注入', sec.text() === DISCIPLINE);
+ok('手动开启后新会话也继承', (() => {
+    const a2 = makeAgent();
+    c.handlers.get('agent/created')({ agent: a2 });
+    return a2.sections.get('seep:lab-discipline').text() === DISCIPLINE;
+})());
+
+ctl.setEnabled(false);
+ok('总闸关掉后停止注入', sec.text() === '');
+await say(c, a1, 'lab：进一下');
+ok('总闸关掉后口令也不认（什么都不触发）', sec.text() === '' && ctl.snapshot().activeSessions === 0);
+
+ctl.setEnabled(true);
+await say(c, a1, 'lab：再来');
+ok('总闸打开后口令恢复', sec.text() === DISCIPLINE);
+
+ctl.setActive(false);
+ok('手动退出后再发普通消息不回来', sec.text() === '');
+})();
 
 console.log(`\n全部通过（${pass} 项）`);

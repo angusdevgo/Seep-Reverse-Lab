@@ -387,7 +387,31 @@ window.__ModuleLoader__.load({
             'label',
             { style: { display: 'flex', gap: 8, alignItems: 'center', fontSize: 13 } },
             h('input', { type: 'checkbox', checked: labGate, onChange: (e) => setLabGate(e.target.checked) }),
-            '启用 lab 开关（只有消息里出现 lab： 才注入作战纪律）',
+            '允许 lab 模式（总闸；关掉后连 lab： 口令也不认）',
+          ),
+          // 运行时开关：立刻生效、不用重启。总闸关着的时候它也没意义，所以禁用。
+          h(
+            'div',
+            {
+              style: {
+                display: 'flex', alignItems: 'center', gap: 10,
+                padding: '8px 10px', borderRadius: 8,
+                background: 'var(--dsw-alias-bg-layer-1)',
+                border: '0.5px solid var(--dsw-alias-border-l1)',
+              },
+            },
+            h('span', { style: { fontSize: 13 } }, '当前：',
+              h('b', null, status && status.lab && status.lab.injecting ? '已在 lab 模式' : '不在 lab 模式')),
+            h('span', { style: { ...S.hint, fontSize: 11.5 } },
+              status && status.lab && status.lab.injecting
+                ? '这一轮开始注入作战纪律'
+                : '普通对话，不注入任何作战纪律'),
+            h('span', { style: { marginLeft: 'auto' } }),
+            h('button', {
+              style: status && status.lab && status.lab.injecting ? S.btnSmall : S.btnSmallPrimary,
+              disabled: busy || !(status && status.lab) || !labGate,
+              onClick: () => void toggleLab(!(status && status.lab && status.lab.injecting)),
+            }, status && status.lab && status.lab.injecting ? '退出 lab' : '进入 lab'),
           ),
           h(
             'label',
@@ -579,6 +603,30 @@ window.__ModuleLoader__.load({
           if (!status) void load();
         }, [status, load]);
 
+        // 开关只改内存状态：关掉立刻停止注入，打开下一条消息就带上纪律，不用重启。
+        const toggleLab = async (on) => {
+          setBusy(true);
+          setError('');
+          try {
+            const res = await fetch(API, {
+              method: 'POST',
+              headers: { 'content-type': 'application/json' },
+              credentials: 'same-origin',
+              body: JSON.stringify({ action: 'lab', active: on, enabled: true }),
+            });
+            const payload = await res.json();
+            if (!payload.ok) {
+              setError(payload.error || '切换失败');
+            } else if (status) {
+              setStatus({ ...status, lab: payload.lab });
+            }
+          } catch (e) {
+            setError(e && e.message ? e.message : '切换失败');
+          } finally {
+            setBusy(false);
+          }
+        };
+
         const tools = (status && status.tools) ? Object.values(status.tools) : [];
         const missing = tools.filter((t) => t.state === 'MISSING');
         const ready = tools.filter((t) => t.state === 'READY').length;
@@ -604,6 +652,34 @@ window.__ModuleLoader__.load({
               }, ok ? '就绪' : '未就绪'),
               h('button', { style: S.iconBtn, onClick: () => setOpen(false), title: '收起' }, '×'),
             ),
+            status && status.lab
+              ? h(
+                  'div',
+                  {
+                    style: {
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 8,
+                      padding: '8px 10px',
+                      marginBottom: 10,
+                      borderRadius: 8,
+                      background: 'var(--dsw-alias-bg-layer-1)',
+                      border: '0.5px solid var(--dsw-alias-border-l1)',
+                    },
+                  },
+                  h('span', { style: { fontSize: 12.5, fontWeight: 600 } }, 'Lab 工作台模式'),
+                  h('span', {
+                    style: { fontSize: 11.5, color: 'var(--dsw-alias-label-tertiary)' },
+                  }, status.lab.injecting ? '已进入' : '未进入'),
+                  h('span', { style: { marginLeft: 'auto' } }),
+                  h('button', {
+                    style: status.lab.injecting ? S.btnSmallPrimary : S.btnSmall,
+                    disabled: busy,
+                    title: '只影响当前 DSH 进程，关掉就不注入任何作战纪律',
+                    onClick: () => void toggleLab(!status.lab.injecting),
+                  }, status.lab.injecting ? '关闭' : '开启'),
+                )
+              : null,
             error
               ? h('p', { style: S.err }, error)
               : status
