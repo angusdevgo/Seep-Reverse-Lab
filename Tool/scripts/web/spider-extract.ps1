@@ -76,7 +76,14 @@ if (-not $SkipDecompile) {
         $args = @('-d', $srcDir, '--no-res', '--show-bad-code', $target)
         $log = (Invoke-WebNative -Exe $jadx -Arguments $args -Quiet) -join "`n"
         if (-not (Test-Path -LiteralPath $srcDir)) {
-            throw "jadx 反编译失败（未生成输出目录）。日志尾部：`n$($log.Substring([Math]::Max(0, $log.Length - 1200)))"
+            # 加了 --no-res 之后，如果包里本来就没有 DEX（资源包、测试样本、纯 so 包），
+            # jadx 会正常退出但不创建输出目录。这不是坏掉，别报成「反编译失败」。
+            if ($log -match 'No classes') {
+                Write-Warning 'jadx 报告「没有可反编译的 class」，继续走资源/字符串线索'
+                New-Item -ItemType Directory -Path $srcDir -Force | Out-Null
+            } else {
+                throw "jadx 反编译失败（未生成输出目录）。日志尾部：`n$($log.Substring([Math]::Max(0, $log.Length - 1200)))"
+            }
         }
     }
 }

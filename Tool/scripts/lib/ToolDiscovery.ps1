@@ -34,6 +34,16 @@ function Join-ReverseOptionalPath {
     return Join-Path $Path $ChildPath
 }
 
+
+function Get-ReverseBundledToolsRoot {
+    [CmdletBinding()]
+    param()
+
+    # Get-ReverseSkillRoot 返回的是仓库里的 Tool\ 目录，
+    # 内置工具箱在 Tool\mcp\Tool\safe\ 下面。
+    return Join-Path (Get-ReverseSkillRoot) 'mcp\Tool\safe'
+}
+
 function Get-ReverseToolCatalog {
     [CmdletBinding()]
     param()
@@ -50,6 +60,7 @@ function Get-ReverseToolCatalog {
             FixedVersion = 'v0.5.0'
             VersionArgs = @()
             Fallbacks = @(
+                [pscustomobject]@{ Type = 'bundled'; Value = 'jadx\bin\jadx.bat' },
                 [pscustomobject]@{ Type = 'command'; Value = 'jadx' },
                 [pscustomobject]@{ Type = 'path'; Value = (Join-Path $userProfile 'Tools\jadx\bin\jadx.bat') }
             )
@@ -61,6 +72,7 @@ function Get-ReverseToolCatalog {
             FixedVersion = 'v0.5.0'
             VersionArgs = @()
             Fallbacks = @(
+                [pscustomobject]@{ Type = 'bundled'; Value = 'apktool\apktool.jar' },
                 [pscustomobject]@{ Type = 'command'; Value = 'apktool' },
                 [pscustomobject]@{ Type = 'path'; Value = (Join-Path $userProfile 'Tools\apktool\apktool.bat') },
                 [pscustomobject]@{ Type = 'java-jar'; Value = (Join-Path $userProfile 'Tools\apktool\apktool.jar') }
@@ -196,6 +208,7 @@ function Get-ReverseToolCatalog {
             Purpose = 'radare2 主分析器'
             VersionArgs = @('-v')
             Fallbacks = @(
+                [pscustomobject]@{ Type = 'bundled'; Value = 'radare2\bin\radare2.exe' },
                 [pscustomobject]@{ Type = 'command'; Value = 'r2' },
                 [pscustomobject]@{ Type = 'command'; Value = 'radare2' },
                 [pscustomobject]@{ Type = 'path'; Value = (Join-Path $userProfile 'Tools\radare2\bin\r2.bat') },
@@ -215,6 +228,7 @@ function Get-ReverseToolCatalog {
             Purpose = '二进制侦察'
             VersionArgs = @('-v')
             Fallbacks = @(
+                [pscustomobject]@{ Type = 'bundled'; Value = 'radare2\bin\rabin2.exe' },
                 [pscustomobject]@{ Type = 'command'; Value = 'rabin2' },
                 [pscustomobject]@{ Type = 'path'; Value = (Join-Path $userProfile 'Tools\radare2\bin\rabin2.exe') },
                 [pscustomobject]@{ Type = 'path'; Value = (Join-Path $userProfile 'Tools\radare2\rabin2.exe') },
@@ -227,6 +241,7 @@ function Get-ReverseToolCatalog {
             Purpose = '汇编/反汇编'
             VersionArgs = @('-v')
             Fallbacks = @(
+                [pscustomobject]@{ Type = 'bundled'; Value = 'radare2\bin\rasm2.exe' },
                 [pscustomobject]@{ Type = 'command'; Value = 'rasm2' },
                 [pscustomobject]@{ Type = 'path'; Value = (Join-Path $userProfile 'Tools\radare2\bin\rasm2.exe') },
                 [pscustomobject]@{ Type = 'path'; Value = (Join-Path $userProfile 'Tools\radare2\rasm2.exe') },
@@ -239,6 +254,7 @@ function Get-ReverseToolCatalog {
             Purpose = '二进制差分'
             VersionArgs = @('-v')
             Fallbacks = @(
+                [pscustomobject]@{ Type = 'bundled'; Value = 'radare2\bin\radiff2.exe' },
                 [pscustomobject]@{ Type = 'command'; Value = 'radiff2' },
                 [pscustomobject]@{ Type = 'path'; Value = (Join-Path $userProfile 'Tools\radare2\bin\radiff2.exe') },
                 [pscustomobject]@{ Type = 'path'; Value = (Join-Path $userProfile 'Tools\radare2\radiff2.exe') },
@@ -1001,6 +1017,26 @@ function Resolve-ReverseToolSpec {
         }
 
         switch ($candidate.Type) {
+            'bundled' {
+                $bundled = Join-Path (Get-ReverseBundledToolsRoot) $candidate.Value
+                if (Test-Path -LiteralPath $bundled) {
+                    Add-ReverseProcessPath -Path (Split-Path -Path $bundled -Parent)
+                    return [pscustomobject]@{
+                        Name = $definition.Name
+                        Skill = $definition.Skill
+                        Purpose = $definition.Purpose
+                        Available = $true
+                        IsExecutable = $true
+                        IsDirectory = $false
+                        Source = 'Bundled'
+                        ResolvedPath = $bundled
+                        Command = $bundled
+                        PrefixArgs = @()
+                        VersionArgs = $definition.VersionArgs
+                        FixedVersion = $fixedVersion
+                    }
+                }
+            }
             'command' {
                 $cmd = Resolve-ReverseCommandCandidate -Name $candidate.Value
                 if ($null -ne $cmd) {

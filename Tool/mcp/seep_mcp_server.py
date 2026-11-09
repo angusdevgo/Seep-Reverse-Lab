@@ -1251,6 +1251,12 @@ def seep_aotopsy(target_path: str, action: str = "find-libapp", keyword: Optiona
     is_apk = target.lower().endswith((".apk", ".aab", ".apks"))
 
     lib_path = target
+    if not is_apk and action == "find-libapp":
+        # find-libapp 是「从 APK 里找 Dart 库」，直接喂 libapp.so 时它无意义。
+        # 以前这里会掉到最后的「未知 action」兜底分支，看着像工具坏了，其实是
+        # 调用方用错了 action —— 直接按单文件全量分析（doctor）走，并说明原因。
+        action = "doctor"
+
     if is_apk:
         _run_cmd([exe, "find-libapp", "-apk", target, "-out", out_dir], timeout=300)
         json_candidates = glob.glob(os.path.join(out_dir, "*_find_libapp.json"))
@@ -1285,7 +1291,11 @@ def seep_aotopsy(target_path: str, action: str = "find-libapp", keyword: Optiona
         out = _run_cmd([exe, "export-dart", "--lib", lib_path, "--out", os.path.join(out_dir, "dart_src")], timeout=3600)
         return _clean_r2_output(out) + f"\n[产物] {os.path.join(out_dir, 'dart_src')}"
 
-    return f"[ERROR]: 未知 action: {action}（可选 find-libapp / doctor / signal / strings / export-dart）"
+    return (
+        f"[ERROR]: 未知 action: {action}"
+        "（可选 find-libapp / doctor / signal / strings / export-dart；"
+        "find-libapp 仅用于 APK/AAB，原始 libapp.so 请用 doctor / signal / strings / export-dart）"
+    )
 
 
 # ---------------------------------------------------------------------------
