@@ -50,6 +50,30 @@ pi 上的 `lab：` 是靠扩展实现的。DSH 上现在也在插件里实现了
 
 想整个关掉：`--no-lab-gate`，或配置项 `labGate: false`。
 
+### 设置面板（同一版本内补上）
+
+插件现在带一个浏览器侧面板，两个入口同一个组件：
+
+- 设置 → **Seep 工作台**（独立一页，不用翻插件列表）
+- 设置 → 插件 → `seep-dsh-workbench` → 「配置」（官方给 bundle row 的配置位）
+
+面板能看三件事：运行状态（就绪/未就绪 + 修复命令）、配置项（路径 / Python / 技能 / lab）、
+20 个工具的四态清单（快速检查或「深度检测」真跑一遍）。
+
+实现上有四个必须知道的事实（都在 `DSH-PROFILE.md` 里写清了）：
+
+1. 配置字段必须声明 `.volatile()` —— DSH 只把 volatile 字段投影到设置表单。
+   普通字段进不了表单，面板既看不到也改不了。宿主侧用 `config.x.get()` 取值。
+2. 面板是双面包：`dsh.client` 声明 + `exports["./client"]` → `lib/client.js`，
+   格式是客户端模块系统的懒加载 CJS 工厂，不需要打包器（只 `require('react')`）。
+3. 浏览器读不到磁盘，所以宿主侧注册了 `GET /seep-workbench/api`（只放本机回环），
+   工具清单和仓库自检都从这儿取。
+4. `ConfigForm` 要每次渲染重新取 —— 保存后 profile 重载会销毁旧控制器，
+   拿旧对象再写会报 `writeGeneration undefined`。
+
+改完路径不会自动重挂 MCP，需要重启 DSH；技能 / lab 开关对下一个会话生效。
+面板上已直接写明。
+
 ### 两个实测出来的坑（写进文档了）
 
 1. **`file:` 安装是硬链接**。包里新增文件必须 `remove` + `add` 重装才生效；
@@ -62,10 +86,10 @@ pi 上的 `lab：` 是靠扩展实现的。DSH 上现在也在插件里实现了
 
 ### 新增/改动文件
 
-- `packages/dsh-workbench/` —— 插件包本体（`package.json` / `cordis.patch.yml` / `lib/index.js` / `lib/lab-gate.js`）
+- `packages/dsh-workbench/` —— 插件包本体（`package.json` / `cordis.patch.yml` / `lib/index.js` / `lib/lab-gate.js` / `lib/client.js` 面板）
 - `packages/dsh-workbench/test/lab-gate.test.mjs` —— lab 开关单测，25 项，不需 DSH 与模型
 - `setup/dsh-plugin-setup.py` —— 装包 + 写路径 + 打印下一步
-- `setup/verify-dsh.py` —— 改读 `seep-workbench.status.json`；6 组 21 项 100 分
+- `setup/verify-dsh.py` —— 改读 `seep-workbench.status.json`；6 组 22 项 100 分（新增面板声明项）
 - `setup/install.ps1` / `setup/install.sh` —— 先试插件路线，失败才回退旧路线
 - `DSH-PROFILE.md` —— 新增插件包路线章节与两个坑
 

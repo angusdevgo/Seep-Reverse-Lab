@@ -63,6 +63,41 @@ python setup\dsh-plugin-setup.py --dry-run                 # 只看会改什么
 > 只能用 `dsh-plugin-setup.py` 写，或者手改上面那个 `cordis.patch.yml`
 > （设置 → 打开配置文件 可以直接打开它）。
 
+### 设置面板（1.14.0 起）
+
+插件带一个浏览器侧的面板，在 DSH 网页里能直接看到状态、改配置。
+两个入口，同一个组件：
+
+| 入口 | 位置 | 宿主传什么 |
+| :--- | :--- | :--- |
+| 独立一页 | 设置 → **Seep 工作台** | 不传，组件自己从 `ctx.configForms` 取 |
+| 插件行配置 | 设置 → 插件 → `seep-dsh-workbench` → 「配置」 | 传 `{ view, form: { state, mutate } }` |
+
+面板显示三块：
+
+1. **运行状态** —— 就绪/未就绪、仓库版本、已接线哪些、当前工作台路径；
+   失败时直接给出可复制的修复命令（比如「路径不存在，先 git clone」）。
+2. **配置** —— 工作台路径、Python、技能开关、lab 开关。改完点保存，
+   写回 profile 的 `cordis.patch.yml`（走 DSH 官方 configForms/config-editor 通道）。
+3. **工具清单** —— 20 个工具逐个标 ✅READY / ⚠️DEGRADED / ○OPTIONAL / ❌MISSING。
+   默认「快速检查」（只看找没找到）；点「深度检测」会真的启动每个工具验一遍
+   （调 `Tool/mcp/tool_resolver.py --verify`）。
+
+实现要点（自己改的时候别踩）：
+
+- 面板是**浏览器侧**的一半：`package.json` 里 `dsh.client` 声明 + `exports["./client"]`
+  指向 `lib/client.js`，格式必须是客户端模块系统的懒加载 CJS 工厂
+  （`window.__ModuleLoader__.load({ id, factory: (require) => ... })`）。
+- 宿主侧在 `lib/index.js` 里注册了只读接口 `GET /seep-workbench/api`
+  （只放本机回环访问）。浏览器读不到磁盘，工具在不在只有宿主知道 —— 所以绕这一趟。
+- **配置字段必须声明 `.volatile()`**。DSH 只把 volatile 字段投影到设置表单，
+  普通字段根本进不了表单，面板就既看不到也改不了。宿主里要用 `config.x.get()` 取值。
+- keyed 槽位的注册用 `key`（不是 `id`），值是 `<包名>#<行 id>`。
+- `ConfigForm` 要**每次渲染重新取**：保存后 profile 会重载，旧控制器被销毁，
+  拿旧对象再写会报 `writeGeneration undefined`。
+- 改完配置**不会**自动重挂 MCP —— 路径类改动需要重启 DSH；
+  技能 / lab 开关对下一个会话生效。面板上已写明这一点。
+
 ### Skill 图层（默认开启）
 
 DSH 自带 skill 机制 —— `dsh-skill-filesystem`（发现）+ `dsh-tool-skill`（模型侧加载），
@@ -221,7 +256,7 @@ cat "$DSH_HOME/seep-workbench.status.json"     # Windows: type %USERPROFILE%\.ds
 ```
 
 ```bash
-# 1. 完整度评分（6 组 / 21 项 / 100 分，输出百分比与缺失清单）
+# 1. 完整度评分（6 组 / 22 项 / 100 分，输出百分比与缺失清单）
 python setup/verify-dsh.py
 
 # 2. 插件有没有挂上（合成配置里应有 seep-workbench-boot）

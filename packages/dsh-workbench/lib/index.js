@@ -13,6 +13,7 @@
  * 配置项在 DSH 的「设置 → 插件」里能直接填（DSH 用 Config schema 自动生成表单）。
  */
 
+import { spawnSync } from 'node:child_process';
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { join } from 'node:path';
@@ -35,17 +36,46 @@ export const Config = z.object({
   repoRoot: z
     .string()
     .default('')
+    .volatile()
     .description('工作台仓库路径（含 Tool 目录的那一层）。留空则读环境变量 SEEP_ROOT。'),
   pythonPath: z
     .string()
     .default('')
+    .volatile()
     .description('能 import mcp 的 python 解释器。留空则用 PATH 里的 python。'),
-  enableSkills: z.boolean().default(true).description('在 DSH 里列出工作台的 10 个技能。'),
+  enableSkills: z.boolean().default(true).volatile().description('在 DSH 里列出工作台的 10 个技能。'),
   labGate: z
     .boolean()
     .default(true)
+    .volatile()
     .description('只在消息里出现 lab： 之后才注入作战纪律。关掉便于排查问题。'),
 });
+
+/**
+ * 把配置读成普通值。
+ *
+ * DSH 的 volatile 字段在宿主里是引用（config.x.get()），不是裸值；
+ * 我们内部统一按普通值处理，所以入口处解一次。
+ * 为什么要 volatile：DSH 只把 volatile 字段投影到设置表单里，
+ * 普通字段根本不进表单 —— 那样面板就看不到也改不了。
+ */
+function readConfig(config = {}) {
+  const plain = (ref, fallback) => {
+    if (ref === undefined) return fallback;
+    if (ref !== null && typeof ref === 'object' && typeof ref.get === 'function') {
+      const value = ref.get();
+      return value === undefined ? fallback : value;
+    }
+    return ref;
+  };
+  return {
+    repoRoot: plain(config.repoRoot, ''),
+    pythonPath: plain(config.pythonPath, ''),
+    enableSkills: plain(config.enableSkills, true) !== false,
+    labGate: plain(config.labGate, true) !== false,
+    strict: config.strict === true,
+  };
+}
 
 /** 这个插件是按哪个仓库版本做的；仓库更旧就提醒用户先更新。 */
 const MIN_REPO_VERSION = '1.14.0';
@@ -237,7 +267,203 @@ function writeStatus(payload) {
   }
 }
 
-export function apply(ctx, config = {}) {
+// ---------------------------------------------------------------- 工具扫描
+// 面板要显示「哪个工具找到、哪个缺」。浏览器读不到磁盘，所以由宿主算好给它。
+
+/** PATH 里按名字找可执行文件（Windows 要补 .exe/.cmd/.bat）。 */
+function whichInPath(names) {
+  const dirs = String(process.env.PATH ?? '').split(process.platform === 'win32' ? ';' : ':');
+  const exts = process.platform === 'win32' ? ['', '.exe', '.cmd', '.bat'] : [''];
+  for (const name of names ?? []) {
+    for (const dir of dirs) {
+      if (!dir) continue;
+      for (const ext of exts) {
+        const candidate = join(dir, name + ext);
+        if (existsSync(candidate)) return candidate;
+      }
+    }
+  }
+  return '';
+}
+
+/**
+ * 快速扫一遍工具在哪。只做「找得到吗」，不真启动 —— 真启动是面板上「深度检测」按钮的事。
+ * 状态用 tool_resolver.py 的同一套词汇，免得两处说法不一致。
+ */
+function scanTools(repoRoot) {
+  let registry = [];
+  try {
+    const raw = JSON.parse(readFileSync(join(repoRoot, 'setup', 'tool-registry.json'), 'utf8'));
+    registry = Array.isArray(raw) ? raw : raw.tools ?? [];
+  } catch {
+    return {};
+  }
+
+  const out = {};
+  for (const tool of registry) {
+    const id = tool?.id;
+    if (!id) continue;
+    const envName = tool.env ? String(process.env[tool.env] ?? '').trim() : '';
+    let path = '';
+    let source = '';
+
+    if (envName && existsSync(envName)) {
+      path = envName;
+      source = 'env';
+    }
+    if (!path) {
+      for (const candidate of tool.candidates ?? []) {
+        const expanded = expand(candidate);
+        // 候选里可能写的是目录（比如安装根），存在就算找到
+        if (expanded && existsSync(expanded)) {
+          path = expanded;
+          source = 'candidates';
+          break;
+        }
+      }
+    }
+    if (!path) {
+      for (const bundled of tool.bundled ?? []) {
+        const expanded = expand(bundled);
+        if (expanded && existsSync(expanded)) {
+          path = expanded;
+          source = 'bundled';
+          break;
+        }
+      }
+    }
+    if (!path) {
+      const found = whichInPath(tool.path_names);
+      if (found) {
+        path = found;
+        source = 'path';
+      }
+    }
+
+    const optional = tool.kind === 'optional';
+    out[id] = {
+      state: path ? 'READY' : optional ? 'OPTIONAL' : 'MISSING',
+      source,
+      path,
+      detail: path ? `找到：${source}` : optional ? '未安装（不影响使用）' : '找不到，需要安装',
+      fix: path ? '' : tool.fix || '',
+    };
+  }
+  return out;
+}
+
+/**
+ * 深度检测：真启动每个工具验一下（慢，几秒到几十秒）。
+ * 结果与 `python Tool/mcp/tool_resolver.py --verify --json` 完全一致 —— 就是调它。
+ */
+function probeTools(repoRoot, python) {
+  try {
+    const result = spawnSync(
+      python,
+      [join(repoRoot, 'Tool', 'mcp', 'tool_resolver.py'), '--verify', '--json'],
+      { cwd: repoRoot, encoding: 'utf8', timeout: 180000, windowsHide: true },
+    );
+    const text = String(result.stdout ?? '');
+    const start = text.indexOf('{');
+    if (start >= 0) {
+      const parsed = JSON.parse(text.slice(start));
+      return parsed.tools ?? {};
+    }
+  } catch {
+    // 深度检测失败不该让面板整页报错，退回快速扫描即可
+  }
+  return scanTools(repoRoot);
+}
+
+/** 工具扫描很贵，缓存 60 秒；深度检测缓存 5 分钟。 */
+const toolCache = new Map();
+
+function toolsFor(repoRoot, python, deep) {
+  const key = `${repoRoot}|${deep ? 'deep' : 'fast'}`;
+  const ttl = deep ? 300000 : 60000;
+  const hit = toolCache.get(key);
+  if (hit && Date.now() - hit.at < ttl) return hit.value;
+  const value = deep ? probeTools(repoRoot, python) : scanTools(repoRoot);
+  toolCache.set(key, { at: Date.now(), value });
+  return value;
+}
+
+// ---------------------------------------------------------------- 面板接口
+// 只读接口，给浏览器面板用。浏览器读不到磁盘，工具在不在只有宿主知道。
+
+const API_PATH = '/seep-workbench/api';
+
+/** 只放本机回环访问，避免把本机路径暴露给别的机器。 */
+function allowedPeer(req) {
+  const host = String(req.headers.host ?? '');
+  const hostLocal = /^(localhost|127\.0\.0\.1|\[::1\])(:\d+)?$/i.test(host);
+  const remote = String(req.socket?.remoteAddress ?? '');
+  const loopback = remote === '127.0.0.1' || remote === '::1' || remote === '::ffff:127.0.0.1';
+  if (!loopback && !hostLocal) return false;
+  const origin = req.headers.origin;
+  if (origin === undefined || origin === '' || origin === 'null') return true;
+  try {
+    return new URL(origin).host === host;
+  } catch {
+    return false;
+  }
+}
+
+function sendJson(res, code, payload) {
+  const body = JSON.stringify(payload);
+  res.writeHead(code, {
+    'content-type': 'application/json; charset=utf-8',
+    'cache-control': 'no-store',
+    'content-length': Buffer.byteLength(body),
+  });
+  res.end(body);
+}
+
+/**
+ * 注册 /seep-workbench/api。web profile 才有 webServer，其它 profile 静默跳过。
+ * 用 ctx.inject 声明依赖，这样服务晚到也能挂上，服务没有就整个跳过。
+ */
+function registerPanelApi(ctx, config) {
+  ctx.inject(['webServer'], (scope) => {
+    scope.webServer.register({
+      kind: 'exact',
+      path: API_PATH,
+      handler: (req, res) => {
+        if (!allowedPeer(req)) {
+          sendJson(res, 403, { ok: false, error: 'only loopback' });
+          return;
+        }
+        if (req.method !== 'GET' && req.method !== 'HEAD') {
+          sendJson(res, 405, { ok: false, error: 'GET only' });
+          return;
+        }
+        const deep = /[?&]verify=1/.test(String(req.url ?? ''));
+        const live = readConfig(config);
+        const result = inspect(live);
+        const repoRoot = result.repoRoot;
+        const python = resolvePython(live);
+        const mountedNow = result.ok && existsSync(join(repoRoot, 'Tool', 'mcp', 'seep_mcp_server.py'));
+        const wired = mountedNow ? 'seep / js-reverse / 技能' : '无';
+
+        sendJson(res, 200, {
+          ok: Boolean(mountedNow),
+          repoRoot,
+          version: result.version,
+          python,
+          wired,
+          labGate: live.labGate,
+          skillsEnabled: live.enableSkills,
+          deep,
+          lines: result.lines,
+          tools: result.ok ? toolsFor(repoRoot, python, deep) : {},
+        });
+      },
+    });
+  });
+}
+
+export function apply(ctx, rawConfig = {}) {
+  const config = readConfig(rawConfig);
   const result = inspect(config);
   const repoRoot = result.repoRoot;
   const mounted = { seep: false, jsReverse: false, skills: false };
@@ -327,8 +553,30 @@ export function apply(ctx, config = {}) {
     // 但这种问题往往只是「路径没填 / 工具没下载好」，不该连带影响普通对话。
     console.error('[seep-workbench] 自检没通过：');
     for (const line of lines) console.error(`[seep-workbench]   ${line}`);
-    if (config.strict === true) {
+    if (config.strict) {
       throw new Error('seep-workbench: 自检失败（strict 模式）');
+    }
+  }
+
+  // 面板里改了配置，宿主会发这个事件。现在已经挂着的 MCP 不会自己换路径，
+  // 所以这里只把新值读进来（面板立刻显示新路径）并明确提示要重启。
+  if (typeof ctx?.on === 'function') {
+    ctx.on('loader/volatile-update', () => {
+      const now = readConfig(rawConfig);
+      const changed = now.repoRoot !== config.repoRoot || now.pythonPath !== config.pythonPath;
+      console.error(
+        changed
+          ? `[seep-workbench] 配置已更新为 ${now.repoRoot}，重启 DSH 后新路径才会真正生效`
+          : '[seep-workbench] 配置已更新（技能 / lab 开关对下一个会话生效）',
+      );
+    });
+  }
+
+  if (typeof ctx?.inject === 'function') {
+    try {
+      registerPanelApi(ctx, rawConfig);
+    } catch (error) {
+      lines.push(`面板接口没挂上：${error instanceof Error ? error.message : String(error)}`);
     }
   }
 

@@ -1,12 +1,13 @@
 {
   "name": "seep-dsh-workbench",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": true,
   "description": "Seep 工作台的 DeepSeek Harness 接线包（只装接线，不装工具）",
   "type": "module",
   "main": "lib/index.js",
   "exports": {
-    ".": "./lib/index.js"
+    ".": "./lib/index.js",
+    "./client": "./lib/client.js"
   },
   "files": [
     "lib",
@@ -19,6 +20,13 @@
   "dsh": {
     "bundle": {
       "patch": "./cordis.patch.yml"
+    },
+    "client": {
+      "platform": "web",
+      "inject": [
+        "@deepseek-ai/dsh-client-ui-settings",
+        "@deepseek-ai/dsh-client-ui-slots"
+      ]
     }
   }
 }

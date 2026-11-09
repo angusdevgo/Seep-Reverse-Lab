@@ -30,14 +30,15 @@
 ### 第 1 组 · 配置层（20 分）
 
 1.14.0 起接线由插件包完成，不再往 profile patch 里塞 MCP 条目。
-所以这一组查的是「包装了没、跑过没、指向对不对、lab 开着没」。
+所以这一组查的是「包装了没、跑过没、指向对不对、lab 开着没、面板在不在」。
 
 | 编号 | 检查项 | 分值 | 判据 | 采集方式 |
 | :---: | :--- | :---: | :--- | :--- |
-| A1 | 插件包 `seep-dsh-workbench` 已装进 profile | 8 | `dsh.profile.bundles` 含该包名 | 读 `$DSH_HOME/profiles/<p>/package.json` |
-| A2 | 插件已启动并写出状态文件 | 5 | `$DSH_HOME/seep-workbench.status.json` 存在 | 启动一次 dsh 后读文件 |
-| A3 | 状态 `ok:true` 且 `repoRoot` 指向当前仓库 | 4 | 路径规范化后相等 | 同上 |
+| A1 | 插件包 `seep-dsh-workbench` 已装进 profile | 7 | `dsh.profile.bundles` 含该包名 | 读 `$DSH_HOME/profiles/<p>/package.json` |
+| A2 | 插件已启动并写出状态文件 | 4 | `$DSH_HOME/seep-workbench.status.json` 存在 | 启动一次 dsh 后读文件 |
+| A3 | 状态 `ok:true` 且 `repoRoot` 指向当前仓库 | 3 | 路径规范化后相等 | 同上 |
 | A4 | `labGate` 已启用 | 3 | 状态里 `labGate: true` | 同上 |
+| A5 | 设置面板已声明 | 3 | `package.json` 有 `dsh.client` 且 `lib/client.js` 存在 | 读包目录 |
 
 > 旧路线（`dsh-merge.py`）残留的 `>>> seep-workbench` 标记块**不扣分**，
 > 但会提示「不要两条路线同时用」—— 同时用会把 MCP 挂两份。
@@ -125,7 +126,7 @@ Linux / macOS 同样适用（脚本纯标准库）。
 ### 输出样例
 
 ```
-【配置层】   A1..A4   20/20
+【配置层】   A1..A5   20/20
 【MCP 可用性】B1..B4   25/25     seep 38 工具 / js-reverse 24 工具
 【技能层】   F1..F3   15/15     插件已挂技能层，10 个技能可被发现
 【仓库资产】 C1..C5   15/15
@@ -173,15 +174,17 @@ Linux / macOS 同样适用（脚本纯标准库）。
 
 | 症状 | 根因 | 修复 |
 | :--- | :--- | :--- |
-| A1 全组 FAIL | 没挂载 | `python setup/dsh-merge.py --profile web` |
-| A2/A3 FAIL 但 A1 PASS | profile 名不对 | `--profile <你启动的那个>`，或 `--global` |
-| A4 FAIL | 手改过补丁，把 timeout 删了 | 重跑 `dsh-merge.py`（重写整块） |
-| A5 FAIL | 仓库被移动/复制过，`cwd` 是旧路径 | 重跑 `dsh-merge.py` |
+| A1 FAIL | 插件包没装进 profile | `python setup/dsh-plugin-setup.py` |
+| A2 FAIL | 插件没启动过 / 起不来 | 启动一次 `dsh --profile <p>`，看终端里的 `[seep-workbench]` 行 |
+| A3 FAIL | 路径不对或指向别的副本 | `python setup/dsh-plugin-setup.py --root <正确路径>` |
+| A3 分 > 0 但不满 | 面板上改了路径还没重启 | 重启 DSH |
+| A4 FAIL | lab 开关被关掉 | 面板里打开，或重跑 `dsh-plugin-setup.py` |
+| A5 FAIL | 插件包不完整（缺 `lib/client.js`） | 重新 clone；或重跑 `dsh-plugin-setup.py` |
 | B1 FAIL，报 `ImportError: mcp` | `seep` 用的解释器没装 mcp | `setup\install-python.ps1`，或设 `SEEP_PYTHON` |
 | B2 工具数 < 38 | 启动的是旧副本 | 确认 `args` 指向当前仓库 |
 | B3/B4 FAIL | `npx js-reverse-mcp` 网络/缓存问题 | 手动跑一次 `npx -y js-reverse-mcp` 预热 |
-| **F1/F2 FAIL** | **skill 图层没开** | `python setup/generate-configs.py --root . --dsh-skills all`，再重跑 `dsh-merge.py` |
-| **F3 FAIL** | 两个技能根少了一个 | 同上；确认 `cordis.generated.yml` 里两行都在 |
+| **F1 FAIL** | **技能层没挂**（用 `--no-skills` 装的，或面板里关掉了） | 重跑 `python setup/dsh-plugin-setup.py`（不带 `--no-skills`） |
+| **F2/F3 FAIL** | 仓库里技能目录不完整 | 重新 clone |
 | C1 缺目录 | 克隆不完整 | 重新 `git clone` |
 | D2 FAIL | 改过根 `AGENTS.md` 没同步源 | `python setup/generate-configs.py --root .` |
 | E1 FAIL | `python` 指向没装 mcp 的解释器 | `setup\resolve-tools.ps1 -Tool python -Verify` 定位 |

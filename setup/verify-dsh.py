@@ -195,20 +195,20 @@ def check_config(rep, profile, status):
     installed = plugin_installed(profile)
 
     # A1 插件包已装进 profile
-    rep.add(G, "A1", "插件包 %s 已装进 profile" % PLUGIN_PKG, 8, installed,
+    rep.add(G, "A1", "插件包 %s 已装进 profile" % PLUGIN_PKG, 7, installed,
             "dsh.profile.bundles 含 %s" % PLUGIN_PKG if installed
             else "未装；旧路线的 marker 块不算数（两种路线同时用会挂两份 MCP）",
             "dsh plugin --profile %s add file:<仓库>/packages/dsh-workbench" % profile)
 
     # A2 插件跑过（有状态文件）
-    rep.add(G, "A2", "插件已启动并写出状态文件", 5, bool(status),
+    rep.add(G, "A2", "插件已启动并写出状态文件", 4, bool(status),
             status["_path"] if status else "没找到 %s" % os.path.join(dsh_home(), STATUS_FILE),
             "启动一次 dsh --profile %s，再重新跑本脚本" % profile)
 
     # A3 状态 ok 且指向当前仓库
     repo_root = (status or {}).get("repoRoot") or ""
     ok3 = bool(status) and status.get("ok") is True and same_path(repo_root, ROOT)
-    rep.add(G, "A3", "状态 ok 且路径指向当前仓库", 4, ok3,
+    rep.add(G, "A3", "状态 ok 且路径指向当前仓库", 3, ok3,
             "repoRoot=%s, ok=%s" % (repo_root or "空", (status or {}).get("ok")),
             "在 DSH 设置 → 插件 → seep-workbench-boot 里把路径改成：%s" % ROOT)
 
@@ -217,6 +217,22 @@ def check_config(rep, profile, status):
     rep.add(G, "A4", "lab 开关已启用（只在 lab： 之后注入纪律）", 3, lab is True,
             "labGate=%s" % lab,
             "设置 → 插件 → seep-workbench-boot → lab 开关 打开")
+
+    # A5 面板：包声明了 dsh.client 且 client 入口存在
+    pkg_dir = os.path.join(ROOT, "packages", "dsh-workbench")
+    client_entry = os.path.join(pkg_dir, "lib", "client.js")
+    declared = False
+    pj = os.path.join(pkg_dir, "package.json")
+    if os.path.isfile(pj):
+        try:
+            manifest = json.loads(io.open(pj, encoding="utf-8", errors="replace").read())
+            declared = bool((manifest.get("dsh") or {}).get("client"))
+        except (ValueError, OSError):
+            declared = False
+    rep.add(G, "A5", "设置面板已声明（dsh.client + lib/client.js）", 3,
+            declared and os.path.isfile(client_entry),
+            "声明=%s, client.js=%s" % (declared, os.path.isfile(client_entry)),
+            "重新 clone 仓库；面板文件在 packages/dsh-workbench/lib/client.js")
 
     # 旧路线残留：不扣分，但会重复挂载
     patch = os.path.join(profile_dir(profile), "cordis.patch.yml")
