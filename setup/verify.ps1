@@ -283,14 +283,25 @@ Test-CheckItem "Agent" "DSH Cordis 补丁生成物合法 (insert + timeout)" {
 # DSH 已安装但未挂载 → DEGRADED（不阻塞；DSH 是可选的第四种 Agent 接入）
 $dshHomeDir = if ($env:DSH_HOME) { $env:DSH_HOME } else { Join-Path $env:USERPROFILE '.dsh' }
 if (Test-Path $dshHomeDir) {
-    Test-ManualItem "Agent" "DeepSeek Harness 已挂载 seep MCP (cordis.patch.yml)" {
+    Test-ManualItem "Agent" "DeepSeek Harness 已接入 seep MCP (插件包或旧挂载)" {
+        # 路线一：插件包（1.14.0 起推荐）——profile 的 dsh.profile.bundles 里有这个包名
+        $profilePkg = Join-Path $dshHomeDir 'profiles\web\package.json'
+        if (Test-Path $profilePkg) {
+            try {
+                $pj = Get-Content $profilePkg -Raw -Encoding UTF8 | ConvertFrom-Json
+                $bundles = @($pj.dsh.profile.bundles)
+                if ($bundles -contains 'seep-dsh-workbench') { return $true }
+            }
+            catch { }
+        }
+        # 路线二：旧路线（dsh-merge.py 写的标注块）
         $merge = Join-Path $ScriptDir 'dsh-merge.py'
         if (-not (Test-Path $merge)) { return $false }
         $py = if ($env:SEEP_PYTHON) { $env:SEEP_PYTHON } else { $script:VerifyPython }
         if (-not $py) { return $false }
         & $py $merge --root $Root --dsh-home $dshHomeDir --check 2>$null | Out-Null
         ($LASTEXITCODE -eq 0)
-    } "运行 python setup/dsh-merge.py 完成挂载（或 python setup/dsh-merge.py --global）" "已写入 cordis.patch.yml" "$dshHomeDir\profiles\web\cordis.patch.yml"
+    } "运行 python setup/dsh-plugin-setup.py（推荐）；旧路线 python setup/dsh-merge.py" "插件包已装入 profile" "$dshHomeDir\profiles\web\package.json"
 }
 
 # -----------------------------------------------------------------------------

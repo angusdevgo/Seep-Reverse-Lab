@@ -122,32 +122,48 @@ DSH 通过 `@deepseek-ai/dsh-mcp-client` 桥接外部 MCP，配置以 **Cordis O
    产物：`setup/cordis.generated.yml`，含 `seep` 与 `js-reverse` 两条服务，
    并**显式写入 `toolCallTimeoutMs`**（DSH 默认 60 秒，本工作台的长任务远超此值）。
 
-2. **挂载（三选一）**：
+2. **挂载（推荐：装插件包）**：
    ```bash
-   # A. 持久挂载（推荐）—— 幂等，只替换标注块，你自己的模型/插件配置原样保留，写前自动备份
-   python setup/dsh-merge.py
-
-   # B. 全局挂载 —— 本机所有 profile 生效
-   python setup/dsh-merge.py --global
-
-   # C. 临时挂载 —— 不落盘
-   dsh web --patch "<工作台绝对路径>/setup/cordis.generated.yml"
+   python setup/dsh-plugin-setup.py                       # 装包 + 写入当前仓库路径
+   python setup/dsh-plugin-setup.py --root D:\新位置\Seep  # 仓库搬家后重跑这一条
    ```
 
-3. **指令来源**：项目根 `AGENTS.md` 由 `generate-configs` 从 `Tool/prompts/AGENTS.md`
+   它会 `dsh plugin add` 装进 profile，并把 `repoRoot` 写进
+   `$DSH_HOME/profiles/<p>/cordis.patch.yml`。之后 MCP 服务、技能层、lab 开关
+   都由插件在运行时自己挂 —— **仓库搬家只需改这一个值**。
+
+   > `file:` 安装是硬链接：包里新增文件必须 `remove` + `add` 重装才生效。
+   > 脚本每次都先 remove 再 add，所以重跑它一定能拿到最新代码。
+
+   **旧路线（没有 dsh CLI 时）**：
+   ```bash
+   python setup/dsh-merge.py                 # 持久挂载，只替换标注块，写前自动备份
+   python setup/dsh-merge.py --global        # 本机所有 profile
+   dsh web --patch "<仓库>/setup/cordis.generated.yml"   # 临时，不落盘
+   ```
+   两条路线**不要同时用** —— 会把 MCP 挂两份。
+
+3. **设置面板**：重启 DSH 后，设置 → **Seep 工作台** 能看到运行状态、
+   改工作台路径、看 20 个工具的四态清单。路径改了要重启才换过来（MCP 连接在启动时建立）。
+   也可以走 设置 → 插件 → `seep-dsh-workbench` → 「配置」，同一块面板。
+
+4. **指令来源**：项目根 `AGENTS.md` 由 `generate-configs` 从 `Tool/prompts/AGENTS.md`
    复制生成，DSH 会自动读取，无需手工 `cp`。
 
-4. **校验**：
+5. **校验**：
    ```bash
-   python setup/dsh-merge.py --check         # 0=已挂载
-   dsh --profile web --dump-config | grep -A12 "serverName: seep"
-   python setup/test_dsh_mount.py            # 端到端：按 DSH 合成配置启动 MCP，数工具
+   python setup/verify-dsh.py                # 完整度评分，6 组 22 项 100 分
+   cat "$DSH_HOME/seep-workbench.status.json"   # 插件自己写出的运行状态
+   dsh --profile web --dump-config | grep -A2 "seep-workbench-boot"
    ```
 
-5. **使用**：在 DSH 里工具名为 `mcp__seep__seep_pe_triage` 这种形式
-   （`mcp__<serverName>__<原始工具名>`）。发送 `check` 确认连通，再发 `lab：` 开工。
+6. **使用**：在 DSH 里工具名为 `mcp__seep__seep_pe_triage` 这种形式
+   （`mcp__<serverName>__<原始工具名>`）。发 `lab：` 才进入作战模式
+   （会话级，聊到 APK 不算激活）。
 
-> 卸载：`python setup/dsh-merge.py --remove`（只移除标注块，其余配置不动）。
+> 卸载：
+> - 插件路线：`dsh plugin --profile web remove seep-dsh-workbench`
+> - 旧路线：`python setup/dsh-merge.py --remove`（只移除标注块，其余配置不动）
 
 详见 [DSH-PROFILE.md](../DSH-PROFILE.md)。
 

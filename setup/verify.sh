@@ -174,16 +174,22 @@ test_cordis_patch() {
 }
 check_item "Agent" "DSH Cordis 补丁生成物合法 (insert + timeout)" test_cordis_patch
 
-# DSH 已安装但未挂载 → OPTN（不阻塞）
+# DSH 已安装但没接入 → OPTN（不阻塞）
 DSH_HOME_DIR="${DSH_HOME:-$HOME/.dsh}"
 if [ -d "$DSH_HOME_DIR" ]; then
     test_dsh_mounted() {
+        # 路线一：插件包（1.14.0 起推荐）—— profile 的 dsh.profile.bundles 里有包名
+        local profile_pkg="$DSH_HOME_DIR/profiles/web/package.json"
+        if [ -f "$profile_pkg" ] && grep -q 'seep-dsh-workbench' "$profile_pkg"; then
+            return 0
+        fi
+        # 路线二：旧路线（dsh-merge.py 写的标注块）
         [ -f "$SCRIPT_DIR/dsh-merge.py" ] || return 1
         [ -n "$PY_BIN" ] || return 1
         py_run "$SCRIPT_DIR/dsh-merge.py" --root "$ROOT" --dsh-home "$DSH_HOME_DIR" --check >/dev/null 2>&1
     }
-    check_optn "Agent" "DeepSeek Harness 已挂载 seep MCP (cordis.patch.yml)" \
-        "运行 python setup/dsh-merge.py 完成挂载" test_dsh_mounted
+    check_optn "Agent" "DeepSeek Harness 已接入 seep MCP (插件包或旧挂载)" \
+        "运行 python setup/dsh-plugin-setup.py（推荐）" test_dsh_mounted
 fi
 
 # 项目根 AGENTS.md：DSH / Codex 的指令入口，由 generate-configs 从 Tool/prompts 复制生成
@@ -209,7 +215,7 @@ test_cordis_patch() {
 }
 check_item "Agent" "DSH Cordis 补丁生成物合法 (insert + timeout)" test_cordis_patch
 
-# DSH 已安装但未挂载 → OPTN（不阻塞）
+# DSH 已安装但没接入 → OPTN（不阻塞）
 DSH_HOME_DIR="${DSH_HOME:-$HOME/.dsh}"
 if [ -d "$DSH_HOME_DIR" ]; then
     test_dsh_mounted() {
@@ -217,8 +223,8 @@ if [ -d "$DSH_HOME_DIR" ]; then
         [ -n "$PY_BIN" ] || return 1
         py_run "$SCRIPT_DIR/dsh-merge.py" --root "$ROOT" --dsh-home "$DSH_HOME_DIR" --check >/dev/null 2>&1
     }
-    check_optn "Agent" "DeepSeek Harness 已挂载 seep MCP (cordis.patch.yml)" \
-        "运行 python setup/dsh-merge.py 完成挂载" test_dsh_mounted
+    check_optn "Agent" "DeepSeek Harness 已接入 seep MCP (插件包或旧挂载)" \
+        "运行 python setup/dsh-plugin-setup.py（推荐）" test_dsh_mounted
 fi
 
 # 4. 技能系统
