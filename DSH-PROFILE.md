@@ -22,6 +22,28 @@
 存在则**先试插件包路线**，失败才回退旧路线（两条不能同时上，否则 MCP 会挂两份）。
 跳过该步骤用 `-SkipDsh`（Windows）/ `--skip-dsh`（Unix）。
 
+### 更新什么要怎么做（一张表说清）
+
+**结论先说：所有内容都靠仓库更新（`git pull`），插件包本身不是下载源。**
+`file:` 安装是**硬链接**，装进来的就是仓库里那几个文件，没有第二份拷贝。
+
+| 改了什么 | 怎么更新 | 为什么要这么做 |
+| :--- | :--- | :--- |
+| 插件已有的文件（`lib/*.js`、`package.json`、`cordis.patch.yml`） | `git pull` 后**重启 DSH** | 硬链接，改仓库等于改已装副本；代码在进程启动时加载 |
+| 插件**新增**的文件（比如加了一个 `lib/xxx.js`） | `git pull` → `python setup/dsh-plugin-setup.py` → 重启 | 硬链接只链安装那一刻存在的文件，新文件得重新 add |
+| MCP 服务端（`Tool/mcp/*.py`） | `git pull` 后**重启 DSH** | MCP 是启动时拉起的子进程 |
+| 技能（`Tool/skill/**`） | `git pull`，**新会话生效** | 技能层是运行时扫仓库目录（带 watch） |
+| 知识库 / 内置工具 / 手册 | `git pull`，**不用重启** | 用的时候才去读仓库里的文件 |
+| 工作台换目录 | `dsh-plugin-setup.py --root <新路径>` + 重启 | MCP 连接在启动时建立，路径是那时定的 |
+| 依赖（`node_modules` / Python venv） | `setup/extract-deps.ps1` / `setup/install-python.ps1` | 太大，不进插件包 |
+
+为什么工具层不能走插件：`Tool/` 是 **660MB+**（jadx / apktool / radare2 / node_modules），
+npm 与插件机制都装不下，也不该塞进 `~/.dsh`。插件只负责「把 MCP 指向仓库里那份」。
+
+所以 `dsh plugin update` 现在什么都做不了 —— 实测输出 `Already up to date`。
+它只在将来插件发布到 npm 之后才有意义，而且那时它也只更新插件本身（~96KB），
+工具、技能、知识库照样得跟着仓库走。
+
 ### 插件包路线（1.14.0 起）
 
 为什么加这一条：旧路线把 MCP 条目写死在 profile patch 里，路径是绝对路径，
