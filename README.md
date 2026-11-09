@@ -153,7 +153,7 @@ The agent autonomously:
 - 🌐 **Transport-Layer Compliance Relay & Auto-Retry**: Pure stdlib localhost relay with streaming refusal auto-retry cascade (`S1-review-checklist` → `S2-review-framed` → `S3-review-en`), preserving target paths without semantic drift. Unit tests 84/84 passing.
 - ⚡ **DeepSeek Harness (DSH) integration**: `python setup/dsh-plugin-setup.py` installs a ~40 KB plugin package and writes the workbench path — the plugin mounts both MCP servers itself at runtime (`toolCallTimeoutMs` 900 s, since DSH's 60 s default cuts long tasks) plus the 10 skills, so moving the repo means editing one value. The `lab：` gate is now **code-enforced inside the plugin** (per-session, off by default; mentioning an APK does not activate it), and a **settings panel** (Settings → Seep 工作台) shows live status, lets you edit the path, and lists all 20 tools with their states. Verify with `python setup/verify-dsh.py` (6 groups / 21 items / 100 points).
 - 🛡️ **Measured Anti-Refusal Defense**: Gemini-safe prompt reshaping (`gemini-safe.flag`), L1 observable decision logging (`l1-log.flag`), and native `BLOCK_NONE` payload gating.
-- 🔌 **Offline-Ready**: All toolchains pre-bundled (251 MB), zero network dependencies after setup
+- 🔌 **Offline-Ready**: All toolchains pre-bundled (657 MB of tools), zero network dependencies after setup
 - 🪟 **Windows PE Deep-Dive Engine (`exe-reverse`)**: 41 gated references + **16 dependency-free Python engines** — `peutil` (RVA↔offset, imports/exports/TLS/relocs, MS checksum, per-section entropy), `pe_triage`, `pepatch` (equal-length + checksum recompute + **byte re-read from disk**), `aob_scan` (unique/ambiguous/permissive verdict), `pe_diff`, `hwprobe`, `trace_reduce` (+ optional SMT proof), `fold`. Covers packers, virtualization/flattening, .NET, Unity IL2CPP, packaged Python, kernel drivers, hardware tracing and hypervisor observation.
 
 ---
@@ -164,66 +164,106 @@ The agent autonomously:
 <summary>📁 Full Directory Tree (click to expand)</summary>
 
 ```
-Seep\ (251 MB)
+Seep\ (881 MB, of which 657 MB is the offline toolchain)
 ├── README.md                      ← This file (English default)
 ├── README.zh.md                   ← Chinese documentation (中文文档)
+├── INSTALL.md                     ← ⭐ Read this first: what Pi vs DSH each install
+├── AGENTS.md                      ← Project-root instruction entry (generated from Tool/prompts)
 ├── DSH-PROFILE.md                 ← DeepSeek Harness: field reference, mounting, verification
-├── check.bat                      ← ⭐ Double-click one-shot health verifier (Windows)
-├── check.ps1                      ← PowerShell health verifier entry point
-├── VERSION                        ← Current version marker
-├── CHANGELOG.md                   ← User-facing release notes
+├── VERSION                        ← Version marker (matches the npm package version)
+├── CHANGELOG.md                   ← Release notes
+├── LICENSE                        ← GPL-3.0
+├── check.bat / check.ps1          ← Double-click health check (wraps verify.ps1)
+├── update.bat / update.ps1        ← Double-click update (idempotent, lossless)
+│
+├── packages\dsh-workbench\        ← ⭐ ⬆ The npm bundle (45 KB, wiring only)
+│   ├── package.json               ← Package name: seep-dsh-workbench
+│   ├── cordis.patch.yml           ← The single entry inserted into the load chain
+│   ├── lib\index.js               ← Mounts MCPs, reads config, handles updates
+│   ├── lib\lab-gate.js            ← Session-scoped lab switch
+│   ├── lib\lab-rewrite.js         ← Sensitive-term rewrite (reads the repo rule table)
+│   ├── lib\client.js              ← The Lab button next to the model picker + settings panel
+│   ├── test\lab-gate.test.mjs     ← 39 assertions
+│   └── README.md / LICENSE
 │
 ├── Tool\
-│   ├── skill\                     ← 10 specialized reverse engineering skills
-│   │   ├── softseep\              ← ⭐ Master orchestrator (Router + 10 on-demand references)
-│   │   ├── exe-reverse\           ← Windows PE deep-dive: 41 refs + 16 stdlib engines
-│   │   ├── apkseep\               ← End-to-end Android APK/DEX/SO skill (115 files)
-│   │   ├── ida-reverse\           ← IDA Pro automated spawning & MCP coordination
+│   ├── skill\                     ← 10 reverse-engineering skills (5 primary + 5 safe)
+│   │   ├── softseep\              ← ⭐ Master orchestrator (triage + routing + lazy refs)
+│   │   ├── exe-reverse\           ← Windows PE deep-dive
+│   │   ├── apkseep\               ← End-to-end Android reversing
+│   │   ├── webseep\               ← Web / streaming / HLS chains
 │   │   ├── client-license-validation-bypass\ ← Cross-runtime license attack playbook
 │   │   └── safe-skills\           ← 5 standalone tool packages
+│   │       ├── apk-reverse\           ← Upstream mobile reversing suite
+│   │       ├── ida-reverse\           ← IDA Pro automation
+│   │       ├── mcp-js-reverse-playbook\ ← JS signature chains
+│   │       ├── radare2\               ← CLI reversing
+│   │       └── reverse-engineering\   ← General methodology
 │   │
-│   ├── mcp\                       ← MCP Engine
-│   │   ├── seep_mcp_server.py     ← Core server: 38 native reversing, PE, Web, Android & KB tools
-│   │   ├── mcp.json.template      ← Global MCP client configuration template
-│   │   └── Tool\                  ← ⚠️ Hardcoded relative runtime path (do not rename)
-│   │       ├── safe\              ← Pre-bundled cross-platform toolchains
+│   ├── mcp\                       ← MCP engine
+│   │   ├── seep_mcp_server.py     ← Core server: 38 analysis tools
+│   │   ├── tool_resolver.py       ← Tool path resolution (user → env → bundled → path → candidates)
+│   │   └── Tool\                  ← ⚠️ Hardcoded relative path (do not rename)
+│   │       ├── safe\              ← Pre-bundled toolchains (561 MB)
 │   │       │   ├── jadx\          ← 75 MB (v1.5.6)
 │   │       │   ├── radare2\       ← 39 MB (v5.9.8 full suite)
 │   │       │   ├── apktool\       ← 24 MB (v2.11.0)
 │   │       │   ├── hook-mcp\      ← Frida / LSPosed instrumentation templates
 │   │       │   ├── ida-pro-mcp\   ← IDA bridge adapter
-│   │       │   ├── js-reverse-mcp\← Web / JS debugging engine
-│   │       │   └── playwright-mcp\← Headless browser automation
-│   │       └── reverselab\        ← 294 field journals + attack chains
+│   │       │   ├── js-reverse-mcp\← Web / JS debugging engine (24 tools)
+│   │       │   └── playwright-mcp\← Headless browser automation (25 tools, optional)
+│   │       └── reverselab\
+│   │           ├── kb\            ← 294 field journals
+│   │           └── docs\          ← llms.txt and friends
 │   │
-│   ├── prompts\                   ← Agent coordination specs & runtime extensions
-│   │   ├── SYSTEM.md              ← Pi Agent system instructions
-│   │   ├── AGENTS.md              ← Cross-agent portable instructions
-│   │   └── extensions\            ← BLOCK_NONE injection + terminology mapping
+│   ├── prompts\                   ← Agent coordination specs
+│   │   ├── SYSTEM.md              ← The discipline text injected on lab：
+│   │   ├── AGENTS.md              ← Portable instruction base (shared by Pi and DSH)
+│   │   └── extensions\            ← Pi's lab gate + term rewrite (TypeScript)
 │   │
-│   ├── cases\                     ← 14 desensitized industrial paradigm projects (A ~ N, incl. version-evolution archive v2)
-│   ├── upstream\                  ← Upstream verification & attribution layer (4 full mirrors)
-│   │   ├── apk-reverse\           ← newliver666/apk-reverse (Android RE & offline test suite)
-│   │   ├── open-tgtylab\          ← GeniusHu-tgty/Open-tgtylab (Security lab framework & workflows)
-│   │   ├── open-reverselab\       ← LING71671/open-reverselab (Knowledge base, boards & MCP ecosystem)
-│   │   └── exe-reverse\           ← dabao1955/exe-reverse (Windows PE evidence record & regression suite)
-│   ├── docs\                      ← Engineering reference docs
-│   └── scripts\                   ← Workspace automation scripts
+│   ├── cases\                     ← 14 desensitized industrial cases (projects A ~ N)
+│   ├── upstream\                  ← Upstream attribution layer (4 full mirrors)
+│   │   ├── apk-reverse\           ← newliver666/apk-reverse
+│   │   ├── open-tgtylab\          ← GeniusHu-tgty/Open-tgtylab
+│   │   ├── open-reverselab\       ← LING71671/open-reverselab
+│   │   └── exe-reverse\           ← dabao1955/exe-reverse
+│   ├── aotopsy\                   ← Flutter AOT analysis (Windows-only)
+│   ├── docs\                      ← Engineering references (TOOLKIT_GUIDE / PROVENANCE / DOWNLOADS)
+│   └── scripts\                   ← Workspace automation
 │       └── compliance-relay\      ← 🌐 Transport-layer compliance relay (stdlib-only, 3 protocols)
 │
-├── setup\                         ← Automated install, repair, update, uninstall & verify scripts
-└── MANUAL\                        ← 9 Tactical SOP guides
-    ├── PREREQUISITES.md           ← Environment & dependency requirements
-    ├── IDA-PRO.md                 ← Commercial IDA Pro integration (native idalib + stdio modes)
-    ├── ANTI-DEBUG.md              ← Anti-debug bypass dictionary & proxy DLL framework
-    ├── UNPACKING.md               ← UPX/MPRESS/Themida/VMP unpacking SOP
-    ├── POC-VALIDATION.md          ← Frida self-healing loop & PoC sandbox validation
-    ├── DEPLOYMENT.md              ← Comprehensive deployment & multi-Agent setup guide
-    ├── DEPLOYMENT-CHECKLIST.md    ← Official deployment baseline checklist (51 items)
-    ├── CROSS-PLATFORM.md          ← Cross-platform (Windows/Linux/macOS) execution guide
-    ├── COMPLIANCE-RELAY.md        ← Transport-layer compliance relay & auto-retry architecture
-    └── MODEL-REFUSAL-MATRIX.md    ← Measured refusal matrix & Gemini-safe prompt reshaping
+├── setup\                         ← Install / repair / update / uninstall / verify
+│   ├── install.ps1 / install.sh   ← One entry point (dispatches per agent)
+│   ├── install-pi.ps1             ← Pi only: writes mcp.json + copies skills
+│   ├── dsh-plugin-setup.py        ← DSH only: installs the bundle + writes the path (--from-npm optional)
+│   ├── verify.ps1 / verify.sh     ← Repo baseline check (64 items)
+│   ├── verify-dsh.py              ← DSH deep check (25 items / 102 points)
+│   ├── pack-plugin.py             ← Builds the npm tarball (prints tgz + sha256; never publishes)
+│   ├── update.ps1 / update.sh     ← Idempotent update
+│   ├── uninstall.ps1 / uninstall.sh
+│   ├── tool-registry.json         ← Lookup rules for 20 external tools
+│   └── tool-paths.local.json      ← Your manual tool paths (gitignored)
+│
+├── MANUAL\                        ← 14 tactical SOP guides
+│   ├── AGENTS.md                  ← ⭐ Pi vs DSH wiring, side by side
+│   ├── UPDATING.md                ← ⭐ Where the bundle is published, how updates flow
+│   ├── PUBLISHING.md              ← Maintainer release discipline & runbook
+│   ├── PREREQUISITES.md           ← Environment & dependency requirements
+│   ├── IDA-PRO.md                 ← IDA Pro integration (idalib + stdio)
+│   ├── ANTI-DEBUG.md              ← Anti-debug bypass dictionary & proxy DLL framework
+│   ├── UNPACKING.md               ← UPX/MPRESS/Themida/VMP unpacking SOP
+│   ├── POC-VALIDATION.md          ← Frida self-healing loop & sandbox validation
+│   ├── DEPLOYMENT.md              ← Deployment guide (Pi / DSH routes)
+│   ├── DEPLOYMENT-CHECKLIST.md    ← Official baseline checklist
+│   ├── DSH-VERIFICATION.md        ← DSH acceptance list (why 102 points)
+│   ├── CROSS-PLATFORM.md          ← Windows / Linux / macOS equivalence
+│   ├── COMPLIANCE-RELAY.md        ← Transport-layer relay & auto-retry
+│   └── MODEL-REFUSAL-MATRIX.md    ← Measured refusal matrix & prompt reshaping
+│
+├── docs\images\                   ← README artwork
+└── .github\workflows\             ← Upstream sync (spillover-proof)
 ```
+
 
 </details>
 

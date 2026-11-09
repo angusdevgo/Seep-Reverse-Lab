@@ -164,64 +164,104 @@ Agent 自主完成：
 <summary>📁 完整目录树（点击展开）</summary>
 
 ```
-Seep\ (251 MB)
+Seep\ (881 MB，其中 657 MB 是离线工具链)
 ├── README.md                      ← 全局说明（英文默认）
 ├── README.zh.md                   ← 本文件（中文文档）
+├── INSTALL.md                     ← ⭐ 第一次来先看这个：Pi / DSH 各装什么、怎么装
+├── AGENTS.md                      ← 项目根指令入口（由 Tool/prompts/AGENTS.md 生成）
 ├── DSH-PROFILE.md                 ← DeepSeek Harness 接入：字段表 / 挂载方式 / 校验
-├── check.bat                      ← ⭐ 双击一键体检入口（Windows）
-├── check.ps1                      ← PowerShell 体检入口
-├── VERSION                        ← 当前版本标识
-├── CHANGELOG.md                   ← 面向用户的版本变更日志
+├── VERSION                        ← 版本标识（与 npm 包版本一致）
+├── CHANGELOG.md                   ← 版本变更日志
+├── LICENSE                        ← GPL-3.0
+├── check.bat / check.ps1          ← 双击一键体检（verify.ps1 的入口）
+├── update.bat / update.ps1        ← 双击一键更新（幂等、无损）
+│
+├── packages\dsh-workbench\        ← ⭐ ⬆ 发布到 npm 的插件包（45 KB，只有接线）
+│   ├── package.json               ← 包名 seep-dsh-workbench
+│   ├── cordis.patch.yml           ← 加载链里插的那一条
+│   ├── lib\index.js               ← 挂 MCP、读配置、管更新
+│   ├── lib\lab-gate.js            ← lab 会话级开关
+│   ├── lib\lab-rewrite.js         ← 敏感词改写（读仓库里的规则表）
+│   ├── lib\client.js              ← 输入框右侧 Lab 按钮 + 设置面板
+│   ├── test\lab-gate.test.mjs     ← 39 项单测
+│   └── README.md / LICENSE
 │
 ├── Tool\
-│   ├── skill\                     ← 10 大逆向专业技能
-│   │   ├── softseep\              ← ⭐ 总控调度器（路由 + 10 专题按需库）
-│   │   ├── exe-reverse\           ← Windows PE 深水区（41 篇规范 + 16 个引擎）
-│   │   ├── apkseep\               ← Android 全链路逆向（115 个工程文件）
-│   │   ├── ida-reverse\           ← IDA Pro 自动化联动
-│   │   ├── client-license-validation-bypass\ ← 跨运行时卡密/授权攻防手册
-│   │   └── safe-skills\           ← 5 个独立战术工具包
+│   ├── skill\                     ← 10 个逆向技能（5 主 + 5 安全）
+│   │   ├── softseep\              ← ⭐ 总控调度器（判型 + 路由 + 按需加载）
+│   │   ├── exe-reverse\           ← Windows PE 深水区
+│   │   ├── apkseep\               ← Android 全链路逆向
+│   │   ├── webseep\               ← Web / 流媒体 / HLS 链路
+│   │   ├── client-license-validation-bypass\ ← 跨运行时卡密/授权攻防
+│   │   └── safe-skills\           ← 5 个独立战术包
+│   │       ├── apk-reverse\           ← 上游移动端逆向套件
+│   │       ├── ida-reverse\           ← IDA Pro 自动化
+│   │       ├── mcp-js-reverse-playbook\ ← JS 签名链路
+│   │       ├── radare2\               ← 命令行逆向
+│   │       └── reverse-engineering\   ← 通用逆向方法论
 │   │
 │   ├── mcp\                       ← MCP 服务引擎
-│   │   ├── seep_mcp_server.py     ← 核心服务端，38 个底层分析工具
+│   │   ├── seep_mcp_server.py     ← 核心服务端，38 个分析工具
+│   │   ├── tool_resolver.py       ← 工具路径解析（user → env → bundled → path → candidates）
 │   │   └── Tool\                  ← ⚠️ 硬编码相对路径，禁止重命名/搬移
-│   │       ├── safe\              ← 物理内置工具箱
+│   │       ├── safe\              ← 物理内置工具箱（561 MB）
 │   │       │   ├── jadx\          ← 75 MB（v1.5.6）
 │   │       │   ├── radare2\       ← 39 MB（v5.9.8 全套）
 │   │       │   ├── apktool\       ← 24 MB（v2.11.0）
 │   │       │   ├── hook-mcp\      ← Frida / LSPosed 动态注入模板
 │   │       │   ├── ida-pro-mcp\   ← IDA 桥接适配层
-│   │       │   ├── js-reverse-mcp\← Web / JS 调试引擎
-│   │       │   └── playwright-mcp\← 无头浏览器自动化
-│   │       └── reverselab\        ← 294 篇战术笔记 + 攻击链模板
+│   │       │   ├── js-reverse-mcp\← Web / JS 调试引擎（24 个工具）
+│   │       │   └── playwright-mcp\← 无头浏览器自动化（25 个工具，可选）
+│   │       └── reverselab\
+│   │           ├── kb\            ← 294 篇战术笔记
+│   │           └── docs\          ← llms.txt 等
 │   │
-│   ├── prompts\                   ← 智能体协同规范与运行时扩展
-│   │   ├── SYSTEM.md              ← Pi Agent 系统指令
-│   │   ├── AGENTS.md              ← 跨 Agent 通用指令规范
-│   │   └── extensions\            ← BLOCK_NONE 注入 + 口语合规转译
+│   ├── prompts\                   ← 智能体协同规范
+│   │   ├── SYSTEM.md              ← 作战纪律正文（lab： 时注入）
+│   │   ├── AGENTS.md              ← 通用指令底座（Pi / DSH 共用）
+│   │   └── extensions\            ← Pi 的 lab 闸门 + 词替换扩展（TS）
 │   │
-│   ├── cases\                     ← 14 大脱敏工业案例库（项目 A ~ N，含版本演进归档 v2）
-│   ├── upstream\                  ← 上游溯源验证层（4 大开源项目完整镜像）
-│   │   ├── apk-reverse\           ← newliver666/apk-reverse（Android 逆向与离线测试集）
-│   │   ├── open-tgtylab\          ← GeniusHu-tgty/Open-tgtylab（攻防流水线与提效路由）
-│   │   ├── open-reverselab\       ← LING71671/open-reverselab（知识库、boards 与工具生态）
-│   │   └── exe-reverse\           ← dabao1955/exe-reverse（Windows PE 深水区证据记录与回归套件）
-│   ├── docs\                      ← 工程参考文档
+│   ├── cases\                     ← 14 个脱敏工业案例（项目 A ~ N）
+│   ├── upstream\                  ← 上游溯源验证层（4 个开源项目完整镜像）
+│   │   ├── apk-reverse\           ← newliver666/apk-reverse（Android 逆向）
+│   │   ├── open-tgtylab\          ← GeniusHu-tgty/Open-tgtylab（攻防流水线）
+│   │   ├── open-reverselab\       ← LING71671/open-reverselab（知识库与工具生态）
+│   │   └── exe-reverse\           ← dabao1955/exe-reverse（PE 深水区）
+│   ├── aotopsy\                   ← Flutter AOT 分析（Windows-only）
+│   ├── docs\                      ← 工程参考文档（TOOLKIT_GUIDE / PROVENANCE / DOWNLOADS）
 │   └── scripts\                   ← 工作流自动化脚本
 │       └── compliance-relay\      ← 🌐 链路层合规转译中继（纯标准库，三协议）
 │
-├── setup\                         ← 安装、修复、更新、卸载与校验脚本集
-└── MANUAL\                        ← 14 份战术专项 SOP 手册
-    ├── PREREQUISITES.md           ← 环境与依赖预要求指南
-    ├── IDA-PRO.md                 ← IDA Pro 商业软件接入指南（支持 idalib 原生与传统 stdio 双模式）
-    ├── ANTI-DEBUG.md              ← 反调试绕过字典与代理 DLL 框架
-    ├── UNPACKING.md               ← UPX/MPRESS/Themida/VMP 脱壳 SOP
-    ├── POC-VALIDATION.md          ← Frida 自愈循环与 PoC 沙箱验证
-    ├── DEPLOYMENT.md              ← 全景部署与多 Agent 集成指南
-    ├── DEPLOYMENT-CHECKLIST.md    ← 官方部署资产核验基准清单（51 项）
-    ├── CROSS-PLATFORM.md          ← 跨平台（Windows/Linux/macOS）运行与战术等价指南
-    ├── COMPLIANCE-RELAY.md        ← 链路层合规转译中继与防拒自动重试指南
-    └── MODEL-REFUSAL-MATRIX.md    ← 实测大模型拒答矩阵与提示词重塑研究
+├── setup\                         ← 安装 / 修复 / 更新 / 卸载 / 校验 脚本集
+│   ├── install.ps1 / install.sh   ← 总入口（内部按 Agent 分发）
+│   ├── install-pi.ps1             ← Pi 专用：写 mcp.json + 拷技能
+│   ├── dsh-plugin-setup.py        ← DSH 专用：装插件包 + 写路径（--from-npm 可选）
+│   ├── verify.ps1 / verify.sh     ← 仓库基准自检（64 项）
+│   ├── verify-dsh.py              ← DSH 深度自检（25 项 / 102 分）
+│   ├── pack-plugin.py             ← 打 npm 包（只产出 tgz + sha256，绝不发布）
+│   ├── update.ps1 / update.sh     ← 幂等更新
+│   ├── uninstall.ps1 / uninstall.sh
+│   ├── tool-registry.json         ← 20 个外部工具的查找规则
+│   └── tool-paths.local.json      ← 你手填的工具路径（gitignore，不入库）
+│
+├── MANUAL\                        ← 14 份战术专项 SOP 手册
+│   ├── AGENTS.md                  ← ⭐ Pi 与 DSH 的接线对照（两列）
+│   ├── UPDATING.md                ← ⭐ 插件发哪、怎么更新、连带更新什么
+│   ├── PUBLISHING.md              ← 维护者发版纪律与 Runbook
+│   ├── PREREQUISITES.md           ← 环境与依赖预要求
+│   ├── IDA-PRO.md                 ← IDA Pro 接入（idalib / stdio 双模式）
+│   ├── ANTI-DEBUG.md              ← 反调试绕过字典与代理 DLL 框架
+│   ├── UNPACKING.md               ← UPX/MPRESS/Themida/VMP 脱壳 SOP
+│   ├── POC-VALIDATION.md          ← Frida 自愈循环与沙箱验证
+│   ├── DEPLOYMENT.md              ← 部署指南（Pi / DSH 两条路线）
+│   ├── DEPLOYMENT-CHECKLIST.md    ← 官方部署资产核验基准
+│   ├── DSH-VERIFICATION.md        ← DSH 验收清单（为什么是 102 分）
+│   ├── CROSS-PLATFORM.md          ← Windows / Linux / macOS 等价指南
+│   ├── COMPLIANCE-RELAY.md        ← 链路层转译中继与防拒重试
+│   └── MODEL-REFUSAL-MATRIX.md    ← 实测模型拒答矩阵与提示词重塑
+│
+├── docs\images\                   ← README 用的示意图
+└── .github\workflows\             ← 上游定点同步（防外溢）
 ```
 
 </details>
