@@ -16,7 +16,7 @@
 import { execFileSync, spawn, spawnSync } from 'node:child_process';
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { homedir } from 'node:os';
-import { join } from 'node:path';
+import { isAbsolute, join } from 'node:path';
 import z from '@deepseek-ai/schemastery';
 import * as McpClient from '@deepseek-ai/dsh-mcp-client';
 import * as SkillFilesystem from '@deepseek-ai/dsh-skill-filesystem';
@@ -842,9 +842,13 @@ function scanTools(repoRoot) {
     }
     if (!path) {
       for (const bundled of tool.bundled ?? []) {
+        // registry 里的 bundled 是**仓库相对路径**（Tool/mcp/Tool/safe/...）。
+        // 不能直接交给 existsSync：那会按 DSH 进程的 cwd 解析，cwd 一离开仓库根，
+        // 这些自带工具就全被判成 MISSING（面板一片红，但其实文件都在）。
         const expanded = expand(bundled);
-        if (expanded && existsSync(expanded)) {
-          path = expanded;
+        const resolved = isAbsolute(expanded) ? expanded : join(repoRoot, expanded);
+        if (resolved && existsSync(resolved)) {
+          path = resolved;
           source = 'bundled';
           break;
         }
