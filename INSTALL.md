@@ -20,6 +20,23 @@
 
 ---
 
+## NixOS / Home Manager
+
+NixOS 用户可使用仓库的 Flake 声明式安装 MCP 与原生工具链，避免向系统 Python
+执行 pip 安装：
+
+```bash
+nix run github:angusdevgo/Seep-Reverse-Lab
+# 在本地仓库进入开发环境：
+nix develop
+```
+
+包提供 `seep-reverse-lab` 与 `seep-mcp` 两个命令，Home Manager 模块可安装 10 个技能、
+配置共享 MCP 注册表，并按需安装 Android 工具、Frida、Ghidra 与 Android SDK。
+完整配置、Agent 接线边界与验证方式见 [NixOS 指南](nix/README.md)。
+
+---
+
 ## 共同前提（两个 Agent 都需要）
 
 ### 1. 系统与运行时

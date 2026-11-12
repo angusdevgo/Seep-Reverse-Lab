@@ -321,6 +321,10 @@ Seep\ (881 MB，其中 657 MB 是离线工具链)
 
 ## 🚀 快速开始与部署
 
+**NixOS / Home Manager**：使用 `nix run github:angusdevgo/Seep-Reverse-Lab`
+启动带 Nix 原生工具链的 MCP，或在仓库内执行 `nix develop`。
+声明式安装、Home Manager 模块、可选工具与 Agent 接线见 [NixOS 指南](nix/README.md)。
+
 ### 1. 运行依赖
 - **操作系统**：Windows 10 / 11 x64（推荐），兼容 Linux / macOS
 - **核心运行时**：Python 3.11+、Node.js 18+、Git
