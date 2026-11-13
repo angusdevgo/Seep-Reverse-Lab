@@ -9,7 +9,7 @@
 
 **这个脚本不发布**，只产出文件并打印校验和。发布动作永远由人来做：
 
-    npm publish packages/dsh-workbench
+    npm publish packages/seep-lab
     # 或者把 tgz 传到 GitHub Release 当备用通道
 
 为什么不用 `npm pack`
@@ -32,7 +32,7 @@ import time
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 REPO = os.path.dirname(HERE)
-PKG_DIR = os.path.join(REPO, "packages", "dsh-workbench")
+PKG_DIR = os.path.join(REPO, "packages", "seep-lab")
 
 # 和 package.json 的 files 保持一致：只有这些进包
 DEFAULT_FILES = ["package.json", "cordis.patch.yml", "README.md", "lib"]
@@ -138,8 +138,8 @@ def build(out_dir: str) -> str:
     print("  sha256 : %s" % digest)
     print("  输出   : %s" % target)
     print()
-    print("  安装：dsh plugin --profile web add \"file:%s\"" % target)
-    print("  发布：npm publish packages/dsh-workbench")
+    print("  安装：dsh plugin add --profile web \"file:%s\"" % target)
+    print("  发布：npm publish packages/seep-lab")
     return target
 
 
@@ -149,7 +149,7 @@ def main(argv=None) -> int:
     ap.add_argument("--out", default=os.path.join(REPO, "dist"), help="输出目录")
     args = ap.parse_args(argv)
 
-    print("  Seep 工作台 · DSH 插件打包")
+    print("  Seep Lab · DSH 插件打包")
     print("  " + "-" * 60)
 
     ok, problems = check_versions()

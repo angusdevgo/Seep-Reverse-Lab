@@ -1,4 +1,4 @@
-# Seep 工作台 —— DeepSeek Harness 接线补丁
+# Seep Lab —— DeepSeek Harness 接线补丁
 #
 # 这个包只做「接线」，不装工具。
 # 真正的工具（jadx / radare2 / apktool … 共 659 MB）在你自己 clone 的仓库里。
@@ -12,4 +12,4 @@
 
 - insert:
     - id: seep-workbench-boot
-      name: 'seep-dsh-workbench'
+      name: 'seep-lab'

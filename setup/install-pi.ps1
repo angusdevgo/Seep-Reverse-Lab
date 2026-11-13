@@ -1,6 +1,6 @@
 ﻿#Requires -Version 5.1
 <#
-  Seep 工作台 —— 一键配置 Pi Agent 运行环境 (加强版)
+  Seep Lab —— 一键配置 Pi Agent 运行环境 (加强版)
   包含：
     1. 备份原 ~/.pi/agent 配置
     2. 同步 10 个 Skill

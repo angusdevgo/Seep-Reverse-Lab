@@ -34,7 +34,7 @@
 
 | 编号 | 检查项 | 分值 | 判据 | 采集方式 |
 | :---: | :--- | :---: | :--- | :--- |
-| A1 | 插件包 `seep-dsh-workbench` 已装进 profile | 7 | `dsh.profile.bundles` 含该包名 | 读 `$DSH_HOME/profiles/<p>/package.json` |
+| A1 | 插件包 `seep-lab` 已装进 profile | 7 | `dsh.profile.bundles` 含该包名 | 读 `$DSH_HOME/profiles/<p>/package.json` |
 | A2 | 插件已启动并写出状态文件 | 4 | `$DSH_HOME/seep-workbench.status.json` 存在 | 启动一次 dsh 后读文件 |
 | A3 | 状态 `ok:true` 且 `repoRoot` 指向当前仓库 | 3 | 路径规范化后相等 | 同上 |
 | A4 | `labGate` 已启用 | 3 | 状态里 `labGate: true` | 同上 |
@@ -135,7 +135,7 @@ Linux / macOS 同样适用（脚本纯标准库）。
 【指令层】   D1..D3   13/13
 【运行时】   E1..E2   10/10
 ──────────────────────────────────────────────────────────
-完整率  ████████████████████████████████████████  100.0%   (102 / 102 分)
+完整率  ████████████████████████████████████████  100.0%   (100 / 100 分)
 ```
 
 用 `--no-skills` 装（或状态里 `skillsEnabled:false`）时会是 **85%** —— 这是**设计选择**，不是故障：
@@ -183,7 +183,7 @@ Linux / macOS 同样适用（脚本纯标准库）。
 | A4 FAIL | lab 开关被关掉 | 面板里打开，或重跑 `dsh-plugin-setup.py` |
 | A5 FAIL | 插件包不完整（缺 `lib/client.js`） | 重新 clone；或重跑 `dsh-plugin-setup.py` |
 | A6 FAIL | 旧路线（dsh-merge）的标注块还在 → MCP 会挂两份 | 重跑 `setup/dsh-plugin-setup.py`，它会自动清掉 |
-| A7 FAIL | lab 开关逻辑坏了，或 PATH 里没有 node | `node packages/dsh-workbench/test/lab-gate.test.mjs` 看具体哪条 |
+| A7 FAIL | lab 开关逻辑坏了，或 PATH 里没有 node | `node packages/seep-lab/test/lab-gate.test.mjs` 看具体哪条 |
 | F1 FAIL | 技能没进注册表（mounted=true 但注册表空） | 看 dsh 启动日志的 `[seep-workbench] 技能注册表 / 技能探测` 行 |
 | B1 FAIL，报 `ImportError: mcp` | `seep` 用的解释器没装 mcp | `setup\install-python.ps1`，或设 `SEEP_PYTHON` |
 | B2 工具数 < 38 | 启动的是旧副本 | 确认 `args` 指向当前仓库 |

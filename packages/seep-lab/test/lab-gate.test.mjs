@@ -6,7 +6,7 @@
  * 验的是四件事：默认关 / lab： 才开 / 会话之间互不影响 / 退出后真关。
  *
  * 用法：
- *   node packages/dsh-workbench/test/lab-gate.test.mjs
+ *   node packages/seep-lab/test/lab-gate.test.mjs
  *
  * 退出码 0 = 全过；1 = 有失败。
  */

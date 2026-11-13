@@ -129,7 +129,7 @@ pi 的技能是**拷贝**的，所以 `git pull` 之后**必须**重跑 `install
 
 | 东西 | 落到哪 |
 | :--- | :--- |
-| **插件包** `seep-dsh-workbench` | `~/.dsh/profiles/web/node_modules/` |
+| **插件包** `seep-lab` | `~/.dsh/profiles/web/node_modules/` |
 | 一条挂载配置 | `~/.dsh/profiles/web/cordis.patch.yml` |
 | 运行状态 | `~/.dsh/seep-workbench.status.json`（只有 DSH 写这个文件） |
 
@@ -156,7 +156,7 @@ python setup/dsh-plugin-setup.py --root D:\新位置\seep # 仓库搬家后重�
 | | 默认（本地目录） | `--from-npm` |
 | :--- | :--- | :--- |
 | 命令 | `python setup/dsh-plugin-setup.py` | `python setup/dsh-plugin-setup.py --from-npm` |
-| 插件从哪来 | 仓库里的 `packages/dsh-workbench/` | npm 上的 `seep-dsh-workbench` |
+| 插件从哪来 | 仓库里的 `packages/seep-lab/` | npm 上的 `seep-lab` |
 | 改了 `lib/*.js` | **重启就生效**（硬链接） | 不生效，要等发新版 |
 | 面板「更新插件」 | 灰色不可点 | **可点，自动拉新版** |
 | 适合谁 | 想改代码 / 没网 | 只想用，不想管插件版本 |
@@ -175,13 +175,13 @@ python setup/verify-dsh.py
 
 ### 装完必须做
 
-**完全退出并重开 DSH。** 然后：设置 → **Seep 工作台**，能看到运行状态就对了。
+**完全退出并重开 DSH。** 然后：设置 → **Seep Lab**，能看到运行状态就对了。
 
 ### 怎么更新
 
 ```bash
 cd seep && git pull      # 工具 / 技能 / 知识库
-dsh plugin update --profile web seep-dsh-workbench   # 只更新插件（从 npm 装时才有意义）
+dsh plugin update --profile web seep-lab   # 只更新插件（从 npm 装时才有意义）
 ```
 
 或者全在面板上点：**更新插件** / **更新工作台** / **更新内容**。
@@ -229,7 +229,7 @@ DSH 还可以直接点面板上的 Lab 开关，效果一样。
 | `verify` 说 Python 没 `import mcp` | `python` 指向了错误解释器 | `SEEP_PYTHON=<正确路径>` 或重跑 `install-python.ps1` |
 | MCP 工具一个都看不到 | Agent 没重启 | 完全退出重开（不是新开一个标签页） |
 | `verify-dsh.py` 说插件没装 | 装到了别的 profile | 加 `--profile <名字>` 重跑 |
-| DSH 面板一片空白 / 没有「Seep 工作台」 | 插件没生效 | `python setup/dsh-plugin-setup.py --check` |
+| DSH 面板一片空白 / 没有「Seep Lab」 | 插件没生效 | `python setup/dsh-plugin-setup.py --check` |
 | 提示「工作台路径不存在」 | 仓库搬过家 | 面板改路径，或 `--root` 重跑，然后**重启 DSH** |
 | pi 的技能是旧的 | 技能是拷贝的 | 重跑 `install-pi.ps1` |
 | `未找到 jadx` | 依赖 zip 没解压 | `setup/extract-deps.ps1` |
@@ -244,7 +244,7 @@ DSH 还可以直接点面板上的 Lab 开关，效果一样。
 | 技能 | **拷贝**到 `~/.pi/agent/skills` | 插件**直接指向**仓库目录 |
 | `git pull` 后 | 要重跑 `install-pi.ps1` | 技能直接生效，MCP 要重启 |
 | lab 闸门 | TS 扩展 | 插件里的 JS |
-| 设置面板 | 没有 | 有（设置 → Seep 工作台） |
+| 设置面板 | 没有 | 有（设置 → Seep Lab） |
 | 校验命令 | `verify.ps1` | `verify-dsh.py` |
 
 更细的对照见 [MANUAL/AGENTS.md](MANUAL/AGENTS.md)。
@@ -262,6 +262,6 @@ seep/
 │   ├── skill/          10 个技能
 │   ├── cases/          14 个脱敏案例
 │   └── prompts/        纪律正文（SYSTEM.md）与指令入口（AGENTS.md）
-├── packages/dsh-workbench/   DSH 插件源码（发布到 npm 的就是它）
+├── packages/seep-lab/   DSH 插件源码（发布到 npm 的就是它）
 └── MANUAL/             部署细节、校验基准、发布章程
 ```

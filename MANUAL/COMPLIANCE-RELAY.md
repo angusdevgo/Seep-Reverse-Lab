@@ -1,6 +1,6 @@
 # MANUAL — 合规转译中继与防拒体系 (Compliance Relay & Anti-Refusal)
 
-> 本手册说明 Seep 工作台**三层防拒体系**中的第三层：网络层通用合规转译中继。
+> 本手册说明 Seep Lab**三层防拒体系**中的第三层：网络层通用合规转译中继。
 > 它把「敏感口语 → 合规术语」的能力从「单点 Agent 插件」升级为「链路级通用网关」。
 >
 > 工具本体位于 `Tool/scripts/compliance-relay/`，操作速查见其 `README.md`。

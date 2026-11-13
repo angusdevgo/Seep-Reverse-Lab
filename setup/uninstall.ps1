@@ -139,7 +139,7 @@ function Backup-Item([string]$src, [string]$backupRoot, [string]$label) {
 # ===========================================================================
 if ($Restore) {
     Write-Host "`n╔══════════════════════════════════════════════════════════════╗" -ForegroundColor Magenta
-    Write-Host "║   Seep 工作台 —— 从备份恢复                                   ║" -ForegroundColor Magenta
+    Write-Host "║   Seep Lab —— 从备份恢复                                   ║" -ForegroundColor Magenta
     Write-Host "╚══════════════════════════════════════════════════════════════╝" -ForegroundColor Magenta
 
     if (-not (Test-Path $Restore)) {
@@ -365,14 +365,14 @@ if (Test-Path $dshHomeDir) {
     if (Test-Path $dshProfilePkg) {
         try {
             $pj = Get-Content $dshProfilePkg -Raw -Encoding UTF8 | ConvertFrom-Json
-            $hasPlugin = @($pj.dsh.profile.bundles) -contains 'seep-dsh-workbench'
+            $hasPlugin = @($pj.dsh.profile.bundles) -contains 'seep-lab'
         } catch { }
     }
 
     if ($hasPlugin) {
         if ($dshCli) {
-            & dsh plugin --profile web remove seep-dsh-workbench 2>&1 | Out-Null
-            if ($LASTEXITCODE -eq 0) { Write-Ok '已从 DSH 卸下插件包 seep-dsh-workbench'; $script:Removed++ }
+            & dsh plugin --profile web remove seep-lab 2>&1 | Out-Null
+            if ($LASTEXITCODE -eq 0) { Write-Ok '已从 DSH 卸下插件包 seep-lab'; $script:Removed++ }
             else { Write-Warn '插件包卸载返回非 0，可能已不存在；配置条目仍会被清理' }
         }
         else { Write-Warn 'PATH 里没有 dsh，只能清理配置条目；如需彻底移除请手动 dsh plugin remove' }

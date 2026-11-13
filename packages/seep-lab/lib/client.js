@@ -1,14 +1,14 @@
 /**
- * Seep 工作台 —— 面板（浏览器侧）
+ * Seep Lab —— 面板（浏览器侧）
  *
  * 格式遵循 DSH 客户端模块协议：外层 window.__ModuleLoader__.load 包住，
  * factory(require) 返回 { apply, inject }。不用打包器 —— 只 require('react')，
  * 其余全走 ctx 上的服务。
  *
  * 面板同时挂在两个位置（同一个组件，两处入口）：
- *   1. 设置 → 插件 → seep-dsh-workbench → 我们那一行的「配置」
+ *   1. 设置 → 插件 → seep-lab → 我们那一行的「配置」
  *      （plugins.row.config，DSH 官方给 bundle row 的配置位；宿主会传 form 进来）
- *   2. 设置 → Seep 工作台（settings.section，独立一页，方便直接找到）
+ *   2. 设置 → Seep Lab（settings.section，独立一页，方便直接找到）
  *
  * 面板显示什么：
  *   · 现在挂没挂上（宿主侧 /seep-workbench/api 提供，浏览器读不到磁盘）
@@ -17,7 +17,7 @@
  */
 
 window.__ModuleLoader__.load({
-  id: 'seep-dsh-workbench',
+  id: 'seep-lab',
   factory: (require) => {
     const React = require('react');
     const ReactDOM = require('react-dom');
@@ -28,7 +28,7 @@ window.__ModuleLoader__.load({
     const API = '/seep-workbench/api';
 
     // keyed slot 的 key 是 `<包名>#<行 id>`，这是 DSH 的约定。
-    const ROW_KEY = 'seep-dsh-workbench#seep-workbench-boot';
+    const ROW_KEY = 'seep-lab#seep-workbench-boot';
 
     async function fetchStatus(deep) {
       const res = await fetch(deep ? `${API}?verify=1` : API, {
@@ -311,7 +311,7 @@ window.__ModuleLoader__.load({
         };
 
         if (!snap) {
-          return h('span', { style: { fontSize: 13, color: 'var(--dsw-alias-label-tertiary)' } }, 'Seep 工作台');
+          return h('span', { style: { fontSize: 13, color: 'var(--dsw-alias-label-tertiary)' } }, 'Seep Lab');
         }
 
         // 摘要视图：插件列表里那一行只用一句话（注意 form 来自 props，不是快照）
@@ -324,7 +324,7 @@ window.__ModuleLoader__.load({
               ? okNow
                 ? `已就绪 · ${status.wired || '未接线'}`
                 : '未就绪 · 点开配置'
-              : 'Seep 工作台',
+              : 'Seep Lab',
           );
         }
 
@@ -735,7 +735,7 @@ window.__ModuleLoader__.load({
     }
 
     // ---------------------------------------------------------------- 输入框右侧的常驻入口
-    // 为什么要有：设置面板要点三层才到（更多 → 设置 → Seep 工作台），
+    // 为什么要有：设置面板要点三层才到（更多 → 设置 → Seep Lab），
     // 平时只想瞄一眼「接上了没」的时候太绕。这个入口贴在输入框右侧，
     // 一点就出小卡片；完整面板仍然在设置里。
     /**
@@ -841,7 +841,7 @@ window.__ModuleLoader__.load({
             name: 'plugins.row.config',
             key: ROW_KEY,
             order: 10,
-            label: () => 'Seep 工作台',
+            label: () => 'Seep Lab',
           },
           Panel,
         ),
@@ -861,7 +861,7 @@ window.__ModuleLoader__.load({
       // 这一处宿主不传 form，组件会退回 ctx.configForms.get()。
       ctx.slots.inject('settings.section', () =>
         ctx.slots.register(
-          { name: 'settings.section', id: NS, order: 40, label: () => 'Seep 工作台' },
+          { name: 'settings.section', id: NS, order: 40, label: () => 'Seep Lab' },
           Panel,
         ),
       );

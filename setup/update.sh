@@ -296,7 +296,7 @@ fi
 step "6/6  更新完成报告"
 
 echo -e "\n${WHITE}================================================================================${RESET}"
-echo -e "  ${GREEN}Seep 工作台更新完成:  v$OLD_VERSION  ->  v$NEW_VERSION${RESET}"
+echo -e "  ${GREEN}Seep Lab更新完成:  v$OLD_VERSION  ->  v$NEW_VERSION${RESET}"
 echo -e "${WHITE}================================================================================${RESET}"
 
 # 动态统计，避免版本迭代后报告里的数字过时

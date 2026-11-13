@@ -113,9 +113,9 @@ DSH 通过 `@deepseek-ai/dsh-mcp-client` 桥接外部 MCP，配置以 **Cordis O
    ```
    两条路线**不要同时用** —— 会把 MCP 挂两份。
 
-3. **设置面板**：重启 DSH 后，设置 → **Seep 工作台** 能看到运行状态、
+3. **设置面板**：重启 DSH 后，设置 → **Seep Lab** 能看到运行状态、
    改工作台路径、看 20 个工具的四态清单。路径改了要重启才换过来（MCP 连接在启动时建立）。
-   也可以走 设置 → 插件 → `seep-dsh-workbench` → 「配置」，同一块面板。
+   也可以走 设置 → 插件 → `seep-lab` → 「配置」，同一块面板。
 
 4. **指令来源**：项目根 `AGENTS.md` 由 `generate-configs` 从 `Tool/prompts/AGENTS.md`
    复制生成，DSH 会自动读取，无需手工 `cp`。
@@ -132,7 +132,7 @@ DSH 通过 `@deepseek-ai/dsh-mcp-client` 桥接外部 MCP，配置以 **Cordis O
    （会话级，聊到 APK 不算激活）。
 
 > 卸载：
-> - 插件路线：`dsh plugin --profile web remove seep-dsh-workbench`
+> - 插件路线：`dsh plugin --profile web remove seep-lab`
 > - 旧路线：`python setup/dsh-merge.py --remove`（只移除标注块，其余配置不动）
 
 详见 [DSH-PROFILE.md](../DSH-PROFILE.md)。

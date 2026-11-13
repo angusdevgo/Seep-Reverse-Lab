@@ -13,7 +13,7 @@
 <p align="center">
   <a href="https://github.com/angusdevgo/seep-reverse-lab"><img src="https://img.shields.io/badge/Release-v1.15.0-brightgreen.svg?style=for-the-badge&logo=github" alt="Release"></a>
   <a href="https://github.com/angusdevgo/seep-reverse-lab/blob/main/LICENSE"><img src="https://img.shields.io/badge/License-GPL--3.0-blue.svg?style=for-the-badge" alt="License"></a>
-  <a href="https://www.npmjs.com/package/seep-dsh-workbench"><img src="https://img.shields.io/npm/v/seep-dsh-workbench?style=for-the-badge&logo=npm&label=DSH%20plugin" alt="npm"></a>
+  <a href="https://www.npmjs.com/package/seep-lab"><img src="https://img.shields.io/npm/v/seep-lab?style=for-the-badge&logo=npm&label=DSH%20plugin" alt="npm"></a>
   <img src="https://img.shields.io/badge/Platform-Windows%20%7C%20Android%20%7C%20Linux-0078D6?style=for-the-badge&logo=windows" alt="Platform">
   <img src="https://img.shields.io/badge/Architecture-x86%20%7C%20x64%20%7C%20ARM64-orange?style=for-the-badge" alt="Architecture">
 </p>
@@ -151,7 +151,7 @@ The agent autonomously:
 - 🔄 **PoC Self-Healing Loop**: Frida error → root-cause mapping → auto-fix → re-execute (up to 3 attempts, then structured handoff)
 - 💎 **14 Industrial Architecture Paradigms**: Monolithic offline PE → multi-process IPC → VM arbitration → .NET keygen → weak RSA bypass → Java agent → .NET VM bypass *(fully desensitized, Projects A through N)*
 - 🌐 **Transport-Layer Compliance Relay & Auto-Retry**: Pure stdlib localhost relay with streaming refusal auto-retry cascade (`S1-review-checklist` → `S2-review-framed` → `S3-review-en`), preserving target paths without semantic drift. Unit tests 84/84 passing.
-- ⚡ **DeepSeek Harness (DSH) integration**: `python setup/dsh-plugin-setup.py` installs a ~40 KB plugin package and writes the workbench path — the plugin mounts both MCP servers itself at runtime (`toolCallTimeoutMs` 900 s, since DSH's 60 s default cuts long tasks) plus the 10 skills, so moving the repo means editing one value. The `lab：` gate is now **code-enforced inside the plugin** (per-session, off by default; mentioning an APK does not activate it), and a **settings panel** (Settings → Seep 工作台) shows live status, lets you edit the path, and lists all 20 tools with their states. Verify with `python setup/verify-dsh.py` (6 groups / 21 items / 100 points).
+- ⚡ **DeepSeek Harness (DSH) integration**: `python setup/dsh-plugin-setup.py` installs a ~40 KB plugin package and writes the workbench path — the plugin mounts both MCP servers itself at runtime (`toolCallTimeoutMs` 900 s, since DSH's 60 s default cuts long tasks) plus the 10 skills, so moving the repo means editing one value. The `lab：` gate is now **code-enforced inside the plugin** (per-session, off by default; mentioning an APK does not activate it), and a **settings panel** (Settings → Seep Lab) shows live status, lets you edit the path, and lists all 20 tools with their states. Verify with `python setup/verify-dsh.py` (6 groups / 21 items / 100 points).
 - 🛡️ **Measured Anti-Refusal Defense**: Gemini-safe prompt reshaping (`gemini-safe.flag`), L1 observable decision logging (`l1-log.flag`), and native `BLOCK_NONE` payload gating.
 - 🔌 **Offline-Ready**: All toolchains pre-bundled (657 MB of tools), zero network dependencies after setup
 - 🪟 **Windows PE Deep-Dive Engine (`exe-reverse`)**: 41 gated references + **16 dependency-free Python engines** — `peutil` (RVA↔offset, imports/exports/TLS/relocs, MS checksum, per-section entropy), `pe_triage`, `pepatch` (equal-length + checksum recompute + **byte re-read from disk**), `aob_scan` (unique/ambiguous/permissive verdict), `pe_diff`, `hwprobe`, `trace_reduce` (+ optional SMT proof), `fold`. Covers packers, virtualization/flattening, .NET, Unity IL2CPP, packaged Python, kernel drivers, hardware tracing and hypervisor observation.
@@ -176,8 +176,8 @@ Seep\ (881 MB, of which 657 MB is the offline toolchain)
 ├── check.bat / check.ps1          ← Double-click health check (wraps verify.ps1)
 ├── update.bat / update.ps1        ← Double-click update (idempotent, lossless)
 │
-├── packages\dsh-workbench\        ← ⭐ ⬆ The npm bundle (45 KB, wiring only)
-│   ├── package.json               ← Package name: seep-dsh-workbench
+├── packages\seep-lab\        ← ⭐ ⬆ The npm bundle (45 KB, wiring only)
+│   ├── package.json               ← Package name: seep-lab
 │   ├── cordis.patch.yml           ← The single entry inserted into the load chain
 │   ├── lib\index.js               ← Mounts MCPs, reads config, handles updates
 │   ├── lib\lab-gate.js            ← Session-scoped lab switch
@@ -374,7 +374,7 @@ This workbench supports and verifies exactly two agents. **There is one copy of 
 | Agent | Instruction entry | What gets wired | Install |
 |---|---|---|---|
 | **Pi Agent** | `Tool/prompts/SYSTEM.md` → `~/.pi/agent/seep-system.md` | `~/.pi/agent/mcp.json` + **copied** skills | `powershell -File setup/install-pi.ps1` |
-| **DeepSeek Harness** | project-root `AGENTS.md` (generated) | **bundle** `seep-dsh-workbench` | `python setup/dsh-plugin-setup.py` |
+| **DeepSeek Harness** | project-root `AGENTS.md` (generated) | **bundle** `seep-lab` | `python setup/dsh-plugin-setup.py` |
 
 **The DSH bundle is published on npm.** Two ways to install it:
 

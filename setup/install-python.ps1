@@ -1,6 +1,6 @@
 ﻿#Requires -Version 5.1
 <#
-  Seep 工作台 —— Python 依赖安装
+  Seep Lab —— Python 依赖安装
 #>
 [CmdletBinding()]
 param(

@@ -1,7 +1,7 @@
 ﻿#Requires -Version 5.1
 <#
 .SYNOPSIS
-    Seep 工作台 —— 外部工具统一解析 / 实跑验证器
+    Seep Lab —— 外部工具统一解析 / 实跑验证器
 
 .DESCRIPTION
     回答两个问题，且用同一条证据链回答：

@@ -1,8 +1,8 @@
 {
-  "name": "seep-dsh-workbench",
+  "name": "seep-lab",
   "version": "1.15.0",
   "private": false,
-  "description": "Seep 工作台的 DeepSeek Harness 接线包：把 MCP / 技能 / lab 闸门挂到 DSH（只装接线，不装工具）",
+  "description": "Seep Lab 的 DeepSeek Harness 接线包：把 MCP / 技能 / lab 闸门挂到 DSH（只装接线，不装工具）",
   "type": "module",
   "main": "lib/index.js",
   "exports": {
@@ -42,7 +42,7 @@
   "repository": {
     "type": "git",
     "url": "https://github.com/angusdevgo/Seep-Reverse-Lab.git",
-    "directory": "packages/dsh-workbench"
+    "directory": "packages/seep-lab"
   },
   "homepage": "https://github.com/angusdevgo/Seep-Reverse-Lab",
   "bugs": {

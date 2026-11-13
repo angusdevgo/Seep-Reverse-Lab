@@ -12,13 +12,13 @@
 | | **Pi Agent** | **DeepSeek Harness (DSH)** |
 | :--- | :--- | :--- |
 | 安装脚本 | `setup/install-pi.ps1` | `python setup/dsh-plugin-setup.py` |
-| 接线物 | `~/.pi/agent/mcp.json` + `~/.pi/agent/skills/`（**拷贝**） | **插件包** `seep-dsh-workbench` + profile patch |
+| 接线物 | `~/.pi/agent/mcp.json` + `~/.pi/agent/skills/`（**拷贝**） | **插件包** `seep-lab` + profile patch |
 | MCP 怎么注册 | 静态 JSON 文件 | 插件在**运行时**用 `ctx.plugin(McpClient)` 挂 |
 | 技能怎么进来 | 启动时扫 `~/.pi/agent/skills`（副本） | 插件挂 `SkillFilesystem`，**直接指**仓库两个目录 |
 | 纪律注入 | `~/.pi/agent/seep-system.md` + 扩展 | 插件里的 `systemPrompt.section` |
-| lab 闸门 | `Tool/prompts/extensions/security-audit-interceptor.ts` | `packages/dsh-workbench/lib/lab-gate.js` |
-| 词替换 | 同一个 TS 扩展 | `packages/dsh-workbench/lib/lab-rewrite.js` |
-| 设置面板 | 无 | 有（设置 → Seep 工作台 + 输入框旁小圆点） |
+| lab 闸门 | `Tool/prompts/extensions/security-audit-interceptor.ts` | `packages/seep-lab/lib/lab-gate.js` |
+| 词替换 | 同一个 TS 扩展 | `packages/seep-lab/lib/lab-rewrite.js` |
+| 设置面板 | 无 | 有（设置 → Seep Lab + 输入框旁小圆点） |
 | 校验命令 | `setup/verify.ps1` | `setup/verify-dsh.py`（24 项 / 100 分） |
 | 换路径怎么办 | 重跑 `install-pi.ps1` | 面板改 / `--root`，然后**重启 DSH** |
 | 更新插件 | 没有「插件」这个概念 | `dsh plugin update`（npm 装时）/ 本地装改代码即生效 |
@@ -58,7 +58,7 @@
 
 | 路径 | 作用 |
 | :--- | :--- |
-| `packages/dsh-workbench/` | 插件包源码（发布到 npm 的就是它） |
+| `packages/seep-lab/` | 插件包源码（发布到 npm 的就是它） |
 | `~/.dsh/profiles/web/cordis.patch.yml` | 插件插进加载链的那一条 |
 | `~/.dsh/seep-workbench.status.json` | 插件自检状态（只有 DSH 会写） |
 | `lib/lab-gate.js` / `lib/lab-rewrite.js` | DSH 版的 lab 与词替换 |

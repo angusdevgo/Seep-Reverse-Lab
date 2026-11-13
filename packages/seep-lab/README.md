@@ -1,4 +1,4 @@
-# seep-dsh-workbench
+# seep-lab
 
 Seep 逆向工作台的 DeepSeek Harness 插件包。
 
@@ -18,7 +18,7 @@ python setup/dsh-plugin-setup.py --root D:\新位置\Seep-Reverse-Lab
 装完重启 DSH 生效。想手工装也行：
 
 ```bash
-dsh plugin --profile web add file:<仓库>/packages/dsh-workbench
+dsh plugin --profile web add file:<仓库>/packages/seep-lab
 ```
 
 ## 它做什么
@@ -29,11 +29,11 @@ dsh plugin --profile web add file:<仓库>/packages/dsh-workbench
 | 挂 MCP | `seep`（38 工具，超时 900s）+ `js-reverse`（24 工具，超时 600s） |
 | 挂技能 | DSH 的 skill 图层（默认关）+ 两个技能根 → 10 个技能 |
 | lab 开关 | 会话级、默认关；消息里出现 `lab：` 才注入作战纪律 |
-| 设置面板 | 设置 → Seep 工作台：状态 / 改路径 / 工具四态清单 |
+| 设置面板 | 设置 → Seep Lab：状态 / 改路径 / 工具四态清单 |
 
 ## 配置
 
-在 DSH 里 设置 → Seep 工作台（或 设置 → 插件 → 本包 → 「配置」）能改：
+在 DSH 里 设置 → Seep Lab（或 设置 → 插件 → 本包 → 「配置」）能改：
 
 | 字段 | 默认 | 说明 |
 | :--- | :--- | :--- |
@@ -52,8 +52,8 @@ dsh plugin --profile web add file:<仓库>/packages/dsh-workbench
 
 两个入口，同一个组件：
 
-- 设置 → **Seep 工作台**（独立一页）
-- 设置 → 插件 → `seep-dsh-workbench` → 「配置」（官方 bundle row 配置位）
+- 设置 → **Seep Lab**（独立一页）
+- 设置 → 插件 → `seep-lab` → 「配置」（官方 bundle row 配置位）
 
 工具清单用四态：`READY` 找到 / `DEGRADED` 找不到但曾经在 / `OPTIONAL` 可选且没装 /
 `MISSING` 核心项缺失。「深度检测」会调 `Tool/mcp/tool_resolver.py --verify` 真跑一遍（慢）。
@@ -67,7 +67,7 @@ dsh plugin --profile web add file:<仓库>/packages/dsh-workbench
 ## 开发
 
 ```bash
-node packages/dsh-workbench/test/lab-gate.test.mjs   # lab 开关单测，25 项，不需要 DSH
+node packages/seep-lab/test/lab-gate.test.mjs   # lab 开关单测，25 项，不需要 DSH
 ```
 
 面板格式是 DSH 客户端模块系统的懒加载 CJS 工厂，**不需要打包器** ——

@@ -13,7 +13,7 @@
 
 ```
 ┌─────────────────────────────────────────────────────────┐
-│  接线层   30 KB    packages/dsh-workbench/              │
+│  接线层   30 KB    packages/seep-lab/              │
 │                   把 MCP / 技能 / lab 挂到 DSH 上的代码 │
 │                   走 npm，有版本号，能自动更新           │
 ├─────────────────────────────────────────────────────────┤
@@ -38,7 +38,7 @@
 
 | 渠道 | 地址 | 作用 |
 | :--- | :--- | :--- |
-| **npm（主）** | `npmjs.com/package/seep-dsh-workbench` | 唯一能让「面板→更新插件」按钮生效的渠道 |
+| **npm（主）** | `npmjs.com/package/seep-lab` | 唯一能让「面板→更新插件」按钮生效的渠道 |
 | **GitHub Release（备）** | `github.com/angusdevgo/Seep-Reverse-Lab/releases` | 挂同一份 `.tgz`，sha256 与 npm 一致 |
 
 **为什么主渠道必须是 npm**：DSH 的 `dsh plugin add` 底层转发给 pnpm。
@@ -56,7 +56,7 @@
 ```json
 // ~/.dsh/profiles/web/package.json
 "dependencies": {
-  "seep-dsh-workbench": "file:<仓库路径>/packages/dsh-workbench"
+  "seep-lab": "file:<仓库路径>/packages/seep-lab"
 }
 ```
 
@@ -73,12 +73,12 @@
 ### 模式 B：npm —— 使用者默认
 
 ```json
-"dependencies": { "seep-dsh-workbench": "^1.15.0" }
+"dependencies": { "seep-lab": "^1.15.0" }
 ```
 
 | 改了什么 | 怎么生效 |
 | :--- | :--- |
-| 插件代码 | 面板「更新插件」或 `dsh plugin --profile web add seep-dsh-workbench@latest` |
+| 插件代码 | 面板「更新插件」或 `dsh plugin add --profile web seep-lab@latest` |
 | 技能 / 知识库 / 案例 | 面板「更新工作台」（`git pull`）或手动 `git pull` |
 | 工具 | 同上，然后**重启 DSH** |
 
@@ -89,7 +89,7 @@
 ### 模式 C：本地 tgz
 
 ```bash
-dsh plugin --profile web add "file:C:\...\seep-dsh-workbench-1.15.0.tgz"
+dsh plugin add --profile web "file:C:\...\seep-lab-1.15.0.tgz"
 ```
 
 - ✅ 内网 / 无 npm 环境可用
@@ -133,7 +133,7 @@ README.md             说明
 
 | 你改 / 更新了 | pipi… 应该做 | DSH 应该做 |
 | :--- | :--- | :--- |
-| 插件代码（`packages/dsh-workbench/`） | 不适用 | 模式 A：重启；模式 B：**发新版后**点「更新插件」 |
+| 插件代码（`packages/seep-lab/`） | 不适用 | 模式 A：重启；模式 B：**发新版后**点「更新插件」 |
 | 技能（`Tool/skill/**`） | `git pull` **+ 重跑 `install-pi.ps1`**（pi 是拷贝的） | `git pull`，**新会话**生效（直接指仓库） |
 | 知识库 / 案例（`kb/`、`cases/`） | `git pull` + 重启 pi | `git pull`，立即生效（MCP 每次查盘） |
 | 工具本体（`Tool/mcp/Tool/safe/`） | `git pull` + 重启 pi | `git pull` + **重启 DSH**（MCP 是启动时拉起的） |
@@ -199,7 +199,7 @@ README.md             说明
 发布前四道门必须全绿：
 
 ```bash
-node packages/dsh-workbench/test/lab-gate.test.mjs      # 39 项单测
+node packages/seep-lab/test/lab-gate.test.mjs      # 39 项单测
 python setup/verify-dsh.py                              # 100 / 100
 powershell -File setup/verify.ps1                       # 64 项
 python setup/pack-plugin.py --check                     # 版本三处一致
@@ -210,21 +210,21 @@ python setup/pack-plugin.py --check                     # 版本三处一致
 ```bash
 # 1. 升版本（三处必须一致）
 #    VERSION
-#    packages/dsh-workbench/package.json  → version
+#    packages/seep-lab/package.json  → version
 #    CHANGELOG.md                          → 加 ## [x.y.z] 段
 
 # 2. 打包（只产出 tgz + 打印 sha256，绝不自动发布）
 python setup/pack-plugin.py
-#   → dist/seep-dsh-workbench-x.y.z.tgz
+#   → dist/seep-lab-x.y.z.tgz
 
 # 3. 试装（可选，建议每次做）
-dsh plugin --profile webtest add "file:<tgz 绝对路径>"
+dsh plugin add --profile webtest "file:<tgz 绝对路径>"
 
 # 4. 发布
-npm publish packages/dsh-workbench --access public
+npm publish packages/seep-lab --access public
 
 # 5. 打 GitHub Release，挂同一份 tgz
-gh release create vx.y.z dist/seep-dsh-workbench-x.y.z.tgz --notes-file CHANGELOG.md
+gh release create vx.y.z dist/seep-lab-x.y.z.tgz --notes-file CHANGELOG.md
 ```
 
 **`pack-plugin.py` 永不自动发布** —— 它只打包、只打印 sha256。发布是人的动作。
@@ -237,10 +237,10 @@ gh release create vx.y.z dist/seep-dsh-workbench-x.y.z.tgz --notes-file CHANGELO
 
 ```bash
 # 1. 卸掉本地目录装法（关键：必须彻底移除，否则挂两份）
-dsh plugin remove --profile web seep-dsh-workbench
+dsh plugin remove --profile web seep-lab
 
 # 2. 从 npm 装
-dsh plugin --profile web add seep-dsh-workbench
+dsh plugin add --profile web seep-lab
 
 # 3. 确认装法已变
 cat ~/.dsh/profiles/web/package.json | grep seep-dsh
@@ -252,8 +252,8 @@ python setup/verify-dsh.py    # 应仍是 100 / 100
 ### 回退（想继续改代码时）
 
 ```bash
-dsh plugin remove --profile web seep-dsh-workbench
-dsh plugin --profile web add "file:<仓库>/packages/dsh-workbench"
+dsh plugin remove --profile web seep-lab
+dsh plugin add --profile web "file:<仓库>/packages/seep-lab"
 ```
 
 切换后必须**重启 DSH**，并确认状态文件里 `mounted` 没有重复项。
@@ -266,7 +266,7 @@ dsh plugin --profile web add "file:<仓库>/packages/dsh-workbench"
 
 ```
 VERSION                              → 1.15.0
-packages/dsh-workbench/package.json  → 1.15.0
+packages/seep-lab/package.json  → 1.15.0
 CHANGELOG.md                         → ## [1.15.0]
 ```
 

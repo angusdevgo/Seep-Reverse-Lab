@@ -5,7 +5,7 @@
 
 .DESCRIPTION
     把动态插桩与 Flutter AOT 分析能力落地到本机工具箱目录（默认 D:\Tool\Android），
-    并在 Seep 工作台中建立统一垫片（shim）与解析层，使 MCP / 脚本 / Agent 都能直接调用。
+    并在 Seep Lab中建立统一垫片（shim）与解析层，使 MCP / 脚本 / Agent 都能直接调用。
 
     幂等：重复执行只做增量补齐，不会破坏已有 venv 或用户自装包。
 

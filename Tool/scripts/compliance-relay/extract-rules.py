@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Seep 工作台 —— 合规规则表提取器 (extract-rules.py)
+Seep Lab —— 合规规则表提取器 (extract-rules.py)
 
 单一真值源策略：以 Tool/prompts/extensions/security-audit-interceptor.ts 中的
 SENSITIVE_WORD_MAP 为唯一权威来源，单向提取生成 sensitive-rules.json 供

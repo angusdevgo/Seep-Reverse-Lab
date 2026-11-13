@@ -13,7 +13,7 @@
 <p align="center">
   <a href="https://github.com/angusdevgo/seep-reverse-lab"><img src="https://img.shields.io/badge/Release-v1.15.0-brightgreen.svg?style=for-the-badge&logo=github" alt="Release"></a>
   <a href="https://github.com/angusdevgo/seep-reverse-lab/blob/main/LICENSE"><img src="https://img.shields.io/badge/License-GPL--3.0-blue.svg?style=for-the-badge" alt="License"></a>
-  <a href="https://www.npmjs.com/package/seep-dsh-workbench"><img src="https://img.shields.io/npm/v/seep-dsh-workbench?style=for-the-badge&logo=npm&label=DSH%20插件" alt="npm"></a>
+  <a href="https://www.npmjs.com/package/seep-lab"><img src="https://img.shields.io/npm/v/seep-lab?style=for-the-badge&logo=npm&label=DSH%20插件" alt="npm"></a>
   <img src="https://img.shields.io/badge/Platform-Windows%20%7C%20Android%20%7C%20Linux-0078D6?style=for-the-badge&logo=windows" alt="Platform">
   <img src="https://img.shields.io/badge/Architecture-x86%20%7C%20x64%20%7C%20ARM64-orange?style=for-the-badge" alt="Architecture">
 </p>
@@ -139,7 +139,7 @@ Agent 自主完成：
 > 典型客户端应用全程耗时：**8–20 分钟，完全无人值守**。
 
 > **DSH 用户**：输入框底部点一次 **`Lab`**（变绿）等同于在消息里写 `lab：`；
-> 状态随时可在 **设置 → Seep 工作台** 看，`python setup/verify-dsh.py` 应报 `102 / 102`。
+> 状态随时可在 **设置 → Seep Lab** 看，`python setup/verify-dsh.py` 应报 `102 / 102`。
 
 ---
 
@@ -151,7 +151,7 @@ Agent 自主完成：
 - 🔄 **PoC 自愈循环**：Frida 报错 → 根因映射 → 自动修正代码 → 重跑（最多 3 次，超限后结构化移交人工）
 - 💎 **14 大工业级脱敏范式**：单进程离线 → 多进程 IPC → VM 集中判定 → .NET 算号 → 弱模 RSA 旁路 → Java 动态插桩 → .NET VM 逆向，全覆盖（项目 A ~ 项目 N）
 - 🌐 **链路层合规转译中继与自动重试**：纯标准库实现的本地中继，支持流式拒答自动重试级联（`S1 评审清单` → `S2 架构走查` → `S3 英文重塑`），100% 保留目标参数不漂移，84 项单元测试全绿
-- ⚡ **DeepSeek Harness (DSH) 接入**：`python setup/dsh-plugin-setup.py` 装一个几十 KB 的插件包并写入工作台路径 —— MCP（`toolCallTimeoutMs` 900 秒，DSH 默认 60 秒会掐断长任务）与 10 个技能由插件在运行时自己挂，仓库搬家只改这一处；`lab：` 闸门也升级为**插件内代码实现**（会话级、默认关、聊到 APK 不算激活）；另带**设置面板**（设置 → Seep 工作台），能看运行状态、直接改路径、列 20 个工具的四态清单。校验：`python setup/verify-dsh.py`（6 组 24 项 100 分）
+- ⚡ **DeepSeek Harness (DSH) 接入**：`python setup/dsh-plugin-setup.py` 装一个几十 KB 的插件包并写入工作台路径 —— MCP（`toolCallTimeoutMs` 900 秒，DSH 默认 60 秒会掐断长任务）与 10 个技能由插件在运行时自己挂，仓库搬家只改这一处；`lab：` 闸门也升级为**插件内代码实现**（会话级、默认关、聊到 APK 不算激活）；另带**设置面板**（设置 → Seep Lab），能看运行状态、直接改路径、列 20 个工具的四态清单。校验：`python setup/verify-dsh.py`（6 组 24 项 100 分）
 - 🛡️ **实测抗拒答综合防线**：Gemini-Safe 提示词语义重塑（`gemini-safe.flag`，377 token 拒答 → 3300 字深度分析）、L1 拦截器动态可观测日志（`l1-log.flag`）、底座级 `BLOCK_NONE` 注入
 - 🔌 **离线预置全量内置**：所有工具链物理打包（251 MB），部署后零外网依赖
 - 🪟 **Windows PE 深水区引擎（`exe-reverse`）**：41 篇带门禁的参考文档 + **16 个零依赖 Python 引擎** —— `peutil`（RVA↔偏移、导入导出/TLS/重定位、微软校验和、逐节熵）、`pe_triage`、`pepatch`（等长补丁 + 校验和重算 + **写盘后逐字节回读**）、`aob_scan`（unique/ambiguous/pervasive 裁决）、`pe_diff`、`hwprobe`、`trace_reduce`（可选 SMT 证明）、`fold`。覆盖保护壳、虚拟化/控制流平坦化、.NET、Unity IL2CPP、打包 Python、内核驱动、硬件追踪与 Hypervisor 观测
@@ -176,8 +176,8 @@ Seep\ (881 MB，其中 657 MB 是离线工具链)
 ├── check.bat / check.ps1          ← 双击一键体检（verify.ps1 的入口）
 ├── update.bat / update.ps1        ← 双击一键更新（幂等、无损）
 │
-├── packages\dsh-workbench\        ← ⭐ ⬆ 发布到 npm 的插件包（45 KB，只有接线）
-│   ├── package.json               ← 包名 seep-dsh-workbench
+├── packages\seep-lab\        ← ⭐ ⬆ 发布到 npm 的插件包（45 KB，只有接线）
+│   ├── package.json               ← 包名 seep-lab
 │   ├── cordis.patch.yml           ← 加载链里插的那一条
 │   ├── lib\index.js               ← 挂 MCP、读配置、管更新
 │   ├── lib\lab-gate.js            ← lab 会话级开关
@@ -370,7 +370,7 @@ powershell -File setup\install-capabilities.ps1 -CheckOnly  # 只看现状
 | Agent | 指令入口 | 接线物 | 装法 |
 |---|---|---|---|
 | **Pi Agent** | `Tool/prompts/SYSTEM.md` → `~/.pi/agent/seep-system.md` | `~/.pi/agent/mcp.json` + 技能**副本** | `powershell -File setup/install-pi.ps1` |
-| **DeepSeek Harness** | 项目根 `AGENTS.md`（自动生成） | **插件包** `seep-dsh-workbench` | `python setup/dsh-plugin-setup.py` |
+| **DeepSeek Harness** | 项目根 `AGENTS.md`（自动生成） | **插件包** `seep-lab` | `python setup/dsh-plugin-setup.py` |
 
 **DSH 插件已发布到 npm**，装的时候有两种选法：
 
@@ -393,7 +393,7 @@ python setup/dsh-plugin-setup.py
 
 已经部署过？**不需要重新克隆或手动拷贝文件**。更新脚本是**幂等且无损**的 —— 你的模型凭据与自行添加的 MCP 条目永不会被覆盖。
 
-- **DSH 面板方式**：设置 → Seep 工作台 → **一键更新**（同时拉仓库、内容层、插件），有变化时会出现 **重启 DSH** 按钮，点一下自动重启，不用回终端；
+- **DSH 面板方式**：设置 → Seep Lab → **一键更新**（同时拉仓库、内容层、插件），有变化时会出现 **重启 DSH** 按钮，点一下自动重启，不用回终端；
 - **最简方式（双击批处理）**：Windows 用户直接双击项目根目录下的 **`update.bat`** 即可全自动执行；
 - **智能对话方式**：在支持的 Agent 会话中直接对 AI 发送 **“更新工作台”**，Agent 会原地自动调用更新脚本并向你汇报；
 - **命令行方式**：

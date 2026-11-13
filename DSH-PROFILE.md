@@ -136,8 +136,8 @@ IDA 要本机装了 IDA、Playwright 走 npx 要联网，且多几十个工具�
 
 它做的事：
 
-1. `dsh plugin --profile web remove seep-dsh-workbench`（没装过时失败属正常）
-2. `dsh plugin --profile web add file:<仓库>/packages/dsh-workbench`
+1. `dsh plugin --profile web remove seep-lab`（没装过时失败属正常）
+2. `dsh plugin --profile web add file:<仓库>/packages/seep-lab`
 3. 往 `$DSH_HOME/profiles/<p>/cordis.patch.yml` 写：
 
 ```yaml
@@ -190,7 +190,7 @@ IDA 要本机装了 IDA、Playwright 走 npx 要联网，且多几十个工具�
 | 位置 | 形态 |
 | :--- | :--- |
 | 小卡片（点 ● Seep） | `Lab 工作台模式  未进入 [开启]` |
-| 设置 → Seep 工作台 | 配置区里的「当前：不在 lab 模式 [进入 lab]」 |
+| 设置 → Seep Lab | 配置区里的「当前：不在 lab 模式 [进入 lab]」 |
 | 对话框 | 发 `lab：` 进入，发 `退出实验` 退出 |
 
 语义分两层，别再混：
@@ -206,7 +206,7 @@ IDA 要本机装了 IDA、Playwright 走 npx 要联网，且多几十个工具�
 | 入口 | 位置 | 适合 |
 | :--- | :--- | :--- |
 | **小圆点 Seep** | 新会话时输入框上方那行（工作区 / 标准模式 旁边），有对话时在输入框右侧 | **平时最常用**：一眼看状态，点开看明细 |
-| 设置 → Seep 工作台 | 设置左侧导航 | 改路径、看全部 20 个工具、给单个工具指定路径 |
+| 设置 → Seep Lab | 设置左侧导航 | 改路径、看全部 20 个工具、给单个工具指定路径 |
 | 设置 → 插件 → 本包 → 配置 | 插件列表 | 同上（DSH 给的官方位置） |
 
 小圆点的颜色就是结论：**绿=就绪，黄=能跑但有工具缺，红=没接上**。
@@ -246,8 +246,8 @@ python Tool/mcp/tool_resolver.py --clear jadx          # 恢复自动查找
 
 | 入口 | 位置 | 宿主传什么 |
 | :--- | :--- | :--- |
-| 独立一页 | 设置 → **Seep 工作台** | 不传，组件自己从 `ctx.configForms` 取 |
-| 插件行配置 | 设置 → 插件 → `seep-dsh-workbench` → 「配置」 | 传 `{ view, form: { state, mutate } }` |
+| 独立一页 | 设置 → **Seep Lab** | 不传，组件自己从 `ctx.configForms` 取 |
+| 插件行配置 | 设置 → 插件 → `seep-lab` → 「配置」 | 传 `{ view, form: { state, mutate } }` |
 
 面板显示三块：
 
@@ -397,10 +397,10 @@ python setup/dsh-merge.py --remove      # 只移除标注块，其余配置不�
 插件包路线（1.14.0 起）的补丁只有一条，其余全在代码里：
 
 ```yaml
-# packages/dsh-workbench/cordis.patch.yml
+# packages/seep-lab/cordis.patch.yml
 - insert:
     - id: seep-workbench-boot
-      name: 'seep-dsh-workbench'
+      name: 'seep-lab'
 ```
 
 MCP 条目与技能层由 `lib/index.js` 在运行时用 `ctx.plugin()` 挂：
@@ -439,7 +439,7 @@ python setup/verify-dsh.py
 dsh --profile web --dump-config | grep -A3 "seep-workbench-boot"
 
 # 3. lab 开关单测（不需 DSH、不需模型，纯逻辑）
-node packages/dsh-workbench/test/lab-gate.test.mjs
+node packages/seep-lab/test/lab-gate.test.mjs
 
 # 4. 旧路线的自查（只在用 dsh-merge.py 时有意义）
 python setup/dsh-merge.py --check

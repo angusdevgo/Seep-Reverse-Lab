@@ -45,7 +45,7 @@ EXPECT_SKILLS = 10          # 技能源目录的唯一名数量
 
 OPTIONAL_TOOLS = ["ida", "playwright", "ffmpeg", "frida", "apkid", "aotopsy"]
 
-PLUGIN_PKG = "seep-dsh-workbench"   # 插件包名
+PLUGIN_PKG = "seep-lab"   # 插件包名
 STATUS_FILE = "seep-workbench.status.json"
 
 
@@ -198,7 +198,7 @@ def check_config(rep, profile, status):
     rep.add(G, "A1", "插件包 %s 已装进 profile" % PLUGIN_PKG, 7, installed,
             "dsh.profile.bundles 含 %s" % PLUGIN_PKG if installed
             else "未装；旧路线的 marker 块不算数（两种路线同时用会挂两份 MCP）",
-            "dsh plugin --profile %s add file:<仓库>/packages/dsh-workbench" % profile)
+            "dsh plugin --profile %s add file:<仓库>/packages/seep-lab" % profile)
 
     # A2 插件跑过（有状态文件）
     rep.add(G, "A2", "插件已启动并写出状态文件", 4, bool(status),
@@ -219,7 +219,7 @@ def check_config(rep, profile, status):
             "设置 → 插件 → seep-workbench-boot → lab 开关 打开")
 
     # A5 面板：包声明了 dsh.client 且 client 入口存在
-    pkg_dir = os.path.join(ROOT, "packages", "dsh-workbench")
+    pkg_dir = os.path.join(ROOT, "packages", "seep-lab")
     client_entry = os.path.join(pkg_dir, "lib", "client.js")
     declared = False
     pj = os.path.join(pkg_dir, "package.json")
@@ -232,7 +232,7 @@ def check_config(rep, profile, status):
     rep.add(G, "A5", "设置面板已声明（dsh.client + lib/client.js）", 3,
             declared and os.path.isfile(client_entry),
             "声明=%s, client.js=%s" % (declared, os.path.isfile(client_entry)),
-            "重新 clone 仓库；面板文件在 packages/dsh-workbench/lib/client.js")
+            "重新 clone 仓库；面板文件在 packages/seep-lab/lib/client.js")
 
     # A8 装进 profile 的那份 client.js 必须和仓库一致。
     #
@@ -240,7 +240,7 @@ def check_config(rep, profile, status):
     # 但只要有人用 `git checkout -- <文件>` 还原过一次，硬链接就被切断，
     # profile 里变成一份**不会再更新的副本** —— 于是"我改了代码却没反应"，
     # 排查半天。这条把它变成一眼可见的红灯。
-    installed = os.path.join(profile_dir(profile), "node_modules", "seep-dsh-workbench")
+    installed = os.path.join(profile_dir(profile), "node_modules", "seep-lab")
     installed_client = os.path.join(installed, "lib", "client.js")
     drift = ""
     if not os.path.isfile(installed_client):
@@ -277,7 +277,7 @@ def check_lab_gate(rep):
     说明不了它真的这么工作。这里直接跑仓库里的单测（纯 JS 逻辑，不需要 DSH）。
     """
     G = "配置层"
-    test = os.path.join(ROOT, "packages", "dsh-workbench", "test", "lab-gate.test.mjs")
+    test = os.path.join(ROOT, "packages", "seep-lab", "test", "lab-gate.test.mjs")
     if not os.path.isfile(test):
         rep.add(G, "A7", "lab 开关单测通过（会话级 / 默认关 / 只认指令）", 4, False,
                 "缺 %s" % test, "重新 clone 仓库")
@@ -292,7 +292,7 @@ def check_lab_gate(rep):
     tail = [ln.strip() for ln in (out or "").splitlines() if ln.strip()]
     summary = tail[-1] if tail else (err or "").strip()[:100]
     rep.add(G, "A7", "lab 开关单测通过（会话级 / 默认关 / 只认指令）", 4, passed,
-            summary[:90], "node packages/dsh-workbench/test/lab-gate.test.mjs 看具体哪条挂了")
+            summary[:90], "node packages/seep-lab/test/lab-gate.test.mjs 看具体哪条挂了")
 
 
 def check_mcp(rep, status, skip_spawn):

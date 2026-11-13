@@ -155,7 +155,7 @@ PY
 # ===========================================================================
 if [ -n "$RESTORE" ]; then
     echo -e "\n${MAGENTA}╔══════════════════════════════════════════════════════════════╗${RESET}"
-    echo -e "${MAGENTA}║   Seep 工作台 —— 从备份恢复                                   ║${RESET}"
+    echo -e "${MAGENTA}║   Seep Lab —— 从备份恢复                                   ║${RESET}"
     echo -e "${MAGENTA}╚══════════════════════════════════════════════════════════════╝${RESET}"
 
     if [ ! -d "$RESTORE" ]; then fail "备份目录不存在: $RESTORE"; exit 1; fi
@@ -374,10 +374,10 @@ if [ -d "$DSH_HOME_DIR" ]; then
     DSH_PROFILE_PKG="$DSH_HOME_DIR/profiles/web/package.json"
     DSH_PATCH="$DSH_HOME_DIR/profiles/web/cordis.patch.yml"
 
-    if [ -f "$DSH_PROFILE_PKG" ] && grep -q 'seep-dsh-workbench' "$DSH_PROFILE_PKG"; then
+    if [ -f "$DSH_PROFILE_PKG" ] && grep -q 'seep-lab' "$DSH_PROFILE_PKG"; then
         if command -v dsh >/dev/null 2>&1; then
-            if dsh plugin --profile web remove seep-dsh-workbench >/dev/null 2>&1; then
-                ok '已从 DSH 卸下插件包 seep-dsh-workbench'; REMOVED=$((REMOVED+1))
+            if dsh plugin --profile web remove seep-lab >/dev/null 2>&1; then
+                ok '已从 DSH 卸下插件包 seep-lab'; REMOVED=$((REMOVED+1))
             else
                 warn '插件包卸载返回非 0，可能已不存在；配置条目仍会被清理'
             fi

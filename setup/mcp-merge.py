@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""Seep 工作台 — `~/.pi/agent/mcp.json` 安全增量合并器（跨平台，纯标准库）
+"""Seep Lab — `~/.pi/agent/mcp.json` 安全增量合并器（跨平台，纯标准库）
 
 为什么需要它
 ------------

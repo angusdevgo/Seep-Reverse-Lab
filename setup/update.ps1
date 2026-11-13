@@ -365,7 +365,7 @@ if (-not $SkipVerify) {
 Write-Step '6/6  更新完成报告'
 
 Write-Host "`n================================================================================" -ForegroundColor White
-Write-Host ("  Seep 工作台更新完成:  v{0}  ->  v{1}" -f $oldVersion, $newVersion) -ForegroundColor Green
+Write-Host ("  Seep Lab更新完成:  v{0}  ->  v{1}" -f $oldVersion, $newVersion) -ForegroundColor Green
 Write-Host "================================================================================" -ForegroundColor White
 
 # -----------------------------------------------------------------------------

@@ -267,7 +267,7 @@ if ((Test-Path $dshHomeForScore) -and (Test-Path (Join-Path $ScriptDir 'verify-d
 # ---------------------------------------------------------------- 总结
 Write-Host "`n=================================================================" -ForegroundColor White
 if ($script:Failed.Count -eq 0) {
-    Write-Host '  🎉 恭喜！Seep 工作台全套组件已部署完成！' -ForegroundColor Green
+    Write-Host '  🎉 恭喜！Seep Lab全套组件已部署完成！' -ForegroundColor Green
 } else {
     Write-Host "  [!!] 部分非关键步骤失败: $($script:Failed -join ', ')" -ForegroundColor Yellow
 }

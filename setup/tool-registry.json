@@ -1,6 +1,6 @@
 {
   "$comment": [
-    "Seep 工作台 —— 外部工具声明式注册表（SSOT）",
+    "Seep Lab —— 外部工具声明式注册表（SSOT）",
     "",
     "为什么要有这个文件：",
     "  工作台内置的 jadx / apktool / radare2 / playwright-mcp / js-reverse-mcp 随仓库分发，",

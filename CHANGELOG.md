@@ -81,7 +81,7 @@
 ### DSH 接入改成插件包，并给 `lab：` 加上代码级开关
 
 之前 DSH 的接法是往 profile 的 `cordis.patch.yml` 里写一堆条目，路径是绝对路径，
-仓库一搬家就全断。现在改成装一个几十 KB 的插件包（`packages/dsh-workbench/`），
+仓库一搬家就全断。现在改成装一个几十 KB 的插件包（`packages/seep-lab/`），
 路径只在一个地方写：
 
 ```powershell
@@ -118,8 +118,8 @@ pi 上的 `lab：` 是靠扩展实现的。DSH 上现在也在插件里实现了
 
 插件现在带一个浏览器侧面板，两个入口同一个组件：
 
-- 设置 → **Seep 工作台**（独立一页，不用翻插件列表）
-- 设置 → 插件 → `seep-dsh-workbench` → 「配置」（官方给 bundle row 的配置位）
+- 设置 → **Seep Lab**（独立一页，不用翻插件列表）
+- 设置 → 插件 → `seep-lab` → 「配置」（官方给 bundle row 的配置位）
 
 面板能看三件事：运行状态（就绪/未就绪 + 修复命令）、配置项（路径 / Python / 技能 / lab）、
 20 个工具的四态清单（快速检查或「深度检测」真跑一遍）。
@@ -214,7 +214,7 @@ installLabGate(ctx, { discipline, enabled })  // -> { setEnabled, setActive, sna
 
 ### 入口从「三层菜单」变成「一眼就能看到」
 
-以前看状态要去 更多 → 设置 → Seep 工作台，太绕。现在多了一个常驻小圆点：
+以前看状态要去 更多 → 设置 → Seep Lab，太绕。现在多了一个常驻小圆点：
 
 - 新会话时它在输入框上方那一行（`conversation.hero.options`，工作区 / 标准模式 旁边）
 - 有对话时它在输入框右侧（`conversation.input.right`）
@@ -251,7 +251,7 @@ python Tool/mcp/tool_resolver.py --set jadx "D:/tools/jadx/bin/jadx.bat"
 python setup\dsh-plugin-setup.py --with-ida --with-playwright
 ```
 
-- 面板：设置 → Seep 工作台 → 勾「额外挂 IDA MCP / Playwright MCP」
+- 面板：设置 → Seep Lab → 勾「额外挂 IDA MCP / Playwright MCP」
 - 配置文件：`enableIda: true` / `enablePlaywright: true`
 
 实测（dsh-seep）：
@@ -316,8 +316,8 @@ IDA 的解析顺序：`SEEP_IDA_ROOT` → `setup/tool-registry.json` 的 ida 候
 
 ### 新增/改动文件
 
-- `packages/dsh-workbench/` —— 插件包本体（`package.json` / `cordis.patch.yml` / `lib/index.js` / `lib/lab-gate.js` / `lib/client.js` 面板）
-- `packages/dsh-workbench/test/lab-gate.test.mjs` —— lab 开关单测，25 项，不需 DSH 与模型
+- `packages/seep-lab/` —— 插件包本体（`package.json` / `cordis.patch.yml` / `lib/index.js` / `lib/lab-gate.js` / `lib/client.js` 面板）
+- `packages/seep-lab/test/lab-gate.test.mjs` —— lab 开关单测，25 项，不需 DSH 与模型
 - `setup/dsh-plugin-setup.py` —— 装包 + 写路径 + 打印下一步
 - `setup/verify-dsh.py` —— 改读 `seep-workbench.status.json`；6 组 24 项 100 分（新增面板声明 / 旧路线残留 / lab 单测）
 - `setup/install.ps1` / `setup/install.sh` —— 先试插件路线，失败才回退旧路线

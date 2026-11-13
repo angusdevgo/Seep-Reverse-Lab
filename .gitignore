@@ -78,3 +78,4 @@ setup/tool-paths.local.json
 # 打包产物（pack-plugin.py 输出，含本机路径）
 dist/
 *.tgz
+opencode.jsonc

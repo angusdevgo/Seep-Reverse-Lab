@@ -1,6 +1,6 @@
 ﻿# AndroidToolbox.ps1 - Android 外部工具箱统一解析层（Frida / objection / APKiD / Aotopsy）
 #
-# 设计目标：Seep 工作台不把上 GB 的 Python 生态塞进仓库，而是统一"指向"本机工具箱，
+# 设计目标：Seep Lab不把上 GB 的 Python 生态塞进仓库，而是统一"指向"本机工具箱，
 # 并保证任何一台机器上路径不同也能自动探测到。
 #
 # 探测优先级：

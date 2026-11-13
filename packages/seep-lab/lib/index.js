@@ -1,5 +1,5 @@
 /**
- * Seep 工作台 —— DeepSeek Harness 插件
+ * Seep Lab —— DeepSeek Harness 插件
  *
  * 这个包只做「接线」，不装工具。真正的工具（jadx / radare2 / apktool … 共 659 MB）
  * 在你 clone 的仓库里，本包靠配置里的路径指过去。
@@ -657,7 +657,7 @@ function pluginInstallInfo() {
   let spec = '';
   try {
     const data = JSON.parse(readFileSync(pkgFile, 'utf8'));
-    spec = String((data.dependencies || {})['seep-dsh-workbench'] ?? '');
+    spec = String((data.dependencies || {})['seep-lab'] ?? '');
   } catch {
     spec = '';
   }
@@ -690,7 +690,7 @@ function updatePlugin() {
   if (!info.updatable) {
     return {
       ok: false,
-      message: `当前是${info.mode}，没有可拉取的远端。要自动更新请改成 npm 安装：dsh plugin --profile ${info.profile} add seep-dsh-workbench`,
+      message: `当前是${info.mode}，没有可拉取的远端。要自动更新请改成 npm 安装：dsh plugin add --profile ${info.profile} seep-lab`,
       install: info,
     };
   }
@@ -698,7 +698,7 @@ function updatePlugin() {
   try {
     const out = execFileSync(
       process.platform === 'win32' ? 'dsh.cmd' : 'dsh',
-      ['plugin', '--profile', info.profile, 'add', 'seep-dsh-workbench@latest'],
+      ['plugin', '--profile', info.profile, 'add', 'seep-lab@latest'],
       { encoding: 'utf8', timeout: 180000, shell: process.platform === 'win32' },
     );
     return {

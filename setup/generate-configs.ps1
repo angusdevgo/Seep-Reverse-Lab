@@ -1,6 +1,6 @@
 ﻿#Requires -Version 5.1
 <#
-  Seep 工作台 — DSH 配置与指令入口生成器
+  Seep Lab — DSH 配置与指令入口生成器
 
   本工作台只支持两个 Agent：**Pi Agent** 与 **DeepSeek Harness (DSH)**。
   Pi 的接线由 setup/install-pi.ps1 负责（写 mcp.json + 拷技能）；

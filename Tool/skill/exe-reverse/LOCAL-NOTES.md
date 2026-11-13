@@ -1,6 +1,6 @@
-# exe-reverse × Seep 工作台 —— 本地接入说明（LOCAL-NOTES）
+# exe-reverse × Seep Lab —— 本地接入说明（LOCAL-NOTES）
 
-> 本文件是 **Seep 工作台本地新增**，不属于上游仓库。
+> 本文件是 **Seep Lab本地新增**，不属于上游仓库。
 > 上游 `SKILL.md` / `references/` / `scripts/` **保持原样不修改**，因此
 > `setup/sync-upstream.py` 对 `Tool/upstream/exe-reverse` 的同步始终是纯拷贝、零漂移。
 

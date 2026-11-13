@@ -15,11 +15,11 @@
 
 | 问题 | 答案 |
 | :--- | :--- |
-| 主发到哪 | **npm**（`seep-dsh-workbench`，公开包） |
+| 主发到哪 | **npm**（`seep-lab`，公开包） |
 | 备用呢 | **GitHub Release** 挂同版本 `.tgz`，给装不了 npm 的人 |
 | 包里装什么 | 只有**接线代码**（约 100 KB） |
 | 包里不装什么 | **工具（561 MB）、技能、知识库、案例** —— 这些永远在仓库里 |
-| 别人怎么更新 | `dsh plugin update --profile web seep-dsh-workbench`，或面板上点「更新插件」 |
+| 别人怎么更新 | `dsh plugin update --profile web seep-lab`，或面板上点「更新插件」 |
 | 更新后要重启吗 | **要**（插件代码是启动时加载的） |
 
 **一句话**：插件是个「遥控器」，不是「工具箱」。遥控器可以更新，电视还得你自己搬。
@@ -45,7 +45,7 @@ GitHub Release 留着当**镜像**：谁那边 npm 装不上（网络、公司�
 ## 三、包里到底装了什么
 
 ```
-seep-dsh-workbench-0.x.y.tgz      约 100 KB
+seep-lab-0.x.y.tgz      约 100 KB
 ├── package.json          身份、版本、DSH 兼容范围
 ├── cordis.patch.yml      告诉 DSH「把我插进加载链」
 ├── lib/index.js          宿主侧：挂 MCP、挂技能、lab 闸门、面板接口
@@ -81,7 +81,7 @@ powershell -File setup\install.ps1      # 解压依赖、装 Python 依赖、装
 之后更新：
 
 ```bash
-dsh plugin update --profile web seep-dsh-workbench   # 只更插件
+dsh plugin update --profile web seep-lab   # 只更插件
 cd seep && git pull                                  # 更工具/技能/知识库
 ```
 
@@ -89,10 +89,10 @@ cd seep && git pull                                  # 更工具/技能/知识�
 
 ### 2. 装不了 npm 的人
 
-从 GitHub Release 下载 `seep-dsh-workbench-<版本>.tgz`，然后：
+从 GitHub Release 下载 `seep-lab-<版本>.tgz`，然后：
 
 ```bash
-dsh plugin --profile web add "file:D:/下载/seep-dsh-workbench-0.3.0.tgz"
+dsh plugin --profile web add "file:D:/下载/seep-lab-0.3.0.tgz"
 ```
 
 更新 = 下载新 tgz 再执行一遍。**没有自动更新**，这是选这条路的代价。
@@ -100,7 +100,7 @@ dsh plugin --profile web add "file:D:/下载/seep-dsh-workbench-0.3.0.tgz"
 ### 3. 自己改代码的（我们）
 
 ```bash
-dsh plugin --profile web add "file:<仓库>/packages/dsh-workbench"
+dsh plugin --profile web add "file:<仓库>/packages/seep-lab"
 ```
 
 `file:` 安装是**硬链接** —— 改仓库文件，插件立刻跟着变，不用重装。
@@ -142,7 +142,7 @@ dsh plugin --profile web add "file:<仓库>/packages/dsh-workbench"
 
 ```bash
 # 1. 全绿才往下走
-node packages/dsh-workbench/test/lab-gate.test.mjs     # 单测
+node packages/seep-lab/test/lab-gate.test.mjs     # 单测
 python setup/verify-dsh.py                             # DSH 完整度 100 分
 powershell -File setup/verify.ps1                      # 仓库基准 64 项
 
@@ -151,7 +151,7 @@ powershell -File setup/verify.ps1                      # 仓库基准 64 项
 powershell -File setup/verify.ps1 -Detailed   # 看「脱敏」那几行是否全绿
 
 # 3. 版本号 + CHANGELOG 同步
-#    VERSION、packages/dsh-workbench/package.json、CHANGELOG.md 三处一致
+#    VERSION、packages/seep-lab/package.json、CHANGELOG.md 三处一致
 
 # 4. 打包（不发布，只产出 tgz 并打印校验和）
 python setup/pack-plugin.py
@@ -161,7 +161,7 @@ dsh plugin --profile web add "file:<刚才的 tgz>"
 dsh --profile web --dump-config | grep seep-workbench   # 确认插进加载链了
 
 # 6. 发布
-npm publish packages/dsh-workbench                       # 或 npm publish --access public（scoped 包）
+npm publish packages/seep-lab                       # 或 npm publish --access public（scoped 包）
 
 # 7. GitHub Release 挂同一个 tgz（备用通道）
 ```
@@ -174,8 +174,8 @@ npm publish packages/dsh-workbench                       # 或 npm publish --acc
 
 | 情况 | 怎么退 |
 | :--- | :--- |
-| 新版本插件有问题 | `dsh plugin --profile web add seep-dsh-workbench@0.2.2`（装回旧版） |
-| 插件完全起不来 | `dsh plugin remove --profile web seep-dsh-workbench`，DSH 恢复干净状态 |
+| 新版本插件有问题 | `dsh plugin --profile web add seep-lab@0.2.2`（装回旧版） |
+| 插件完全起不来 | `dsh plugin remove --profile web seep-lab`，DSH 恢复干净状态 |
 | 配置被改坏 | 插件写过的东西只有两处：profile 的 `cordis.patch.yml`（有 `.bak`）和 `setup/tool-paths.local.json` |
 | 想彻底重来 | 删 `~/.dsh/profiles/web`，重新 `dsh --profile web` 让它自建 |
 

@@ -179,7 +179,7 @@ if [ -d "$DSH_HOME_DIR" ]; then
     test_dsh_mounted() {
         # 路线一：插件包（1.14.0 起推荐）—— profile 的 dsh.profile.bundles 里有包名
         local profile_pkg="$DSH_HOME_DIR/profiles/web/package.json"
-        if [ -f "$profile_pkg" ] && grep -q 'seep-dsh-workbench' "$profile_pkg"; then
+        if [ -f "$profile_pkg" ] && grep -qE 'seep-lab|seep-dsh-workbench' "$profile_pkg"; then
             return 0
         fi
         # 路线二：旧路线（dsh-merge.py 写的标注块）

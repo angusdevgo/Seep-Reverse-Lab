@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "version": "1.0.0",
-  "description": "Seep 工作台上游仓库定点纳入与防外溢隔离规则清单 (Strict-Boundary Upstream Sync Manifest)",
+  "description": "Seep Lab上游仓库定点纳入与防外溢隔离规则清单 (Strict-Boundary Upstream Sync Manifest)",
   "upstreams": {
     "apk-reverse": {
       "name": "apk-reverse",

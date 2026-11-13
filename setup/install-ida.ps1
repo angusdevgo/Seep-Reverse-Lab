@@ -1,6 +1,6 @@
 ﻿#Requires -Version 5.1
 <#
-  Seep 工作台 —— IDA Pro 探测与配置 (加强版)
+  Seep Lab —— IDA Pro 探测与配置 (加强版)
   解决：
     1. 支持交互式输入/参数传参/全盘智能多点探测自定义路径（解决写死 D:\Tool\IDA Pro 问题）
     2. 支持 IDA 9.x 原生 idalib_supervisor 模式及传统 server.py 模式

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""把 Seep 工作台插件装进 DSH，并把工作台路径写进配置。
+"""把 Seep Lab插件装进 DSH，并把工作台路径写进配置。
 
 为什么需要这个脚本：
 
@@ -12,7 +12,7 @@
 
 它做的事情：
     1. 卸掉旧的同名包（file: 安装是硬链接，加了新文件必须重装才生效）
-    2. dsh plugin --profile <p> add file:<仓库>/packages/dsh-workbench
+    2. dsh plugin --profile <p> add file:<仓库>/packages/seep-lab
     3. 在 profile 的 cordis.patch.yml 里写入/更新：
            - id: seep-workbench-boot
              config:
@@ -43,8 +43,8 @@ import sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 REPO = os.path.dirname(HERE)
-BUNDLE_REL = os.path.join("packages", "dsh-workbench")
-PKG_NAME = "seep-dsh-workbench"
+BUNDLE_REL = os.path.join("packages", "seep-lab")
+PKG_NAME = "seep-lab"
 ENTRY_ID = "seep-workbench-boot"
 
 # 旧路线（dsh-merge.py）用的标注块。两条路线同时存在 = MCP 挂两份，必须清掉。
@@ -216,7 +216,7 @@ def report_status(root: str, profile: str, version: str) -> int:
 
 
 def main(argv=None) -> int:
-    ap = argparse.ArgumentParser(description="把 Seep 工作台插件装进 DSH 并写好路径")
+    ap = argparse.ArgumentParser(description="把 Seep Lab插件装进 DSH 并写好路径")
     ap.add_argument("--profile", default="web")
     ap.add_argument("--root", default=REPO, help="工作台仓库绝对路径（默认：本脚本的上级目录）")
     ap.add_argument("--no-skills", action="store_true", help="不在 DSH 里列出技能")
@@ -239,7 +239,7 @@ def main(argv=None) -> int:
 
     print()
     print("=" * 70)
-    print("  Seep 工作台 → DeepSeek Harness 插件安装")
+    print("  Seep Lab → DeepSeek Harness 插件安装")
     print("=" * 70)
     print("  仓库    : %s" % root)
     print("  插件包  : %s" % bundle)
@@ -250,7 +250,7 @@ def main(argv=None) -> int:
 
     if not os.path.isfile(os.path.join(bundle, "package.json")):
         print("  [FAIL] 找不到插件包：%s" % bundle)
-        print("         这个脚本必须在仓库里跑（packages/dsh-workbench 要存在）。")
+        print("         这个脚本必须在仓库里跑（packages/seep-lab 要存在）。")
         return 1
     if not os.path.isfile(os.path.join(root, "Tool", "mcp", "seep_mcp_server.py")):
         print("  [FAIL] %s 不像工作台（缺 Tool/mcp/seep_mcp_server.py）" % root)
@@ -344,7 +344,7 @@ def main(argv=None) -> int:
     print("    2. 检查是否接上：python setup/verify-dsh.py")
     print("    3. 想改路径：重跑本脚本并加 --root <新路径>，或改 %s" % patch)
     print()
-    print("  改路径也可以不用命令：DSH 里 设置 → Seep 工作台 直接填。")
+    print("  改路径也可以不用命令：DSH 里 设置 → Seep Lab 直接填。")
     print("  面板入口有两条：设置左侧导航 / 设置 → 插件 → 本包 → 「配置」。")
     print()
     return 0

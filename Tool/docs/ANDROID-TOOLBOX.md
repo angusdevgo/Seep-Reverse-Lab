@@ -1,6 +1,6 @@
 # Android 动态/静态外部工具箱（Frida / objection / frida-dexdump / APKiD / Aotopsy）
 
-> 本文件说明 Seep 工作台如何把 Android 逆向的**外部专业工具链**落地到本机，并在工作台内
+> 本文件说明 Seep Lab如何把 Android 逆向的**外部专业工具链**落地到本机，并在工作台内
 > 建立统一的调用入口（PowerShell 脚本 + MCP 工具），使 Agent 与人都不必再记路径、不必临时 pip install。
 
 ---

@@ -289,7 +289,7 @@ if (Test-Path $dshHomeDir) {
             try {
                 $pj = Get-Content $profilePkg -Raw -Encoding UTF8 | ConvertFrom-Json
                 $bundles = @($pj.dsh.profile.bundles)
-                if ($bundles -contains 'seep-dsh-workbench') { return $true }
+                if ($bundles -contains 'seep-lab' -or $bundles -contains 'seep-dsh-workbench') { return $true }
             }
             catch { }
         }
