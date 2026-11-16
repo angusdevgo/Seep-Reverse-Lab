@@ -10,22 +10,28 @@ env.md 后再继续。env.md 是本机级快照、跨项目共享，只写本机
 
 这是给 AI/Agent 的全局操作入口。任何任务先判断所属板块，再沿 board、case、tools、kb、reports 的链路推进；不要只在当前目录里孤立工作。
 
+`kb/` 通过 Git 子模块链接独立仓库 [open-reverselab-knowledge](https://github.com/LING71671/open-reverselab-knowledge)。首次使用源码知识工具前执行 `git submodule update --init --recursive`；文章、方法和网络修改在知识库仓库提交。
+
 ## 1. 任务路由
 
 | 任务类型 | 主入口 | 工具入口 | 知识/模板 |
 |---|---|---|---|
-| Web / Website CTF / CVE 链 | `boards/ctf-website/README.md` | `tools/ctf-website/` | `kb/ctf-website/README.md` |
+| 桌面 UI / Goal / 工作区 / Agent 调度 | `desktop/README.zh-CN.md` | `desktop/src/`, `scripts/misc/desktop_*.py` | `desktop/ARCHITECTURE.md`, `desktop/AGENT_SYSTEM.md` |
+| 官网 / 文档 / 发布 | `site/README.md`, `RELEASING.md` | `site/`, `.github/workflows/` | `PRODUCT.md`, `DESIGN.md` |
+| Web / Website CTF / CVE 链 | `boards/ctf-website/README.md` | `tools/ctf-website/` | `kb/shared/ctf-website/README.md` |
 | Android / APK / DEX / Frida | `boards/android/README.md` | `tools/android/` | `templates/notes/android-apk-analysis.md` |
 | Windows / PE / crackme / malware triage | `boards/windows/README.md` | `tools/windows/`, `tools/common/` | `templates/notes/windows-pe-analysis.md` |
-| General / crypto / protocol / firmware / IoT / radio / AI | `boards/general/README.md` | `tools/general/` | `kb/general/README.md` |
+| General / crypto / protocol / firmware / IoT / radio / AI | `boards/general/README.md` | `tools/general/` | `kb/shared/general/README.md` |
 | MCP / skills / lab health / automation | `boards/misc/README.md` | `tools/skills/README.md` | `reports/misc/`, `scripts/misc/` |
 | 跨板块综合案件 | `cases/README.md` | 链接各板块 tools/scripts | `templates/cases/` |
+
+桌面运行数据使用所选工作区的 `.reverselab/`，与以下外部 Agent 的 `cases/` 协议分开。桌面开发先读 [DEV_GUIDE.md](desktop/DEV_GUIDE.md)；不要因当前界面切换而改变后台任务的工作区。
 
 ## 2. AI 默认工作流
 
 1. **识别板块**：Web/Android/Windows/Misc；不确定时从 `boards/README.md` 选择最接近的入口。
 2. **生成任务上下文**：运行 `python scripts/misc/ai_context.py "<task>" --save`。
-3. **查知识库路由**：对有明确信号的 Web 目标，运行 `python scripts/ctf-website/kb_router.py "<信号>"`。
+3. **查知识库路由**：先按策略读取所属领域的 `attack-network.md`（red）或 `defense-network.md`（blue），再运行 `python scripts/misc/kb_router.py "<信号>" --track red` 或 `--track blue`；both 分支分别检索并关联证据。
 4. **建立或更新 case**：复杂任务在 `cases/<case>/` 维护轻量索引。
 5. **读取本地说明**：先看目标目录的 `README.md` / `AI-USAGE.md`。
 6. **工具路由**：先运行 `python scripts/misc/ai_tool.py plan "<task>"`，再按 ID 调用工具。

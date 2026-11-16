@@ -2,16 +2,18 @@
   "name": "reverselab-site",
   "version": "1.0.0",
   "private": true,
+  "license": "Apache-2.0",
   "type": "module",
-  "description": "ReverseLab VitePress documentation site",
+  "description": "Open ReverseLab VitePress documentation site",
   "scripts": {
-    "dev": "node scripts/ensure-kb.mjs && python ../scripts/misc/gen_vitepress_sidebar.py && node scripts/gen-en-kb-stubs.mjs && vitepress dev .",
-    "build": "node scripts/ensure-kb.mjs && python ../scripts/misc/gen_vitepress_sidebar.py && node scripts/gen-en-kb-stubs.mjs && vitepress build .",
-    "preview": "vitepress preview ."
+    "dev": "node scripts/ensure-kb.mjs && python ../scripts/misc/gen_vitepress_sidebar.py && node scripts/gen-en-kb-stubs.mjs && python ../scripts/misc/generate_llms_txt.py --output public && vitepress dev .",
+    "build": "node scripts/ensure-kb.mjs && python ../scripts/misc/gen_vitepress_sidebar.py && node scripts/gen-en-kb-stubs.mjs && python ../scripts/misc/generate_llms_txt.py --output public && node --max-old-space-size=6144 node_modules/vitepress/bin/vitepress.js build . && node scripts/verify-links.mjs",
+    "preview": "vitepress preview .",
+    "test": "node --test scripts/links.test.mjs"
   },
   "devDependencies": {
-    "vitepress": "^1.6.4",
-    "@fontsource/ibm-plex-sans": "^5.2.5",
-    "@fontsource/jetbrains-mono": "^5.2.5"
+    "@fontsource/jetbrains-mono": "^5.2.5",
+    "@fontsource/nunito-sans": "^5.3.0",
+    "vitepress": "^1.6.4"
   }
 }
