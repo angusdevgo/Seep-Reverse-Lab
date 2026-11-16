@@ -322,6 +322,11 @@ The bundled `seep` MCP server exposes **38 native tools** across eight functiona
 
 ## 🚀 Quick Start & Deployment
 
+**NixOS / Home Manager**: use `nix run github:angusdevgo/Seep-Reverse-Lab` to start
+an MCP server with a Nix-managed toolchain, or `nix develop` from a clone.
+See the [NixOS guide](nix/README.md) for declarative installation, the Home Manager
+module, optional tools, and client configuration.
+
 ### 1. Prerequisites
 - **OS**: Windows 10 / 11 x64 (recommended) or compatible Linux / macOS
 - **Runtimes**: Python 3.11+, Node.js 18+, Git
