@@ -70,7 +70,8 @@ class HookTest(unittest.TestCase):
     # -- 1. 契约 ------------------------------------------------------------
     def test_session_start_emits_system_message(self):
         code, out, _ = self.run_hook("session_start.py",
-                                     {"conversationId": "c1", "hookEventName": "SessionStart"})
+                                     {"conversationId": "c1", "hookEventName": "SessionStart",
+                                      "workspacePaths": [str(REPO)], "cwd": str(REPO)})
         self.assertEqual(code, 0)
         self.assertIn("injectSteps", out)
         msg = self.injected(out)
@@ -85,8 +86,10 @@ class HookTest(unittest.TestCase):
 
     def test_post_tool_use_returns_empty_object(self):
         code, out, _ = self.run_hook("post_tool_use.py",
-                                     {"conversationId": "c1", "toolCall": {"name": "run_command",
-                                                                           "args": {"CommandLine": "ls"}}})
+                                     {"conversationId": "c1",
+                                      "workspacePaths": [str(REPO)], "cwd": str(REPO),
+                                      "toolCall": {"name": "run_command",
+                                                   "args": {"CommandLine": "ls"}}})
         self.assertEqual(code, 0)
         self.assertEqual(out, {})
 
@@ -139,6 +142,7 @@ class HookTest(unittest.TestCase):
     def test_audit_log_written(self):
         self.run_hook("post_tool_use.py",
                       {"conversationId": "c-audit", "stepIdx": 3,
+                       "workspacePaths": [str(REPO)], "cwd": str(REPO),
                        "toolCall": {"name": "run_command", "args": {"CommandLine": "whoami"}}})
         log_file = self.state_dir / "agy-audit.jsonl"
         self.assertTrue(log_file.is_file(), "审计日志没写出来")
@@ -151,6 +155,7 @@ class HookTest(unittest.TestCase):
         big = "A" * 5000
         self.run_hook("post_tool_use.py",
                       {"conversationId": "c-big",
+                       "workspacePaths": [str(REPO)], "cwd": str(REPO),
                        "toolCall": {"name": "write_file", "args": {"content": big}}})
         rec = json.loads((self.state_dir / "agy-audit.jsonl").read_text(encoding="utf-8")
                          .strip().splitlines()[-1])
@@ -161,11 +166,78 @@ class HookTest(unittest.TestCase):
     def test_audit_marks_failure(self):
         self.run_hook("post_tool_use.py",
                       {"conversationId": "c-err", "error": "exit status 1",
+                       "workspacePaths": [str(REPO)], "cwd": str(REPO),
                        "toolCall": {"name": "run_command", "args": {}}})
         rec = json.loads((self.state_dir / "agy-audit.jsonl").read_text(encoding="utf-8")
                          .strip().splitlines()[-1])
         self.assertFalse(rec["ok"])
         self.assertIn("exit status 1", rec.get("error", ""))
+
+    # -- 4.5 工作区感知（全局钩子的关键）-------------------------------------
+    def test_repo_workspace_gets_full_briefing(self):
+        _, out, _ = self.run_hook("session_start.py",
+                                  {"conversationId": "ws-repo", "workspacePaths": [str(REPO)],
+                                   "cwd": str(REPO)})
+        msg = self.injected(out)
+        self.assertIn("Seep 工作台已就绪", msg)
+        self.assertIn("seep_auto_triage", msg)
+
+    def test_foreign_workspace_gets_short_notice(self):
+        _, out, _ = self.run_hook("session_start.py",
+                                  {"conversationId": "ws-other",
+                                   "workspacePaths": [r"C:\some\other\project"],
+                                   "cwd": r"C:\some\other\project"})
+        msg = self.injected(out)
+        self.assertIn("Seep 工作台可用", msg)
+        self.assertNotIn("本工单", msg, "别的项目里不该贴本仓库的工单")
+        self.assertLess(len(msg), 400, "别的项目里不该长篇大论")
+
+    def test_subdirectory_counts_as_repo(self):
+        sub = str(REPO / "Tool")
+        _, out, _ = self.run_hook("session_start.py",
+                                  {"conversationId": "ws-sub", "workspacePaths": [sub]})
+        self.assertIn("Seep 工作台已就绪", self.injected(out))
+
+    def test_lab_works_in_foreign_workspace_without_scope(self):
+        foreign = r"C:\some\other\project"
+        _, out, _ = self.run_hook("pre_invocation.py",
+                                  {"conversationId": "ws-other-lab",
+                                   "workspacePaths": [foreign], "cwd": foreign,
+                                   "lastUserInput": "lab："})
+        msg = self.injected(out)
+        self.assertIn("授权审计协作", msg, "别的项目里也该能开 lab")
+        self.assertIn("术语对照", msg)
+        self.assertNotIn("本工单授权范围", msg, "别的项目里不该贴本仓库工单")
+
+    def test_lab_in_repo_includes_scope(self):
+        _, out, _ = self.run_hook("pre_invocation.py",
+                                  {"conversationId": "ws-repo-lab",
+                                   "workspacePaths": [str(REPO)], "cwd": str(REPO),
+                                   "lastUserInput": "lab："})
+        msg = self.injected(out)
+        self.assertIn("授权审计协作", msg)
+        self.assertIn("本工单授权范围", msg, "在仓库里应该贴授权范围模板")
+
+    def test_audit_skips_foreign_workspace_when_lab_off(self):
+        log_file = self.state_dir / "agy-audit.jsonl"
+        before = log_file.stat().st_size if log_file.exists() else 0
+        self.run_hook("post_tool_use.py",
+                      {"conversationId": "ws-noise",
+                       "workspacePaths": [r"C:\some\other\project"],
+                       "cwd": r"C:\some\other\project",
+                       "toolCall": {"name": "run_command", "args": {"CommandLine": "ls"}}})
+        after = log_file.stat().st_size if log_file.exists() else 0
+        self.assertEqual(before, after, "别的项目 + lab 关 = 不该写流水")
+
+    def test_audit_records_workspace_when_in_repo(self):
+        self.run_hook("post_tool_use.py",
+                      {"conversationId": "ws-repo-audit",
+                       "workspacePaths": [str(REPO)], "cwd": str(REPO),
+                       "toolCall": {"name": "seep_status", "args": {}}})
+        rec = json.loads((self.state_dir / "agy-audit.jsonl").read_text(encoding="utf-8")
+                         .strip().splitlines()[-1])
+        self.assertTrue(rec.get("inRepo"))
+        self.assertIn("seep", str(rec.get("workspace", "")).lower())
 
     # -- 5. 健壮性 ----------------------------------------------------------
     def test_survives_garbage_input(self):

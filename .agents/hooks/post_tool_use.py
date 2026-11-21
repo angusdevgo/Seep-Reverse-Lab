@@ -16,7 +16,8 @@ import json
 import sys
 import time
 
-from lib import AUDIT_LOG, STATE_DIR, emit, log, read_payload
+from lib import (AUDIT_LOG, STATE_DIR, emit, in_repo, lab_is_on, log,
+                 primary_workspace, read_payload)
 
 # 参数里这些键的值可能是大段文件内容，记摘要就够，别把整个 APK 写进日志
 HEAVY_KEYS = {"content", "fileContent", "data", "file_content", "text", "body"}
@@ -45,9 +46,18 @@ def main() -> int:
         emit({})
         return 0
 
+    # 全局装的时候，人在别的项目里也会调工具。
+    # 只记「仓库内」或「lab 开着」的调用，别把无关项目的流水也写进来。
+    conv = str(payload.get("conversationId") or "")
+    if not in_repo(payload) and not lab_is_on(conv):
+        emit({})
+        return 0
+
     rec = {
         "ts": time.strftime("%Y-%m-%dT%H:%M:%S%z"),
         "conversationId": payload.get("conversationId"),
+        "workspace": primary_workspace(payload),
+        "inRepo": in_repo(payload),
         "stepIdx": payload.get("stepIdx"),
         "tool": name,
         "args": summarize(call.get("args")),

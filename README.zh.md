@@ -392,7 +392,7 @@ python setup/dsh-plugin-setup.py
 
 ```bash
 python setup/agy-setup.py                    # seep + js-reverse + 10 个技能
-python setup/agy-setup.py --with-hooks       # 再开 lab 闸门 + 审计流水（推荐）
+python setup/agy-setup.py --with-hooks       # 再开 lab 闸门 + 审计流水（装成全局，任何工作区可用）
 python setup/agy-setup.py --with-playwright --with-ida
 ```
 

@@ -28,7 +28,11 @@
   - 能力边界写清楚了：能追加系统消息，**改不了用户原话**，所以词表只做对照不做替换；
     也没用 `PreToolUse`（返回 allow 等于替用户点「永远允许」）
 - `Tool/prompts/agy/scope.md` —— 授权范围模板，用户自己填，lab 模式下原样贴进上下文。
-- `setup/test_agy_hooks.py` —— 12 项钩子契约测试（开关机、会话隔离、审计、畸形输入）。
+- **钩子改为默认装全局**（`~/.gemini/config/hooks.json`）：打开 agy 就能用，不要求工作区是
+  这个仓库。钩子会判断当前工作区 —— 在别的项目里只说一句「Seep 工具可用」，`lab：` 仍能开
+  （但不贴本仓库工单），lab 关着就不写审计流水。想只在本仓库生效用 `--hooks-scope workspace`。
+- `setup/test_agy_hooks.py` —— 19 项钩子契约测试（开关机、会话隔离、工作区感知、审计、畸形输入）。
+- `setup/agy-watch.py` —— 活体探针：边盯 `agy-lab.json` / `agy-audit.jsonl`，边去 agy 里操作。
 - `verify.ps1` 增加三条 agy 提示项（装了 Antigravity 才查）：MCP 指向本仓库、
   `skills.json` 指向 `Tool/skill`、钩子已生成。所以满分会变成 67（64 基础 + 3 项 agy）。
 

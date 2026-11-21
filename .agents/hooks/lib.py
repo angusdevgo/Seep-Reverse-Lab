@@ -111,6 +111,59 @@ def clear_lab(conversation_id: str) -> None:
 
 
 # -----------------------------------------------------------------------------
+# 工作区感知
+#
+# 钩子可能装在两个位置：
+#   1. <仓库>/.agents/hooks.json  —— 只在本仓库生效
+#   2. ~/.gemini/config/hooks.json —— 全局，任何工作区都会跑
+#
+# 全局装的时候，用户可能正在做跟逆向无关的活。所以每个钩子都要先问一句
+# 「当前工作区是不是这个仓库」，再决定注入长内容还是短提示。
+# -----------------------------------------------------------------------------
+
+
+def _norm_path(p: str) -> str:
+    try:
+        s = os.path.normpath(os.path.expanduser(str(p))).replace("\\", "/")
+        return s.rstrip("/").lower() if os.name == "nt" else s.rstrip("/")
+    except Exception:
+        return ""
+
+
+def workspace_paths(payload: dict) -> list[str]:
+    """agy 传过来的 work区列表，cwd 也算一个（有的界面只给 cwd）。"""
+    out = []
+    for key in ("workspacePaths", "cwd"):
+        v = payload.get(key)
+        if isinstance(v, str) and v:
+            out.append(v)
+        elif isinstance(v, list):
+            out.extend([x for x in v if isinstance(x, str) and x])
+    seen, uniq = set(), []
+    for p in out:
+        n = _norm_path(p)
+        if n and n not in seen:
+            seen.add(n)
+            uniq.append(p)
+    return uniq
+
+
+def in_repo(payload: dict) -> bool:
+    """当前工作区是不是落在本仓库里（相等或在其子目录）。"""
+    repo = _norm_path(str(REPO))
+    for p in workspace_paths(payload):
+        n = _norm_path(p)
+        if n == repo or n.startswith(repo + "/"):
+            return True
+    return False
+
+
+def primary_workspace(payload: dict) -> str:
+    ws = workspace_paths(payload)
+    return ws[0] if ws else ""
+
+
+# -----------------------------------------------------------------------------
 # 触发词（与 pi / DSH 保持同一套）
 # -----------------------------------------------------------------------------
 

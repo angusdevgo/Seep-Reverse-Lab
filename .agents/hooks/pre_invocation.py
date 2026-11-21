@@ -20,8 +20,8 @@ from __future__ import annotations
 
 import sys
 
-from lib import (emit, lab_is_on, load_rules, load_scope, log, read_payload,
-                 set_lab, trigger_of)
+from lib import (emit, in_repo, lab_is_on, load_rules, load_scope, log,
+                 read_payload, set_lab, trigger_of)
 
 
 def discipline_block() -> str:
@@ -76,9 +76,11 @@ def main() -> int:
     glossary = glossary_block(load_rules())
     if glossary:
         parts.append(glossary)
-    scope = load_scope()
-    if scope:
-        parts += ["## 本工单授权范围", "", scope]
+    # 授权范围是「这个仓库的工单」，别的项目里贴上去是噪声
+    if in_repo(payload):
+        scope = load_scope()
+        if scope:
+            parts += ["## 本工单授权范围", "", scope]
 
     emit({"injectSteps": [{"systemMessage": {"systemMessage": "\n\n".join(parts)}}]})
     return 0

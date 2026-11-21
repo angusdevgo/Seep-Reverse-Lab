@@ -398,7 +398,7 @@ never deletes MCP entries you already have:
 
 ```bash
 python setup/agy-setup.py                    # seep + js-reverse + 10 skills
-python setup/agy-setup.py --with-hooks       # also enables the lab gate + audit trail
+python setup/agy-setup.py --with-hooks       # also enables the lab gate + audit trail (global, any workspace)
 python setup/agy-setup.py --with-playwright --with-ida
 ```
 

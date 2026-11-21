@@ -344,38 +344,65 @@ def install_skills(root: Path, cfg_dir: Path, dry: bool) -> bool:
     return write_json(p, data, dry, "技能清单")
 
 
-def hooks_config(py: str, root: Path) -> dict:
-    """生成 hooks.json。python 用绝对路径 —— cmd/sh 里 PATH 上的 python 不可靠。"""
-    q = '"' + py.replace("\\", "/") + '"'
-    rel = root / ".agents"  # 钩子命令的工作目录就是 hooks.json 所在目录
-    del rel
+def hooks_config(py: str, root: Path, scope: str) -> dict:
+    """生成 hooks.json。
+
+    scope="global"    → 写 ~/.gemini/config/hooks.json，任何工作区都会跑，
+                        命令里用脚本的绝对路径（cwd 是 config 目录，不是仓库）
+    scope="workspace" → 写 <仓库>/.agents/hooks.json，只在本仓库生效，
+                        命令里用相对路径（cwd 就是 .agents）
+    """
+    def q(p: str) -> str:
+        return '"' + p.replace("\\", "/") + '"'
+
+    hooks_dir = root / ".agents" / "hooks"
+    if scope == "global":
+        def script(name: str) -> str:
+            return f"{q(py)} {q(str(hooks_dir / name))}"
+    else:
+        def script(name: str) -> str:
+            return f"{q(py)} hooks/{name}"
+
     return {
         "seep-session-start": {
             "SessionStart": [
-                {"type": "command", "command": f"{q} hooks/session_start.py", "timeout": 20}
+                {"type": "command", "command": script("session_start.py"), "timeout": 20}
             ]
         },
         "seep-lab-gate": {
             "PreInvocation": [
-                {"type": "command", "command": f"{q} hooks/pre_invocation.py", "timeout": 20}
+                {"type": "command", "command": script("pre_invocation.py"), "timeout": 20}
             ]
         },
         "seep-audit-trail": {
             "PostToolUse": [
                 {"matcher": "*",
-                 "hooks": [{"type": "command", "command": f"{q} hooks/post_tool_use.py", "timeout": 20}]}
+                 "hooks": [{"type": "command", "command": script("post_tool_use.py"),
+                            "timeout": 20}]}
             ]
         },
     }
 
 
-def install_hooks(root: Path, py: str, dry: bool) -> bool:
-    """写 <仓库>/.agents/hooks.json（本仓库 = 工作区，agy 打开它就会读）。"""
-    agents = root / ".agents"
-    if not (agents / "hooks").is_dir():
-        warn(f"缺目录 {agents / 'hooks'}，跳过钩子")
+def install_hooks(root: Path, py: str, dry: bool, cfg_dir: Path,
+                  scope: str) -> bool:
+    """装钩子。默认全局（打开 agy 就能用），也可只装本仓库。"""
+    hooks_dir = root / ".agents" / "hooks"
+    if not hooks_dir.is_dir():
+        warn(f"缺目录 {hooks_dir}，跳过钩子")
         return False
-    return write_json(agents / "hooks.json", hooks_config(py, root), dry, "钩子配置")
+    if scope == "global":
+        target = cfg_dir / "hooks.json"
+        label = "全局钩子配置"
+        # 全局装的时候，别在本仓库再留一份，两边会重复注入
+        stale = root / ".agents" / "hooks.json"
+        if stale.is_file() and not dry:
+            stale.rename(root / ".agents" / "hooks.json.bak")
+            skip("把仓库内的 hooks.json 改名留档（避免和全局重复注入）")
+    else:
+        target = root / ".agents" / "hooks.json"
+        label = "仓库内钩子配置"
+    return write_json(target, hooks_config(py, root, scope), dry, label)
 
 
 def count_skills(root: Path) -> int:
@@ -445,8 +472,10 @@ def main() -> int:
     ap.add_argument("--ida-root", help="IDA 安装目录")
     ap.add_argument("--force", action="store_true", help="已存在的 server 也覆盖")
     ap.add_argument("--with-hooks", action="store_true",
-                    help="生成 .agents/hooks.json（lab 闸门 + 审计流水）")
-    ap.add_argument("--no-hooks", action="store_true", help="不生成钩子配置")
+                    help="装钩子（lab 闸门 + 审计流水）；默认装成全局，打开 agy 就能用")
+    ap.add_argument("--no-hooks", action="store_true", help="不装钩子")
+    ap.add_argument("--hooks-scope", choices=("global", "workspace"), default="global",
+                    help="global=任何工作区都能用（默认）；workspace=只在这个仓库生效")
     args = ap.parse_args()
 
     root = repo_root(args.root)
@@ -502,10 +531,11 @@ def main() -> int:
     if args.no_hooks:
         skip("按 --no-hooks 跳过")
     elif args.with_hooks:
-        if install_hooks(root, py, args.dry_run):
-            ok("钩子已生成：lab 闸门 + 审计流水")
+        if install_hooks(root, py, args.dry_run, cfg_dir, args.hooks_scope):
+            where = "全局（任何工作区可用）" if args.hooks_scope == "global" else "仅本仓库"
+            ok(f"钩子已装：{where} —— lab 闸门 + 审计流水")
         else:
-            skip(".agents/hooks.json 已经是最新")
+            skip("钩子配置已经是最新")
     else:
         skip("没给 --with-hooks（想开 lab 闸门加这个参数）")
 
@@ -517,9 +547,14 @@ def main() -> int:
         print(f"    {cfg_dir / 'mcp_config.json'}")
         print(f"    {cfg_dir / 'skills.json'}")
         if args.with_hooks:
-            print(f"    {root / '.agents' / 'hooks.json'}")
+            target = (cfg_dir if args.hooks_scope == "global" else root / ".agents") / "hooks.json"
+            print(f"    {target}")
     print()
     if args.with_hooks:
+        if args.hooks_scope == "global":
+            print("  钩子是全局的：打开 agy、随便哪个工作区，发 lab： 都能用")
+        else:
+            print("  钩子只在本仓库生效：得用 agy 打开这个仓库才会触发")
         print("  lab 模式：在 agy 输入框里单独发一句 lab： 打开，退出实验 关闭")
         print("  审计流水：~/.seep/agy-audit.jsonl（一行一条，tail -f 可看）")
         print()

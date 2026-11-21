@@ -85,7 +85,13 @@
 | `PostToolUse` | 记审计流水 | 改工具结果 |
 
 我们只用了「只读」那部分：注入 + 记账，不干预任何决策。
-脚本在 `.agents/hooks/`，配置 `.agents/hooks.json`（生成物，已 gitignore）。
+脚本在 `.agents/hooks/`（入库），配置在 `~/.gemini/config/hooks.json`（全局生成物）。
+
+**为什么装全局**：MCP 与技能都是全局的，钩子只装仓库里会「换工作区就失效」。
+全局之后，`lab：` 在任何项目都能开；不开就等于不存在（PreInvocation 不注入、
+PostToolUse 不记流水）。
+
+想只在本仓库生效：`--hooks-scope workspace`，配置写到 `.agents/hooks.json`。
 
 ---
 
