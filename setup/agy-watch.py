@@ -29,6 +29,7 @@ LAB = STATE_DIR / "agy-lab.json"
 AUDIT = STATE_DIR / "agy-audit.jsonl"
 REPO = Path(__file__).resolve().parent.parent
 HOOKS_JSON = REPO / ".agents" / "hooks.json"
+GLOBAL_HOOKS = Path(os.path.expanduser("~/.gemini/config/hooks.json"))
 
 
 def _fmt_lab(data: dict) -> list[str]:
@@ -51,7 +52,11 @@ def _fmt_lab(data: dict) -> list[str]:
 def snapshot() -> str:
     lines = []
     lines.append(f"  状态目录 : {STATE_DIR}")
-    lines.append(f"  钩子配置 : {HOOKS_JSON} {'✓ 在' if HOOKS_JSON.is_file() else '✗ 没有（跑 agy-setup.py --with-hooks）'}")
+    for label, path in (("全局钩子", GLOBAL_HOOKS), ("仓库内钩子", HOOKS_JSON)):
+        mark = "✓ 在" if path.is_file() else "✗ 没有"
+        lines.append(f"  {label} : {mark}  {path}")
+    if not GLOBAL_HOOKS.is_file() and not HOOKS_JSON.is_file():
+        lines.append("            → 跑 python setup/agy-setup.py --with-hooks")
     lines.append("")
 
     if LAB.is_file():
