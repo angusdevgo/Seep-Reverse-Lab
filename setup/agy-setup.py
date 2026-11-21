@@ -335,9 +335,14 @@ def install_skills(root: Path, cfg_dir: Path, dry: bool) -> bool:
         entries = []
 
     wanted = skill_entries(root)
-    wanted_paths = {norm(e["path"]) for e in wanted}
+    # 按「形状」替换，不按完整路径：只要某条也指向某个 Tool/skill，就当作旧仓库的残留删掉。
+    # 否则在两套仓库之间来回跑，skills.json 会越积越多（同一批技能被列两遍）。
+    def is_seep_skill(p: str) -> bool:
+        n = norm(p)
+        return n.endswith("/tool/skill") or n.endswith("/tool/skill/safe-skills")
+
     kept = [e for e in entries
-            if isinstance(e, dict) and norm(e.get("path", "")) not in wanted_paths]
+            if isinstance(e, dict) and not is_seep_skill(e.get("path", ""))]
 
     # 已经被别的 skills.json 引用过的同名目录不重复写
     data["entries"] = kept + wanted
@@ -595,8 +600,9 @@ def main() -> int:
     ap.add_argument("--no-hooks", action="store_true", help="不装钩子")
     ap.add_argument("--probe", action="store_true",
                     help="真起一次 MCP 数工具，并检查技能能否被识别")
-    ap.add_argument("--hooks-scope", choices=("global", "workspace"), default="global",
-                    help="global=任何工作区都能用（默认）；workspace=只在这个仓库生效")
+    ap.add_argument("--hooks-scope", choices=("global", "workspace"), default="workspace",
+                    help="workspace=只在这个仓库生效（默认，实测有效）；"
+                         "global=写 ~/.gemini/config（实测 agy 不读，留着给以后版本）")
     args = ap.parse_args()
 
     root = repo_root(args.root)
@@ -656,8 +662,10 @@ def main() -> int:
         skip("按 --no-hooks 跳过")
     elif args.with_hooks:
         if install_hooks(root, py, args.dry_run, cfg_dir, args.hooks_scope):
-            where = "全局（任何工作区可用）" if args.hooks_scope == "global" else "仅本仓库"
-            ok(f"钩子已装：{where} —— lab 闸门 + 审计流水")
+            if args.hooks_scope == "global":
+                ok("钩子已装到 ~/.gemini/config（注意：实测 agy 目前不读这里）")
+            else:
+                ok(f"钩子已装到本仓库：{root / '.agents' / 'hooks.json'}")
         else:
             skip("钩子配置已经是最新")
     else:
@@ -676,9 +684,9 @@ def main() -> int:
     print()
     if args.with_hooks:
         if args.hooks_scope == "global":
-            print("  钩子是全局的：打开 agy、随便哪个工作区，发 lab： 都能用")
+            print("  钩子在 ~/.gemini/config/hooks.json（实测 agy 不读这个位置）")
         else:
-            print("  钩子只在本仓库生效：得用 agy 打开这个仓库才会触发")
+            print("  钩子只在本仓库生效：**必须用 agy 把仓库文件夹打开**，纯聊天不会触发")
         print("  lab 模式：在 agy 输入框里单独发一句 lab： 打开，退出实验 关闭")
         print("  审计流水：~/.seep/agy-audit.jsonl（一行一条，tail -f 可看）")
         print()
