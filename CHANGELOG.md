@@ -19,8 +19,18 @@
   规则层零配置：仓库根 `AGENTS.md` 会被 agy 自动向上找到。
   默认挂 `seep`（38 工具）+ `js-reverse`（24 工具），`--with-playwright` / `--with-ida` 可加挂。
   **不覆盖你已有的 MCP 条目**（同名默认跳过，`--force` 才覆盖），改前自动 `.bak` 备份。
-- `verify.ps1` 增加两条 agy 提示项（装了 Antigravity 才查）：MCP 是否指向本仓库、
-  `skills.json` 是否指向 `Tool/skill`。所以满分会变成 66（64 基础 + 2 项 agy）。
+- **agy 生命周期钩子**（`--with-hooks`）：`.agents/hooks/` 三个脚本 +
+  `.agents/hooks.json`（生成物，含本机 python 路径，已 gitignore）。
+  - `SessionStart` —— 开场说明一次（仓库有什么、`seep_*` 怎么调、lab 怎么开）
+  - `PreInvocation` —— lab 闸门：`lab：` 开、`退出实验` 关，按 `conversationId` 记会话级状态；
+    开着就注入审计协作约定 + 术语对照 + 授权范围
+  - `PostToolUse` —— 审计流水写 `~/.seep/agy-audit.jsonl`（大字段只存 sha256）
+  - 能力边界写清楚了：能追加系统消息，**改不了用户原话**，所以词表只做对照不做替换；
+    也没用 `PreToolUse`（返回 allow 等于替用户点「永远允许」）
+- `Tool/prompts/agy/scope.md` —— 授权范围模板，用户自己填，lab 模式下原样贴进上下文。
+- `setup/test_agy_hooks.py` —— 12 项钩子契约测试（开关机、会话隔离、审计、畸形输入）。
+- `verify.ps1` 增加三条 agy 提示项（装了 Antigravity 才查）：MCP 指向本仓库、
+  `skills.json` 指向 `Tool/skill`、钩子已生成。所以满分会变成 67（64 基础 + 3 项 agy）。
 
 ### 变更
 

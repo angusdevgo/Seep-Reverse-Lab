@@ -16,8 +16,8 @@
 | MCP 怎么注册 | 静态 JSON 文件 | 插件在**运行时**用 `ctx.plugin(McpClient)` 挂 | 静态 `mcp_config.json`（或 `agy mcp add`） |
 | 技能怎么进来 | 启动时扫 `~/.pi/agent/skills`（副本） | 插件挂 `SkillFilesystem`，**直接指**仓库两个目录 | `skills.json` 的 `entries` **直接指**仓库两个目录 |
 | 纪律注入 | `~/.pi/agent/seep-system.md` + 扩展 | 插件里的 `systemPrompt.section` | 仓库根 `AGENTS.md`（agy 自动向上找） |
-| lab 闸门 | `Tool/prompts/extensions/security-audit-interceptor.ts` | `packages/seep-lab/lib/lab-gate.js` | **无拦截**（规则层仍然生效） |
-| 词替换 | 同一个 TS 扩展 | `packages/seep-lab/lib/lab-rewrite.js` | 无 |
+| lab 闸门 | `Tool/prompts/extensions/security-audit-interceptor.ts` | `packages/seep-lab/lib/lab-gate.js` | `.agents/hooks/pre_invocation.py`（生命周期钩子） |
+| 词替换 | 同一个 TS 扩展（真替换） | `packages/seep-lab/lib/lab-rewrite.js`（真替换） | 只能注入术语对照表，**改不了用户原话** |
 | 设置面板 | 无 | 有（设置 → Seep Lab + 输入框旁 `Lab` 按钮） | 无 |
 | 校验命令 | `setup/verify.ps1` | `setup/verify-dsh.py`（25 项 / 102 分） | `python setup/agy-setup.py --list` |
 | 换路径怎么办 | 重跑 `install-pi.ps1` | 面板改 / `--root`，然后**重启 DSH** | `--root` 重跑，然后**重启 agy** |
@@ -73,16 +73,27 @@
 | `<仓库>/AGENTS.md` | 规则入口，agy 从当前文件向上走到仓库根自动加载 |
 | `~/.gemini/antigravity/builtin/skills/agy-customizations/` | agy 自带的定制系统说明书（权威依据，值得一读） |
 
-**agy 没有的东西**：没有插件包、没有面板、没有 lab 拦截器。
-它的强项是「规则 + 技能 + MCP 三件套都认标准格式」，所以接线最省事 —— 但也最没特权。
+**agy 没有的东西**：没有插件包、没有面板、没有 prompt 改写钩子。
+
+它有**生命周期钩子**（`SessionStart` / `PreInvocation` / `PostToolUse`），
+所以 lab 闸门能补上，但要认清能力边界：
+
+| | 能做到 | 做不到 |
+| :--- | :--- | :--- |
+| `PreInvocation` | 追加 `systemMessage`（纪律、术语表、授权范围） | 改 `lastUserInput` 原文 |
+| `PreToolUse` | 放行 / 拒绝 / 改工具参数 | （我们没用，返回 allow 等于替用户点「永远允许」） |
+| `PostToolUse` | 记审计流水 | 改工具结果 |
+
+我们只用了「只读」那部分：注入 + 记账，不干预任何决策。
+脚本在 `.agents/hooks/`，配置 `.agents/hooks.json`（生成物，已 gitignore）。
 
 ---
 
-## 四、一个必须盯住的隐患：lab 只有两个实现在真干活
+## 四、一个必须盯住的隐患：lab 有三份实现
 
-pi 的 lab 在 TS 扩展里，DSH 的在插件里 —— **两份代码**。
+pi 的 lab 在 TS 扩展里，DSH 的在插件里，agy 的在生命周期钩子里 —— **三份代码**。
 
-词表曾经也复制成两份，改一处另一处就过期。现在已经收成一条链：
+词表曾经复制成几份，改一处另一处就过期。现在收成一条链：
 
 ```
 Tool/prompts/extensions/security-audit-interceptor.ts       ← 唯一真值
@@ -94,15 +105,18 @@ Tool/scripts/compliance-relay/sensitive-rules.json          ← 中间产物
 DSH 插件 lab-rewrite.js（读不到才退回内置兜底表）
 ```
 
-**加词的正确做法**：改 TS → 跑 `extract-rules.py` → 两边同时生效。
+**加词的正确做法**：改 TS → 跑 `extract-rules.py` → 三边同时生效（agy 读同一个 JSON）。
 一致性可以随时验：`python Tool/scripts/compliance-relay/extract-rules.py --check`。
 
-> 行为逻辑（闸门怎么开、什么时候注入）仍是两套实现，
+> 行为逻辑（闸门怎么开、什么时候注入）仍是各写各的，
 > 我们只保证**规则数据**单源；行为一致性靠测试：pi 侧 `verify.ps1`，DSH 侧 39 项单测。
 >
-> **agy 没有 lab 拦截器**（它的定制系统只认规则文件，不认运行时改写），
-> 所以第三边没有「实现漂移」这回事 —— 也意味着它拿不到自动词替换。
-> 要用 lab 的完整行为，走 pi 或 DSH。
+> agy 的实现是「钩子注入」：能追加系统消息，但**改不了用户原话**，
+> 所以词表在那边只能以对照表的形式提供，不做原文替换。
+> 要真正的改写能力，走 pi 或 DSH。
+>
+> 三份实现在同一件事上演进很容易漂：**共同点靠 rules 表单源，行为差异靠各自测试**
+> （pi 侧 `verify.ps1`、DSH 侧 39 项单测、agy 侧 `setup/test_agy_hooks.py` 12 项）。
 
 ---
 
@@ -138,6 +152,7 @@ pi 和 agy 都没有被包化，也**不打算**包化：它们的接法都是�
 | `setup/verify.ps1` | **仓库本身** + pi 接线：技能内容、知识库篇数、工具在位、手册、脱敏扫描、`~/.pi/agent/skills` 是否同步 |
 | `setup/verify-dsh.py` | **DSH 接线**：插件是否装、MCP 是否真能起（真启动数工具）、技能是否进注册表、lab、面板 |
 | `python setup/agy-setup.py --list` | **agy 接线**：两个 JSON 在不在、挂了哪几个 server、技能清单指向哪 |
+| `python setup/test_agy_hooks.py` | **agy 钩子**：三个钩子的输入输出契约、lab 开关机、会话隔离、审计流水、畸形输入不崩 |
 
 **三份校验各查各的，分数不能互相替代。** `verify.ps1` 顺带会看一眼 agy 有没有接上（只是提示，不判失败）。
 
@@ -155,6 +170,8 @@ cat ~/.dsh/seep-workbench.status.json
 # agy：看它挂了什么
 agy mcp list
 python setup/agy-setup.py --list
+ls .agents/hooks.json            # 钩子生成了没
+tail -5 ~/.seep/agy-audit.jsonl  # 工具调用流水
 ```
 
 三边列出的 server 名字可以相同（都叫 seep），但**进程是各自拉起的、跑的是各自配的那份文件**：

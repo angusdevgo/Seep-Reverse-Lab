@@ -17,6 +17,11 @@ Antigravity 认三样东西，我们对应接三条线：
       有 agy 命令时走官方 `agy mcp add`（它会自己校验并热加载）；
       没有 agy 命令时直接合并 JSON。
 
+  4. 钩子  —— <仓库>/.agents/hooks.json（可选，--with-hooks）
+      agy 的 SessionStart / PreInvocation / PostToolUse 三个事件，
+      分别做「开场说明」「lab 闸门 + 术语对照」「审计流水」。
+      agy 没有运行时改写钩子，所以这里只注入 systemMessage，不改用户原话。
+
 用法：
   python setup/agy-setup.py                     # 默认：seep + js-reverse + 技能
   python setup/agy-setup.py --dry-run           # 只看会改什么，不落盘
@@ -339,6 +344,40 @@ def install_skills(root: Path, cfg_dir: Path, dry: bool) -> bool:
     return write_json(p, data, dry, "技能清单")
 
 
+def hooks_config(py: str, root: Path) -> dict:
+    """生成 hooks.json。python 用绝对路径 —— cmd/sh 里 PATH 上的 python 不可靠。"""
+    q = '"' + py.replace("\\", "/") + '"'
+    rel = root / ".agents"  # 钩子命令的工作目录就是 hooks.json 所在目录
+    del rel
+    return {
+        "seep-session-start": {
+            "SessionStart": [
+                {"type": "command", "command": f"{q} hooks/session_start.py", "timeout": 20}
+            ]
+        },
+        "seep-lab-gate": {
+            "PreInvocation": [
+                {"type": "command", "command": f"{q} hooks/pre_invocation.py", "timeout": 20}
+            ]
+        },
+        "seep-audit-trail": {
+            "PostToolUse": [
+                {"matcher": "*",
+                 "hooks": [{"type": "command", "command": f"{q} hooks/post_tool_use.py", "timeout": 20}]}
+            ]
+        },
+    }
+
+
+def install_hooks(root: Path, py: str, dry: bool) -> bool:
+    """写 <仓库>/.agents/hooks.json（本仓库 = 工作区，agy 打开它就会读）。"""
+    agents = root / ".agents"
+    if not (agents / "hooks").is_dir():
+        warn(f"缺目录 {agents / 'hooks'}，跳过钩子")
+        return False
+    return write_json(agents / "hooks.json", hooks_config(py, root), dry, "钩子配置")
+
+
 def count_skills(root: Path) -> int:
     n = 0
     for d in (root / "Tool" / "skill").iterdir() if (root / "Tool" / "skill").is_dir() else []:
@@ -405,6 +444,9 @@ def main() -> int:
     ap.add_argument("--with-ida", action="store_true", help="额外挂 IDA（需本机有 IDA）")
     ap.add_argument("--ida-root", help="IDA 安装目录")
     ap.add_argument("--force", action="store_true", help="已存在的 server 也覆盖")
+    ap.add_argument("--with-hooks", action="store_true",
+                    help="生成 .agents/hooks.json（lab 闸门 + 审计流水）")
+    ap.add_argument("--no-hooks", action="store_true", help="不生成钩子配置")
     args = ap.parse_args()
 
     root = repo_root(args.root)
@@ -456,14 +498,31 @@ def main() -> int:
         else:
             skip(f"skills.json 已经是这个样子（{n} 个技能）")
 
-    step("4) 收尾")
+    step("4) 钩子层")
+    if args.no_hooks:
+        skip("按 --no-hooks 跳过")
+    elif args.with_hooks:
+        if install_hooks(root, py, args.dry_run):
+            ok("钩子已生成：lab 闸门 + 审计流水")
+        else:
+            skip(".agents/hooks.json 已经是最新")
+    else:
+        skip("没给 --with-hooks（想开 lab 闸门加这个参数）")
+
+    step("5) 收尾")
     if args.dry_run:
         print("  [dry-run] 到此为止，没有改任何文件。")
     else:
         print("  改了以下几处，重启 Antigravity 后生效：")
         print(f"    {cfg_dir / 'mcp_config.json'}")
         print(f"    {cfg_dir / 'skills.json'}")
+        if args.with_hooks:
+            print(f"    {root / '.agents' / 'hooks.json'}")
     print()
+    if args.with_hooks:
+        print("  lab 模式：在 agy 输入框里单独发一句 lab： 打开，退出实验 关闭")
+        print("  审计流水：~/.seep/agy-audit.jsonl（一行一条，tail -f 可看）")
+        print()
     print("  在 agy 里验证：")
     print("    1. 打开这个仓库，随便点一个文件 —— AGENTS.md 会自动进上下文")
     print("    2. 让它「用 seep_auto_triage 看一眼这个 apk」，能调起来就通了")

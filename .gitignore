@@ -79,3 +79,6 @@ setup/tool-paths.local.json
 dist/
 *.tgz
 opencode.jsonc
+
+# agy 钩子配置（agy-setup.py 生成，含本机 python 绝对路径）
+.agents/hooks.json

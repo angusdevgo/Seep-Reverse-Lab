@@ -236,7 +236,7 @@ Seep\ (881 MB, of which 657 MB is the offline toolchain)
 │   ├── install.ps1 / install.sh   ← One entry point (dispatches per agent)
 │   ├── install-pi.ps1             ← Pi only: writes mcp.json + copies skills
 │   ├── dsh-plugin-setup.py        ← DSH only: installs the bundle + writes the path (--from-npm optional)
-│   ├── agy-setup.py               ← Antigravity only: writes MCP config + skills list
+│   ├── agy-setup.py               ← Antigravity only: writes MCP config + skills list (+hooks)
 │   ├── verify.ps1 / verify.sh     ← Repo baseline check (64 items; +2 when Antigravity is installed)
 │   ├── verify-dsh.py              ← DSH deep check (25 items / 102 points)
 │   ├── pack-plugin.py             ← Builds the npm tarball (prints tgz + sha256; never publishes)
@@ -398,8 +398,13 @@ never deletes MCP entries you already have:
 
 ```bash
 python setup/agy-setup.py                    # seep + js-reverse + 10 skills
+python setup/agy-setup.py --with-hooks       # also enables the lab gate + audit trail
 python setup/agy-setup.py --with-playwright --with-ida
 ```
+
+agy has lifecycle hooks but no prompt-rewrite hook: `lab：` opens the gate and injects context
+plus the terminology table, but it **cannot rewrite what you typed**. Use Pi or DSH if you need
+actual rewriting.
 
 Line-by-line comparison of the three wirings, where `lab` lives, and how updates differ:
 [MANUAL/AGENTS.md](MANUAL/AGENTS.md).

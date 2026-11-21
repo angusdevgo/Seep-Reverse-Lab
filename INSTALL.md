@@ -205,8 +205,9 @@ Antigravity 是 Google 的 Agent IDE（VS Code 派生）。它认三种定制：
 | **规则**（`AGENTS.md`） | 仓库根，已经有了 | agy 自己会自动向上找到，**零配置** |
 | **技能清单** | `~/.gemini/config/skills.json` | `agy-setup.py` 写 |
 | **MCP 服务** | `~/.gemini/config/mcp_config.json` | `agy-setup.py` 写（优先走 `agy mcp add`）|
+| **钩子**（可选） | `<仓库>/.agents/hooks.json` | `agy-setup.py --with-hooks` 生成 |
 
-**不往仓库里塞任何东西**，也不动 Antigravity 的用户设置和模型配置。
+**不动 Antigravity 的用户设置和模型配置。** 只写上面这三处。
 
 ### 怎么装
 
@@ -229,6 +230,41 @@ python setup/agy-setup.py --force             # 覆盖已存在的同名 server
 
 > **你已有的 MCP 条目不会被删。** 脚本只做「加」，同名条目默认跳过（保住你自己加的参数，
 > 比如 playwright 的扩展 token）。要覆盖才加 `--force`。
+
+### 钩子：lab 闸门怎么补上的
+
+agy 本身没有运行时改写钩子，但它有**生命周期钩子**（`SessionStart` / `PreInvocation` /
+`PostToolUse`），可以往上下文里注入内容。`--with-hooks` 就是把这套接起来：
+
+| 事件 | 脚本 | 干什么 |
+| :--- | :--- | :--- |
+| `SessionStart` | `.agents/hooks/session_start.py` | 开场说明一次：这个仓库有什么、`seep_*` 怎么调、lab 怎么开 |
+| `PreInvocation` | `.agents/hooks/pre_invocation.py` | **lab 闸门**：`lab：` 开、`退出实验` 关；开着就注入审计约定 + 术语对照 |
+| `PostToolUse` | `.agents/hooks/post_tool_use.py` | 审计流水：每次工具调用记一行到 `~/.seep/agy-audit.jsonl` |
+
+**能做和不能做的，说清楚：**
+
+| | agy | pi / DSH |
+| :--- | :--- | :--- |
+| 追加系统消息 | ✅ 可以 | ✅ |
+| **改写你的原话** | ❌ 做不到（契约不支持） | ✅ 可以 |
+| 拦截词表替换 | ⚠️ 只能注入「对照表」让模型理解，不能替换原文 | ✅ 真替换 |
+
+也就是说：agy 这边用户的字还是用户说的，我们只是**补充上下文**。
+想真替换措辞，得用 pi 或 DSH。
+
+**lab 状态存在哪**：`~/.seep/agy-lab.json`，按 `conversationId` 记，天然会话级。
+不用了直接删这个文件。
+
+**审计流水怎么看**：
+
+```bash
+tail -f ~/.seep/agy-audit.jsonl
+```
+
+一行一条：时间、会话、工具名、参数摘要（大字段只存 sha256，不会把整个 APK 写进日志）、成功与否。
+
+**关掉钩子**：删掉 `.agents/hooks.json`，或把里面某一段的 `"enabled"` 设成 `false`。
 
 ### 怎么验
 
@@ -254,6 +290,8 @@ python setup/agy-setup.py      # 仓库路径变了才需要重跑，一般不�
 
 技能和 MCP 都直接指向仓库目录，`git pull` 就生效（新会话可见）。
 Antigravity 没有面板插件，所以**没有一键更新按钮** —— 更新就是 `git pull`。
+
+钩子脚本改了（`.agents/hooks/*.py`）不用重跑 setup，下一次触发就用新版。
 
 ### 它没有的东西
 

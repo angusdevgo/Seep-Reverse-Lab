@@ -236,7 +236,7 @@ Seep\ (881 MB，其中 657 MB 是离线工具链)
 │   ├── install.ps1 / install.sh   ← 总入口（内部按 Agent 分发）
 │   ├── install-pi.ps1             ← Pi 专用：写 mcp.json + 拷技能
 │   ├── dsh-plugin-setup.py        ← DSH 专用：装插件包 + 写路径（--from-npm 可选）
-│   ├── agy-setup.py               ← Antigravity 专用：写 MCP + 技能清单
+│   ├── agy-setup.py               ← Antigravity 专用：写 MCP + 技能清单（+钩子）
 │   ├── verify.ps1 / verify.sh     ← 仓库基准自检（64 项；装了 Antigravity 多查 2 项）
 │   ├── verify-dsh.py              ← DSH 深度自检（25 项 / 102 分）
 │   ├── pack-plugin.py             ← 打 npm 包（只产出 tgz + sha256，绝不发布）
@@ -392,8 +392,12 @@ python setup/dsh-plugin-setup.py
 
 ```bash
 python setup/agy-setup.py                    # seep + js-reverse + 10 个技能
+python setup/agy-setup.py --with-hooks       # 再开 lab 闸门 + 审计流水（推荐）
 python setup/agy-setup.py --with-playwright --with-ida
 ```
+
+agy 有生命周期钩子但没有 prompt 改写钩子：`lab：` 能开闸门、能补上下文与术语对照，
+但**改不了你的原话**。要真替换措辞，用 Pi 或 DSH。
 
 接线差异、lab 在哪、更新怎么做的逐项对照见 [MANUAL/AGENTS.md](MANUAL/AGENTS.md)。
 

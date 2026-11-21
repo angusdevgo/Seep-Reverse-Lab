@@ -331,6 +331,17 @@ if (Test-Path $agyHomeDir) {
             return $false
         } catch { return $false }
     } "运行 python setup/agy-setup.py" "技能清单指向仓库" "$agyHomeDir\skills.json"
+
+    Test-ManualItem "Agent" "Antigravity (agy) 钩子已生成 (lab 闸门 + 审计流水)" {
+        $hooksJson = Join-Path $Root '.agents\hooks.json'
+        $hookLib = Join-Path $Root '.agents\hooks\pre_invocation.py'
+        if (-not (Test-Path $hookLib)) { return $false }
+        if (-not (Test-Path $hooksJson)) { return $false }
+        try {
+            $hj = Get-Content $hooksJson -Raw -Encoding UTF8 | ConvertFrom-Json
+            return ($hj.'seep-lab-gate' -and $hj.'seep-audit-trail')
+        } catch { return $false }
+    } "python setup/agy-setup.py --with-hooks" "钩子已生成" "$Root\.agents\hooks.json"
 }
 
 # -----------------------------------------------------------------------------
