@@ -253,8 +253,49 @@ agy 本身没有运行时改写钩子，但它有**生命周期钩子**（`Sessi
 也就是说：agy 这边用户的字还是用户说的，我们只是**补充上下文**。
 想真替换措辞，得用 pi 或 DSH。
 
+**怎么确认真的生效**（三段，从离线到线上）：
+
+```bash
+# ① 离线自检：钩子脚本本身对不对（不用开 agy）
+python setup/test_agy_hooks.py          # 应看到 Ran 12 tests ... OK
+
+# ② 打开探针，去 agy 里发一句 lab：
+python setup/agy-watch.py
+```
+
+探针跑着的时候，在 Antigravity 里发 `lab：`，终端应立刻出现：
+
+```
+  lab 状态 : 有记录
+      🟢 lab 开  17:21:34  会话 ec33ebf9-0cba-41
+  ✅ 钩子在跑
+```
+
+再让它调一次工具（例如「用 seep_status 看下环境」），审计流水应多一行：
+
+```
+  审计流水 : 1 条
+      2026-11-21T17:21:34+0800  seep_status   ok
+```
+
+```bash
+# ③ 反向验证（证明因果，不是巧合）
+mv .agents/hooks.json .agents/hooks.json.off
+#   → 回 agy 重新发 lab：，探针应该毫无反应
+mv .agents/hooks.json.off .agents/hooks.json
+```
+
+**探针什么都不显示 = 钩子没被调用**，按这三条排查：
+
+| 症状 | 原因 | 处理 |
+| :--- | :--- | :--- |
+| 两个文件都不生成 | agy 的工作区不是这个仓库根 | 用 agy 打开 `<仓库根>`，不是它的子目录 |
+| 同上 | 生成 hooks.json 后没重启 | 完全退出 Antigravity 再开 |
+| `hooks.json` 标 ✗ | 忘了 `--with-hooks` | `python setup/agy-setup.py --with-hooks` |
+| lab 有记录、流水没有 | 模型没调工具（只在聊天） | 明确让它调一个 `seep_*` 工具 |
+
 **lab 状态存在哪**：`~/.seep/agy-lab.json`，按 `conversationId` 记，天然会话级。
-不用了直接删这个文件。
+不用了直接删这个文件（连同 `agy-audit.jsonl` 一起删就是全清）。
 
 **审计流水怎么看**：
 
