@@ -3,8 +3,8 @@
 > **这是全仓库最该先看的一份文档。**
 > 只回答两件事：**你要装什么**、**怎么装**。
 >
-> 装错了会白忙 —— 因为 Pi Agent 和 DeepSeek Harness 是**两套完全不同的框架**，
-> 接线方式、配置文件、甚至 lab 闸门都是各自实现的。
+> 装错了会白忙 —— 因为 Pi Agent、DeepSeek Harness、Antigravity 是**三套不同的框架**，
+> 接线方式、配置文件、甚至连 lab 闸门都各有各的实现。
 
 ---
 
@@ -14,13 +14,15 @@
 | :--- | :--- | :--- |
 | **Pi Agent** | → [路线 A](#路线-a-pi-agent) | 写 `mcp.json` + 拷技能目录 |
 | **DeepSeek Harness（DSH）** | → [路线 B](#路线-b-deepseek-harness) | 装一个插件包 |
-| 不确定 | 继续往下看 [共同前提](#共同前提两个-agent-都需要) | 先把前提装好，再回来选 |
+| **Antigravity（agy）** | → [路线 C](#路线-c-antigravityagy) | 改两个 JSON：MCP + 技能清单 |
+| 不确定 | 继续往下看 [共同前提](#共同前提三个-agent-都需要) | 先把前提装好，再回来选 |
 
-**两个都想装？** 两条路互不干扰，先后顺序随意，但**各自都要做一遍**。
+**装多个？** 三条路互不干扰，先后顺序随意，但**各自都要做一遍**。
+它们共享同一份仓库内容，不重复占空间。
 
 ---
 
-## 共同前提（两个 Agent 都需要）
+## 共同前提（三个 Agent 都需要）
 
 ### 1. 系统与运行时
 
@@ -35,7 +37,7 @@
 Python 那个 `import mcp` 最容易翻车：系统装的是 3.10、或 `python` 指向商店占位别名，
 都会让 MCP 一启动就挂，而现象只是「工具连不上」。**先跑一遍这条命令再往下走。**
 
-### 2. 把仓库拉下来（两个 Agent 都要）
+### 2. 把仓库拉下来（三个 Agent 都要）
 
 ```bash
 git clone https://github.com/angusdevgo/Seep-Reverse-Lab.git seep
@@ -57,7 +59,7 @@ cd Tool/mcp/Tool/safe/js-reverse-mcp && unzip -q node_modules.zip
 cd ../playwright-mcp && unzip -q node_modules.zip
 ```
 
-### 3. 装 Python 依赖（两个 Agent 都要）
+### 3. 装 Python 依赖（三个 Agent 都要）
 
 ```bash
 powershell -File setup/install-python.ps1      # Windows：建 venv 并装 mcp
@@ -191,6 +193,78 @@ dsh plugin update --profile web seep-lab   # 只更新插件（从 npm 装时才
 
 ---
 
+## 路线 C：Antigravity（agy）
+
+Antigravity 是 Google 的 Agent IDE（VS Code 派生）。它认三种定制：**规则 / 技能 / MCP**。
+我们的仓库三种都能喂，只有后两种要写配置。
+
+### 装什么
+
+| 东西 | 落到哪 | 谁负责 |
+| :--- | :--- | :--- |
+| **规则**（`AGENTS.md`） | 仓库根，已经有了 | agy 自己会自动向上找到，**零配置** |
+| **技能清单** | `~/.gemini/config/skills.json` | `agy-setup.py` 写 |
+| **MCP 服务** | `~/.gemini/config/mcp_config.json` | `agy-setup.py` 写（优先走 `agy mcp add`）|
+
+**不往仓库里塞任何东西**，也不动 Antigravity 的用户设置和模型配置。
+
+### 怎么装
+
+```bash
+python setup/agy-setup.py
+```
+
+常用参数：
+
+```bash
+python setup/agy-setup.py --list              # 只报现状，不改文件
+python setup/agy-setup.py --dry-run           # 只说会改什么
+python setup/agy-setup.py --with-playwright   # 额外挂 25 个浏览器工具
+python setup/agy-setup.py --with-ida          # 额外挂 48 个 IDA 工具
+python setup/agy-setup.py --root D:\新位置\seep   # 仓库搬家后重跑
+python setup/agy-setup.py --force             # 覆盖已存在的同名 server
+```
+
+默认挂两个：`seep`（38 个工具）+ `js-reverse`（24 个工具）。
+
+> **你已有的 MCP 条目不会被删。** 脚本只做「加」，同名条目默认跳过（保住你自己加的参数，
+> 比如 playwright 的扩展 token）。要覆盖才加 `--force`。
+
+### 怎么验
+
+```bash
+agy mcp list
+```
+
+应该看到 `seep` 和 `js-reverse` 都是 `enabled`。
+
+然后在 agy 里打开这个仓库，随便点一个文件 —— `AGENTS.md` 会自动进上下文；
+再让它「用 `seep_auto_triage` 看一眼这个 apk」，能调起来就通了。
+
+### 装完必须做
+
+**重启 Antigravity**（或新建一个会话）。配置是启动时读的。
+
+### 怎么更新
+
+```bash
+cd seep && git pull
+python setup/agy-setup.py      # 仓库路径变了才需要重跑，一般不用
+```
+
+技能和 MCP 都直接指向仓库目录，`git pull` 就生效（新会话可见）。
+Antigravity 没有面板插件，所以**没有一键更新按钮** —— 更新就是 `git pull`。
+
+### 它没有的东西
+
+| 能力 | Pi | DSH | agy |
+| :--- | :--- | :--- | :--- |
+| `lab：` 闸门按钮 | 输入 `lab：` | 输入框右侧 `Lab` 按钮 | 输入 `lab：`（规则层生效） |
+| 面板一键更新 | `update.ps1` | 面板按钮 | 无，`git pull` |
+| 敏感词改写 | 扩展拦截 | 插件拦截 | 无（不影响工具使用） |
+
+---
+
 ## 一次装全部（图省事）
 
 ```bash
@@ -198,7 +272,10 @@ powershell -File setup/install.ps1
 ```
 
 这一条会依次做：解压依赖 → 检测环境 → 装 Python 依赖 → 配 Pi → 生成各家配置 →
-装 DSH 插件 → 可选能力包 → 跑 `verify.ps1` → 跑 `verify-dsh.py`。
+装 DSH 插件（装了 DSH 才有）→ 接 Antigravity（装了 agy 才有）→ 可选能力包 →
+跑 `verify.ps1` → 跑 `verify-dsh.py`。
+
+**没装的框架会自动跳过**，不会报错。
 
 **适合「我全都要」，不适合「只想装一个」** —— 只想装 DSH 就别用这条，
 用路线 B 的两条命令更干净。
@@ -219,6 +296,7 @@ lab：
 退出：`退出实验`。
 
 DSH 还可以直接点面板上的 Lab 开关，效果一样。
+Antigravity 没有按钮，同样在输入框里打 `lab：`。
 
 ---
 
@@ -237,15 +315,17 @@ DSH 还可以直接点面板上的 Lab 开关，效果一样。
 
 ---
 
-## 两者到底差在哪（防止装混）
+## 三家到底差在哪（防止装混）
 
-| | Pi | DSH |
-| :--- | :--- | :--- |
-| 技能 | **拷贝**到 `~/.pi/agent/skills` | 插件**直接指向**仓库目录 |
-| `git pull` 后 | 要重跑 `install-pi.ps1` | 技能直接生效，MCP 要重启 |
-| lab 闸门 | TS 扩展 | 插件里的 JS |
-| 设置面板 | 没有 | 有（设置 → Seep Lab） |
-| 校验命令 | `verify.ps1` | `verify-dsh.py` |
+| | Pi | DSH | Antigravity（agy） |
+| :--- | :--- | :--- | :--- |
+| 技能 | **拷贝**到 `~/.pi/agent/skills` | 插件**直接指向**仓库目录 | `skills.json` **指向**仓库目录 |
+| MCP 写在 | `~/.pi/agent/mcp.json` | 插件运行时挂载 | `~/.gemini/config/mcp_config.json` |
+| 指令入口 | `~/.pi/agent/seep-system.md` | 插件注入 | 仓库根 `AGENTS.md`（自动） |
+| `git pull` 后 | 要重跑 `install-pi.ps1` | 技能直接生效，MCP 要重启 | 技能直接生效，MCP 要重启 |
+| lab 闸门 | TS 扩展 | 插件里的 JS | 无拦截（规则层生效） |
+| 设置面板 | 没有 | 有（设置 → Seep Lab） | 没有 |
+| 校验命令 | `verify.ps1` | `verify-dsh.py` | `agy-setup.py --list` |
 
 更细的对照见 [MANUAL/AGENTS.md](MANUAL/AGENTS.md)。
 

@@ -249,6 +249,30 @@ if (-not $SkipTools) {
     # IDA 缺失不算失败（有免费 Radare2 替代路线）
 }
 
+# Antigravity 装了才接（它自带 ~/.gemini/config 目录才算装了）
+$agyHome = if ($env:SEEP_AGY_CONFIG) { $env:SEEP_AGY_CONFIG } else { Join-Path $env:USERPROFILE '.gemini\config' }
+if (Test-Path $agyHome) {
+    Write-Step '接入 Antigravity (agy)'
+    $agyScript = Join-Path $ScriptDir 'agy-setup.py'
+    if (Test-Path $agyScript) {
+        $agyPy = if ($env:SEEP_PYTHON) { $env:SEEP_PYTHON } else { $script:VerifyPython }
+        if (-not $agyPy) { $agyPy = 'python' }
+        try {
+            & $agyPy $agyScript --root (Split-Path $ScriptDir -Parent) 2>&1 |
+                ForEach-Object { Write-Host "    $_" -ForegroundColor DarkGray }
+        }
+        catch {
+            Write-Warn "Antigravity 接入异常：$($_.Exception.Message)（不影响其它 Agent）"
+        }
+    }
+    else {
+        Write-Warn '未找到 setupgy-setup.py，跳过 Antigravity 接入'
+    }
+}
+else {
+    Write-Info "未检测到 Antigravity（$agyHome），跳过"
+}
+
 Write-Step '执行官方基准完备性自检 (verify.ps1 -Detailed)'
 & (Join-Path $ScriptDir 'verify.ps1') -Detailed
 

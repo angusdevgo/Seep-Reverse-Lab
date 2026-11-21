@@ -12,9 +12,19 @@
 
 ## [Unreleased]
 
+### 新增
+
+- **Antigravity（agy）接入**：`python setup/agy-setup.py` 一条命令写两个 JSON ——
+  `~/.gemini/config/mcp_config.json`（MCP）与 `~/.gemini/config/skills.json`（技能清单）。
+  规则层零配置：仓库根 `AGENTS.md` 会被 agy 自动向上找到。
+  默认挂 `seep`（38 工具）+ `js-reverse`（24 工具），`--with-playwright` / `--with-ida` 可加挂。
+  **不覆盖你已有的 MCP 条目**（同名默认跳过，`--force` 才覆盖），改前自动 `.bak` 备份。
+- `verify.ps1` 增加两条 agy 提示项（装了 Antigravity 才查）：MCP 是否指向本仓库、
+  `skills.json` 是否指向 `Tool/skill`。所以满分会变成 66（64 基础 + 2 项 agy）。
+
 ### 变更
 
-- **只支持两个 Agent：Pi Agent 与 DeepSeek Harness。** 移除 Claude Code / OpenCode / Codex 的
+- **Agent 支持面收敛为 Pi Agent / DeepSeek Harness（后又新增 Antigravity，见上方新增段）。** 移除 Claude Code / OpenCode / Codex 的
   支持面：`generate-configs` 不再生成 `.mcp.json` 与 `opencode.jsonc`，只产出
   `setup/cordis.generated.yml` 与项目根 `AGENTS.md`；仓库里删掉 `CLAUDE.md` 与两个模板文件。
 - `verify.ps1` / `verify.sh` 去掉 Claude Code 与 `.mcp.json` 两项检查（66 → 64 项）。

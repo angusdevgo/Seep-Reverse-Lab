@@ -236,7 +236,8 @@ Seep\ (881 MB, of which 657 MB is the offline toolchain)
 │   ├── install.ps1 / install.sh   ← One entry point (dispatches per agent)
 │   ├── install-pi.ps1             ← Pi only: writes mcp.json + copies skills
 │   ├── dsh-plugin-setup.py        ← DSH only: installs the bundle + writes the path (--from-npm optional)
-│   ├── verify.ps1 / verify.sh     ← Repo baseline check (64 items)
+│   ├── agy-setup.py               ← Antigravity only: writes MCP config + skills list
+│   ├── verify.ps1 / verify.sh     ← Repo baseline check (64 items; +2 when Antigravity is installed)
 │   ├── verify-dsh.py              ← DSH deep check (25 items / 102 points)
 │   ├── pack-plugin.py             ← Builds the npm tarball (prints tgz + sha256; never publishes)
 │   ├── update.ps1 / update.sh     ← Idempotent update
@@ -367,14 +368,15 @@ powershell -File setup\install-capabilities.ps1 -CheckOnly  # report only, no di
 > See [CROSS-PLATFORM.md](MANUAL/CROSS-PLATFORM.md).
 > See [MANUAL/DEPLOYMENT.md — external capability packages](MANUAL/DEPLOYMENT.md#5-外部能力包为什么需要单独一步).
 
-### 3. Two Agents, Two Wirings
+### 3. Three Agents, Three Wirings
 
-This workbench supports and verifies exactly two agents. **There is one copy of the content; the wiring is per-agent.**
+This workbench supports three agents. **There is one copy of the content; the wiring is per-agent.**
 
 | Agent | Instruction entry | What gets wired | Install |
 |---|---|---|---|
 | **Pi Agent** | `Tool/prompts/SYSTEM.md` → `~/.pi/agent/seep-system.md` | `~/.pi/agent/mcp.json` + **copied** skills | `powershell -File setup/install-pi.ps1` |
 | **DeepSeek Harness** | project-root `AGENTS.md` (generated) | **bundle** `seep-lab` | `python setup/dsh-plugin-setup.py` |
+| **Antigravity (agy)** | project-root `AGENTS.md` (auto-loaded) | `mcp_config.json` + `skills.json` under `~/.gemini/config/` | `python setup/agy-setup.py` |
 
 **The DSH bundle is published on npm.** Two ways to install it:
 
@@ -390,7 +392,16 @@ python setup/dsh-plugin-setup.py
 > package (the package is only 45 KB of wiring). `--from-npm` also accepts `--with-playwright`
 > (+25 browser tools) and `--with-ida` (+48 IDA tools).
 
-Line-by-line comparison of the two wirings, where `lab` lives, and how updates differ:
+**Antigravity** honours all three customization kinds: rules (repo-root `AGENTS.md`, zero config),
+skills (`skills.json` pointing at `Tool/skill`), and MCP (`mcp_config.json`). One command, and it
+never deletes MCP entries you already have:
+
+```bash
+python setup/agy-setup.py                    # seep + js-reverse + 10 skills
+python setup/agy-setup.py --with-playwright --with-ida
+```
+
+Line-by-line comparison of the three wirings, where `lab` lives, and how updates differ:
 [MANUAL/AGENTS.md](MANUAL/AGENTS.md).
 
 > 📖 **Troubleshooting**: `No module named mcp`, execution-policy restrictions, missing Java, and more —
