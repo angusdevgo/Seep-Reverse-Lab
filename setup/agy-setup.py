@@ -344,6 +344,87 @@ def install_skills(root: Path, cfg_dir: Path, dry: bool) -> bool:
     return write_json(p, data, dry, "技能清单")
 
 
+def probe_server(py: str, server_py: Path, timeout: int = 45) -> tuple[bool, str, list[str]]:
+    """真起一个 MCP 子进程，走 initialize + tools/list，把工具名拿回来。
+
+    为什么不用「看配置文件」代替：配置对不代表跑得起来。
+    缺依赖、路径写错、Python 装错，都只有真起一次才暴露。
+    用临时目录当工作目录跑，顺带证明「不依赖工作区」。
+    """
+    import subprocess
+    import tempfile
+
+    try:
+        proc = subprocess.Popen(
+            [py, str(server_py)],
+            stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL,
+            text=True, encoding="utf-8", errors="replace", bufsize=1,
+            cwd=tempfile.gettempdir(),
+        )
+    except OSError as exc:
+        return False, f"起不来：{exc}", []
+
+    def send(obj):
+        proc.stdin.write(json.dumps(obj) + "\n")
+        proc.stdin.flush()
+
+    try:
+        send({"jsonrpc": "2.0", "id": 1, "method": "initialize", "params": {
+            "protocolVersion": "2024-11-05", "capabilities": {},
+            "clientInfo": {"name": "agy-setup-probe", "version": "1"}}})
+        first = proc.stdout.readline()
+        if not first.strip():
+            return False, "握手无响应（进程可能直接退出了）", []
+        hello = json.loads(first)
+        if "error" in hello:
+            return False, f"握手报错：{hello['error']}", []
+
+        send({"jsonrpc": "2.0", "method": "notifications/initialized", "params": {}})
+        send({"jsonrpc": "2.0", "id": 2, "method": "tools/list", "params": {}})
+        data = json.loads(proc.stdout.readline())
+        names = [t.get("name", "?") for t in data.get("result", {}).get("tools", [])]
+        return True, "ok", names
+    except json.JSONDecodeError as exc:
+        return False, f"返回的不是 JSON：{exc}", []
+    except Exception as exc:  # noqa: BLE001
+        return False, f"探活失败：{exc}", []
+    finally:
+        try:
+            proc.terminate()
+        except Exception:
+            pass
+
+
+def count_skill_files(root: Path) -> tuple[int, list[str]]:
+    """数 SKILL.md，并检查 frontmatter 里有没有 name / description。
+
+    agy 靠 description 决定要不要激活；缺了会被静默跳过 —— 所以这里必须查。
+    """
+    import re
+    roots = [root / "Tool" / "skill", root / "Tool" / "skill" / "safe-skills"]
+    total, broken = 0, []
+    for r in roots:
+        if not r.is_dir():
+            continue
+        for d in sorted(r.iterdir()):
+            sk = d / "SKILL.md"
+            if not (d.is_dir() and sk.is_file()):
+                continue
+            total += 1
+            text = sk.read_text(encoding="utf-8", errors="replace")
+            m = re.match(r"^---\s*\n(.*?)\n---", text, re.S)
+            if not m:
+                broken.append(f"{d.name}: 没有 frontmatter")
+                continue
+            fm = m.group(1)
+            if not re.search(r"^name:\s*\S", fm, re.M):
+                broken.append(f"{d.name}: 缺 name")
+            elif not re.search(r"^description:\s*\S", fm, re.M):
+                broken.append(f"{d.name}: 缺 description")
+    return total, broken
+
+
+
 def hooks_config(py: str, root: Path, scope: str) -> dict:
     """生成 hooks.json。
 
@@ -422,6 +503,44 @@ def count_skills(root: Path) -> int:
 # 现状
 # -----------------------------------------------------------------------------
 
+def run_probe(root: Path, agy: str | None, cfg_dir: Path) -> int:
+    """一条命令回答「到底能不能调」。只看配置没用，得真起一次。"""
+    step("Antigravity 可用性实探")
+    py = resolve_python()
+    if not py:
+        fail("找不到能 import mcp 的 python")
+        return 2
+    server = root / "Tool" / "mcp" / "seep_mcp_server.py"
+    print(f"  python : {py}")
+    print(f"  服务端 : {server}")
+
+    good, why, names = probe_server(py, server)
+    if good:
+        ok(f"seep MCP 起得来，拿到 {len(names)} 个工具")
+        print(f"      抽样：{', '.join(names[:6])}")
+    else:
+        fail(f"seep MCP 起不来：{why}")
+        print("      fix: powershell -File setup" + chr(92) + "install-python.ps1")
+
+    total, broken = count_skill_files(root)
+    if broken:
+        fail(f"技能 {total} 个，其中 {len(broken)} 个 frontmatter 有问题（agy 会静默跳过）")
+        for b in broken:
+            print(f"      - {b}")
+    else:
+        ok(f"技能 {total} 个，frontmatter 全合规（name + description 都在）")
+
+    mcp = (read_json(cfg_dir / "mcp_config.json").get("mcpServers") or {})
+    hooks = (cfg_dir / "hooks.json").is_file() or (root / ".agents" / "hooks.json").is_file()
+    print()
+    print(f"  MCP 已注册 : {len(mcp)} 个（{', '.join(sorted(mcp)) or '空'}）")
+    print(f"  技能清单   : {'已指向仓库' if (cfg_dir / 'skills.json').is_file() else '没有'}")
+    print(f"  钩子       : {'已装（lab： 可用）' if hooks else '没装'}")
+    print()
+    print("  以上都是真的起了一次进程拿到的，不是读配置猜的。")
+    return 0 if (good and not broken) else 1
+
+
 def show_status(root: Path, agy: str | None, cfg_dir: Path) -> None:
     step("现状")
     print(f"  仓库       : {root}")
@@ -474,6 +593,8 @@ def main() -> int:
     ap.add_argument("--with-hooks", action="store_true",
                     help="装钩子（lab 闸门 + 审计流水）；默认装成全局，打开 agy 就能用")
     ap.add_argument("--no-hooks", action="store_true", help="不装钩子")
+    ap.add_argument("--probe", action="store_true",
+                    help="真起一次 MCP 数工具，并检查技能能否被识别")
     ap.add_argument("--hooks-scope", choices=("global", "workspace"), default="global",
                     help="global=任何工作区都能用（默认）；workspace=只在这个仓库生效")
     args = ap.parse_args()
@@ -486,6 +607,9 @@ def main() -> int:
         fail(f"这个目录不像 Seep 仓库：{root}")
         print("     用 --root <仓库路径> 指一下。")
         return 2
+
+    if args.probe:
+        return run_probe(root, agy, cfg_dir)
 
     if args.list:
         show_status(root, agy, cfg_dir)

@@ -272,7 +272,24 @@ agy 本身没有运行时改写钩子，但它有**生命周期钩子**（`Sessi
 也就是说：agy 这边用户的字还是用户说的，我们只是**补充上下文**。
 想真替换措辞，得用 pi 或 DSH。
 
-**怎么确认真的生效**（三段，从离线到线上）：
+**一条命令回答「到底能不能调」：**
+
+```bash
+python setup/agy-setup.py --probe
+```
+
+它不看配置，**真起一次 MCP 进程**走完握手数工具，再逐个检查 10 个技能的
+frontmatter（agy 靠 `description` 决定要不要激活，缺了会被静默跳过）。期望：
+
+```
+  [ok] seep MCP 起得来，拿到 38 个工具
+  [ok] 技能 10 个，frontmatter 全合规（name + description 都在）
+  MCP 已注册 : 4 个（ida, js-reverse, playwright, seep）
+  技能清单   : 已指向仓库
+  钩子       : 已装（lab： 可用）
+```
+
+**怎么确认钩子真的生效**（三段，从离线到线上）：
 
 ```bash
 # ① 离线自检：钩子脚本本身对不对（不用开 agy）
