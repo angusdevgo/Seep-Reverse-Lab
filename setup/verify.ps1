@@ -303,54 +303,6 @@ if (Test-Path $dshHomeDir) {
     } "运行 python setup/dsh-plugin-setup.py（推荐）；旧路线 python setup/dsh-merge.py" "插件包已装入 profile" "$dshHomeDir\profiles\web\package.json"
 }
 
-# Antigravity (agy)：有装才看，没装不算问题
-$agyHomeDir = if ($env:SEEP_AGY_CONFIG) { $env:SEEP_AGY_CONFIG } else { Join-Path $env:USERPROFILE '.gemini\config' }
-if (Test-Path $agyHomeDir) {
-    Test-ManualItem "Agent" "Antigravity (agy) 已接入 seep MCP" {
-        $mcpFile = Join-Path $agyHomeDir 'mcp_config.json'
-        if (-not (Test-Path $mcpFile)) { return $false }
-        try {
-            $mc = Get-Content $mcpFile -Raw -Encoding UTF8 | ConvertFrom-Json
-            $servers = $mc.mcpServers
-            if (-not $servers) { return $false }
-            # 名字叫 seep，且指向本仓库的服务端才算接对
-            if (-not $servers.seep) { return $false }
-            $args = @($servers.seep.args)
-            return ($args -join ' ') -match 'seep_mcp_server\.py'
-        } catch { return $false }
-    } "运行 python setup/agy-setup.py（推荐，会一并写技能清单）" "agy 已挂 seep" "$agyHomeDir\mcp_config.json"
-
-    Test-ManualItem "Agent" "Antigravity (agy) 已列技能清单" {
-        $skillFile = Join-Path $agyHomeDir 'skills.json'
-        if (-not (Test-Path $skillFile)) { return $false }
-        try {
-            $sj = Get-Content $skillFile -Raw -Encoding UTF8 | ConvertFrom-Json
-            foreach ($e in @($sj.entries)) {
-                if ($e.path -and ($e.path -replace '\\', '/') -match 'Tool/skill') { return $true }
-            }
-            return $false
-        } catch { return $false }
-    } "运行 python setup/agy-setup.py" "技能清单指向仓库" "$agyHomeDir\skills.json"
-
-    Test-ManualItem "Agent" "Antigravity (agy) 钩子已装 (lab 闸门 + 审计流水)" {
-        # 两种装法都认：全局（~/.gemini/config/hooks.json）或仓库内（.agents/hooks.json）
-        $hookLib = Join-Path $Root '.agents\hooks\pre_invocation.py'
-        if (-not (Test-Path $hookLib)) { return $false }
-        $candidates = @(
-            (Join-Path $agyHomeDir 'hooks.json'),
-            (Join-Path $Root '.agents\hooks.json')
-        )
-        foreach ($hooksJson in $candidates) {
-            if (-not (Test-Path $hooksJson)) { continue }
-            try {
-                $hj = Get-Content $hooksJson -Raw -Encoding UTF8 | ConvertFrom-Json
-                if ($hj.'seep-lab-gate' -and $hj.'seep-audit-trail') { return $true }
-            } catch { }
-        }
-        return $false
-    } "python setup/agy-setup.py --with-hooks（默认装全局）" "钩子已装" "$agyHomeDir\hooks.json"
-}
-
 # -----------------------------------------------------------------------------
 # 4. 技能系统完备性 (Skills System)
 # -----------------------------------------------------------------------------

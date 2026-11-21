@@ -64,7 +64,7 @@
 | 🧠 **大模型缺乏决断逻辑** | `softseep` 总控：两级自动判型（平台 × 9 类业务）+ 七道门决策树 |
 | 🛡️ **云端模型频繁拒绝** | 三层保险：底座级 `BLOCK_NONE` 注入 + 动态口语合规转译 + 推理级思维重定向 |
 | 📚 **实战经验无法沉淀** | 294 篇战术实战笔记 + 14 大脱敏工业范式 + "先查知识库再动手"强制纪律 |
-| 📦 **环境部署摩擦高昂** | 一键 `install.ps1`，三个 Agent 各自一条路：Pi Agent / DeepSeek Harness / Antigravity |
+| 📦 **环境部署摩擦高昂** | 一键 `install.ps1`，两个 Agent 各自一条路：Pi Agent / DeepSeek Harness |
 
 ---
 
@@ -236,8 +236,7 @@ Seep\ (881 MB，其中 657 MB 是离线工具链)
 │   ├── install.ps1 / install.sh   ← 总入口（内部按 Agent 分发）
 │   ├── install-pi.ps1             ← Pi 专用：写 mcp.json + 拷技能
 │   ├── dsh-plugin-setup.py        ← DSH 专用：装插件包 + 写路径（--from-npm 可选）
-│   ├── agy-setup.py               ← Antigravity 专用：写 MCP + 技能清单（+钩子）
-│   ├── verify.ps1 / verify.sh     ← 仓库基准自检（64 项；装了 Antigravity 多查 2 项）
+│   ├── verify.ps1 / verify.sh     ← 仓库基准自检（64 项）
 │   ├── verify-dsh.py              ← DSH 深度自检（25 项 / 102 分）
 │   ├── pack-plugin.py             ← 打 npm 包（只产出 tgz + sha256，绝不发布）
 │   ├── update.ps1 / update.sh     ← 幂等更新
@@ -364,15 +363,14 @@ powershell -File setup\install-capabilities.ps1 -CheckOnly  # 只看现状
 > Unix 需先装 PowerShell 7。详见 [CROSS-PLATFORM.md](MANUAL/CROSS-PLATFORM.md)。
 > 详见 [MANUAL/DEPLOYMENT.md — 外部能力包](MANUAL/DEPLOYMENT.md#5-外部能力包为什么需要单独一步)。
 
-### 3. 三个 Agent，三套接线
+### 3. 两个 Agent，两条接线
 
-本工作台支持三个 Agent。**内容只有一份，接线各管各的。**
+本工作台只支持并验证两个 Agent。**内容只有一份，接线各管各的。**
 
 | Agent | 指令入口 | 接线物 | 装法 |
 |---|---|---|---|
 | **Pi Agent** | `Tool/prompts/SYSTEM.md` → `~/.pi/agent/seep-system.md` | `~/.pi/agent/mcp.json` + 技能**副本** | `powershell -File setup/install-pi.ps1` |
 | **DeepSeek Harness** | 项目根 `AGENTS.md`（自动生成） | **插件包** `seep-lab` | `python setup/dsh-plugin-setup.py` |
-| **Antigravity（agy）** | 项目根 `AGENTS.md`（agy 自动加载） | `~/.gemini/config/` 下 `mcp_config.json` + `skills.json` | `python setup/agy-setup.py` |
 
 **DSH 插件已发布到 npm**，装的时候有两种选法：
 
@@ -386,18 +384,6 @@ python setup/dsh-plugin-setup.py
 
 > 两者都要先 clone 仓库 —— 561 MB 的工具本体在仓库里，不进 npm 包（包只有 45 KB 接线代码）。
 > `--from-npm` 额外支持 `--with-playwright`（多 25 个浏览器工具）、`--with-ida`（多 48 个 IDA 工具）。
-
-**Antigravity** 三样都认：规则（仓库根 `AGENTS.md`，零配置）、技能（`skills.json` 指向
-`Tool/skill`）、MCP（`mcp_config.json`）。一条命令搞定，不动你已有的 MCP 条目：
-
-```bash
-python setup/agy-setup.py                    # seep + js-reverse + 10 个技能
-python setup/agy-setup.py --with-hooks       # 再开 lab 闸门 + 审计流水（装成全局，任何工作区可用）
-python setup/agy-setup.py --with-playwright --with-ida
-```
-
-agy 有生命周期钩子但没有 prompt 改写钩子：`lab：` 能开闸门、能补上下文与术语对照，
-但**改不了你的原话**。要真替换措辞，用 Pi 或 DSH。
 
 接线差异、lab 在哪、更新怎么做的逐项对照见 [MANUAL/AGENTS.md](MANUAL/AGENTS.md)。
 

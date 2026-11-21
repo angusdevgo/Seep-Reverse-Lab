@@ -3,7 +3,7 @@
 > 只想装一个 Agent？看根目录 [INSTALL.md](../INSTALL.md)；这份讲的是完整部署与细节。
 
 > 本手册是 **Seep Reverse Lab** 的咨询级部署标准规范。
-> 本工作台支持三个 Agent：**Pi Agent**、**DeepSeek Harness (DSH)** 与 **Antigravity (agy)**。
+> 本工作台只支持两个 Agent：**Pi Agent** 与 **DeepSeek Harness (DSH)**。
 > 无论跑在 **Windows**、**Linux** 还是 **macOS**，按本手册都能完成完整部署。
 >
 > 只想装一个 Agent、想先看最短路径：根目录 [INSTALL.md](../INSTALL.md)。
@@ -52,7 +52,7 @@ chmod +x setup/install.sh
 
 ---
 
-## 三、 三个 Agent 的接入 SOP
+## 三、 两个 Agent 的接入 SOP
 
 ### 1. 🟣 Pi Agent 专属接入流程
 
@@ -136,47 +136,6 @@ DSH 通过 `@deepseek-ai/dsh-mcp-client` 桥接外部 MCP，配置以 **Cordis O
 > - 旧路线：`python setup/dsh-merge.py --remove`（只移除标注块，其余配置不动）
 
 详见 [DSH-PROFILE.md](../DSH-PROFILE.md)。
-
-### 3. 🔴 Antigravity (agy) 专属接入流程
-
-Antigravity 是 Google 的 Agent IDE（VS Code 派生），它认**规则 / 技能 / MCP** 三种定制，
-恰好对应我们要给的三样东西。
-
-**一条命令：**
-
-```bash
-python setup/agy-setup.py
-```
-
-它做三件事：
-
-| 层 | 动作 |
-| :--- | :--- |
-| 规则 | 什么都不做 —— 仓库根已有 `AGENTS.md`，agy 打开仓库会自动向上找到 |
-| 技能 | 写 `~/.gemini/config/skills.json`，`entries` 指向 `Tool/skill` 与 `Tool/skill/safe-skills` |
-| MCP | 有 `agy` 命令时走 `agy mcp add`，否则直接合并 `~/.gemini/config/mcp_config.json` |
-
-**常用参数：**
-
-```bash
-python setup/agy-setup.py --list              # 只报现状
-python setup/agy-setup.py --dry-run           # 只说会改什么
-python setup/agy-setup.py --with-playwright   # 多挂 25 个浏览器工具
-python setup/agy-setup.py --with-ida          # 多挂 48 个 IDA 工具
-python setup/agy-setup.py --force             # 覆盖同名 server
-```
-
-> **不会覆盖你已有的 MCP 条目。** 同名 server 默认跳过（保住你自己加的参数），
-> 要覆盖才加 `--force`。原文件在第一次修改时备份为 `.bak`。
-
-**装完重启 Antigravity**（配置是启动时读的）。
-
-**卸载：**
-
-```bash
-agy mcp remove seep js-reverse        # 逐个删
-python -c "import json,os;p=os.path.expanduser('~/.gemini/config/skills.json');d=json.load(open(p));d['entries']=[e for e in d['entries'] if 'Tool/skill' not in str(e.get('path',''))];json.dump(d,open(p,'w'),indent=2)"
-```
 
 ---
 

@@ -12,37 +12,9 @@
 
 ## [Unreleased]
 
-### 新增
-
-- **Antigravity（agy）接入**：`python setup/agy-setup.py` 一条命令写两个 JSON ——
-  `~/.gemini/config/mcp_config.json`（MCP）与 `~/.gemini/config/skills.json`（技能清单）。
-  规则层零配置：仓库根 `AGENTS.md` 会被 agy 自动向上找到。
-  默认挂 `seep`（38 工具）+ `js-reverse`（24 工具），`--with-playwright` / `--with-ida` 可加挂。
-  **不覆盖你已有的 MCP 条目**（同名默认跳过，`--force` 才覆盖），改前自动 `.bak` 备份。
-- **agy 生命周期钩子**（`--with-hooks`）：`.agents/hooks/` 三个脚本 +
-  `.agents/hooks.json`（生成物，含本机 python 路径，已 gitignore）。
-  - `SessionStart` —— 开场说明一次（仓库有什么、`seep_*` 怎么调、lab 怎么开）
-  - `PreInvocation` —— lab 闸门：`lab：` 开、`退出实验` 关，按 `conversationId` 记会话级状态；
-    开着就注入审计协作约定 + 术语对照 + 授权范围
-  - `PostToolUse` —— 审计流水写 `~/.seep/agy-audit.jsonl`（大字段只存 sha256）
-  - 能力边界写清楚了：能追加系统消息，**改不了用户原话**，所以词表只做对照不做替换；
-    也没用 `PreToolUse`（返回 allow 等于替用户点「永远允许」）
-- `Tool/prompts/agy/scope.md` —— 授权范围模板，用户自己填，lab 模式下原样贴进上下文。
-- **钩子改为默认装全局**（`~/.gemini/config/hooks.json`）：打开 agy 就能用，不要求工作区是
-  这个仓库。钩子会判断当前工作区 —— 在别的项目里只说一句「Seep 工具可用」，`lab：` 仍能开
-  （但不贴本仓库工单），lab 关着就不写审计流水。想只在本仓库生效用 `--hooks-scope workspace`。
-- `setup/test_agy_hooks.py` —— 19 项钩子契约测试（开关机、会话隔离、工作区感知、审计、畸形输入）。
-- `setup/agy-watch.py` —— 活体探针：边盯 `agy-lab.json` / `agy-audit.jsonl`，边去 agy 里操作。
-- `setup/agy-setup.py --probe` —— 一条命令实探：真起 MCP 数工具（38 个）、逐个查 10 个技能的
-  frontmatter（agy 靠 `description` 激活，缺了会被静默跳过）。
-- **agy 注入完整人格**：第一次开 lab 时把 `Tool/prompts/SYSTEM.md`（18 KB，与 pi 同一份）
-  整份灌进会话，之后每轮只给短提醒。`SEEP_AGY_PERSONA=summary` 可退回摘要模式。
-- `verify.ps1` 增加三条 agy 提示项（装了 Antigravity 才查）：MCP 指向本仓库、
-  `skills.json` 指向 `Tool/skill`、钩子已生成。所以满分会变成 67（64 基础 + 3 项 agy）。
-
 ### 变更
 
-- **Agent 支持面收敛为 Pi Agent / DeepSeek Harness（后又新增 Antigravity，见上方新增段）。** 移除 Claude Code / OpenCode / Codex 的
+- **只支持两个 Agent：Pi Agent 与 DeepSeek Harness。** 移除 Claude Code / OpenCode / Codex 的
   支持面：`generate-configs` 不再生成 `.mcp.json` 与 `opencode.jsonc`，只产出
   `setup/cordis.generated.yml` 与项目根 `AGENTS.md`；仓库里删掉 `CLAUDE.md` 与两个模板文件。
 - `verify.ps1` / `verify.sh` 去掉 Claude Code 与 `.mcp.json` 两项检查（66 → 64 项）。
