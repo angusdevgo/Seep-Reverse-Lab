@@ -33,6 +33,10 @@
   （但不贴本仓库工单），lab 关着就不写审计流水。想只在本仓库生效用 `--hooks-scope workspace`。
 - `setup/test_agy_hooks.py` —— 19 项钩子契约测试（开关机、会话隔离、工作区感知、审计、畸形输入）。
 - `setup/agy-watch.py` —— 活体探针：边盯 `agy-lab.json` / `agy-audit.jsonl`，边去 agy 里操作。
+- `setup/agy-setup.py --probe` —— 一条命令实探：真起 MCP 数工具（38 个）、逐个查 10 个技能的
+  frontmatter（agy 靠 `description` 激活，缺了会被静默跳过）。
+- **agy 注入完整人格**：第一次开 lab 时把 `Tool/prompts/SYSTEM.md`（18 KB，与 pi 同一份）
+  整份灌进会话，之后每轮只给短提醒。`SEEP_AGY_PERSONA=summary` 可退回摘要模式。
 - `verify.ps1` 增加三条 agy 提示项（装了 Antigravity 才查）：MCP 指向本仓库、
   `skills.json` 指向 `Tool/skill`、钩子已生成。所以满分会变成 67（64 基础 + 3 项 agy）。
 

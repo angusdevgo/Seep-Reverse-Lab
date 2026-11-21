@@ -26,6 +26,7 @@ STATE_DIR = Path(os.path.expanduser(os.environ.get("SEEP_AGENT_STATE", "~/.seep"
 LAB_STATE = STATE_DIR / "agy-lab.json"
 AUDIT_LOG = STATE_DIR / "agy-audit.jsonl"
 SCOPE_FILE = REPO / "Tool" / "prompts" / "agy" / "scope.md"
+PERSONA_FILE = REPO / "Tool" / "prompts" / "SYSTEM.md"   # 完整人格/纪律正文（pi 里也是这份）
 RULES_FILE = REPO / "Tool" / "scripts" / "compliance-relay" / "sensitive-rules.json"
 
 MAX_STATE = 200  # 状态文件里最多留多少个会话，防止无限增长
@@ -203,6 +204,24 @@ def load_rules() -> list[tuple[str, str]]:
     except Exception as exc:
         log(f"术语表读不到：{exc}")
         return []
+
+
+def load_persona() -> str:
+    """完整人格/纪律正文。和 pi 注入的是同一份文件，避免三边各写一套。
+
+    模式由 SEEP_AGY_PERSONA 控制：
+      full（默认）—— 第一次开 lab 时把整份注入一次，之后只给短提醒
+      summary     —— 只注入短摘要（省 token，但人格不完整）
+    """
+    mode = (os.environ.get("SEEP_AGY_PERSONA") or "full").strip().lower()
+    if mode == "summary":
+        return ""
+    try:
+        if PERSONA_FILE.is_file():
+            return PERSONA_FILE.read_text(encoding="utf-8").strip()
+    except Exception as exc:
+        log(f"人格文件读不到：{exc}")
+    return ""
 
 
 def load_scope() -> str:

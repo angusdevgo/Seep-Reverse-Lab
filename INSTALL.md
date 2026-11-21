@@ -258,8 +258,22 @@ agy 本身没有运行时改写钩子，但它有**生命周期钩子**（`Sessi
 | 事件 | 脚本 | 干什么 |
 | :--- | :--- | :--- |
 | `SessionStart` | `.agents/hooks/session_start.py` | 开场说明一次：这个仓库有什么、`seep_*` 怎么调、lab 怎么开 |
-| `PreInvocation` | `.agents/hooks/pre_invocation.py` | **lab 闸门**：`lab：` 开、`退出实验` 关；开着就注入审计约定 + 术语对照 |
+| `PreInvocation` | `.agents/hooks/pre_invocation.py` | **lab 闸门 + 人格注入**（见下） |
 | `PostToolUse` | `.agents/hooks/post_tool_use.py` | 审计流水：每次工具调用记一行到 `~/.seep/agy-audit.jsonl` |
+
+**人格/纪律是同一份文件，不是另写一套。** 第一次发 `lab：` 时，钩子把
+`Tool/prompts/SYSTEM.md`（18 KB，pi 注入的也是这份）整份灌进会话：
+
+```
+第 1 轮  lab：        → 11755 字符   人格全文 + 术语表 + 授权范围
+第 2 轮  继续看…      →  1666 字符   只剩短提醒 + 术语表（人格已留在轨迹里）
+退出实验              →     0 字符   不注入
+```
+
+为什么不每轮都灌：agy 的 `systemMessage` 会留在会话轨迹里，灌一次就够，
+每轮再灌纯属烧 token。但也不完全依赖它 —— 短提醒还在，会话被裁剪也不会突然失守。
+
+想省 token：设 `SEEP_AGY_PERSONA=summary`，只给摘要不给全文。
 
 **能做和不能做的，说清楚：**
 

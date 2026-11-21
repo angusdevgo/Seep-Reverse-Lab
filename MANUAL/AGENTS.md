@@ -15,7 +15,7 @@
 | 接线物 | `~/.pi/agent/mcp.json` + `~/.pi/agent/skills/`（**拷贝**） | **插件包** `seep-lab` + profile patch | `~/.gemini/config/` 下两个 JSON |
 | MCP 怎么注册 | 静态 JSON 文件 | 插件在**运行时**用 `ctx.plugin(McpClient)` 挂 | 静态 `mcp_config.json`（或 `agy mcp add`） |
 | 技能怎么进来 | 启动时扫 `~/.pi/agent/skills`（副本） | 插件挂 `SkillFilesystem`，**直接指**仓库两个目录 | `skills.json` 的 `entries` **直接指**仓库两个目录 |
-| 纪律注入 | `~/.pi/agent/seep-system.md` + 扩展 | 插件里的 `systemPrompt.section` | 仓库根 `AGENTS.md`（agy 自动向上找） |
+| 纪律注入 | `~/.pi/agent/seep-system.md` + 扩展 | 插件里的 `systemPrompt.section` | 钩子注入 `Tool/prompts/SYSTEM.md` 全文（首次开 lab 时） |
 | lab 闸门 | `Tool/prompts/extensions/security-audit-interceptor.ts` | `packages/seep-lab/lib/lab-gate.js` | `.agents/hooks/pre_invocation.py`（生命周期钩子） |
 | 词替换 | 同一个 TS 扩展（真替换） | `packages/seep-lab/lib/lab-rewrite.js`（真替换） | 只能注入术语对照表，**改不了用户原话** |
 | 设置面板 | 无 | 有（设置 → Seep Lab + 输入框旁 `Lab` 按钮） | 无 |

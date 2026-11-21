@@ -97,12 +97,19 @@ class HookTest(unittest.TestCase):
     def test_lab_toggle(self):
         conv = {"conversationId": "c-lab", "lastUserInput": "lab：分析这个 apk"}
         _, out, _ = self.run_hook("pre_invocation.py", conv)
-        self.assertIn("授权审计协作", self.injected(out))
+        first = self.injected(out)
+        self.assertIn("进入授权审计协作", first)
+        # 第一轮灌完整人格（pi 注入的同一份 SYSTEM.md）
+        self.assertIn("反退缩", first, "第一次开 lab 应该带上完整人格")
+        self.assertIn("G-Auth", first)
 
-        # 同一会话下一轮：不再带触发词，仍然是开的
+        # 同一会话下一轮：不再带触发词，仍然开着，但只给短提醒
         _, out, _ = self.run_hook("pre_invocation.py",
                                   {"conversationId": "c-lab", "lastUserInput": "继续"})
-        self.assertIn("授权审计协作", self.injected(out))
+        second = self.injected(out)
+        self.assertIn("lab 仍开着", second)
+        self.assertNotIn("反退缩", second, "第二轮不该再灌一遍完整人格（浪费 token）")
+        self.assertLess(len(second), len(first) // 3)
 
         # 关掉
         _, out, _ = self.run_hook("pre_invocation.py",
@@ -113,6 +120,37 @@ class HookTest(unittest.TestCase):
         _, out, _ = self.run_hook("pre_invocation.py",
                                   {"conversationId": "c-lab", "lastUserInput": "继续"})
         self.assertEqual(self.injected(out), "")
+
+        # 再开一次 → 重新灌完整人格
+        _, out, _ = self.run_hook("pre_invocation.py",
+                                  {"conversationId": "c-lab", "lastUserInput": "lab："})
+        self.assertIn("反退缩", self.injected(out), "重新开启应该再灌一次人格")
+
+    def test_persona_matches_pi_source(self):
+        """agy 注入的人格必须就是 pi 那份 SYSTEM.md，不能各写一套。"""
+        persona = REPO / "Tool" / "prompts" / "SYSTEM.md"
+        self.assertTrue(persona.is_file(), "缺 Tool/prompts/SYSTEM.md")
+        _, out, _ = self.run_hook("pre_invocation.py",
+                                  {"conversationId": "c-persona", "lastUserInput": "lab："})
+        msg = self.injected(out)
+        # 抽查两个只在原文件里出现的段落标题
+        for marker in ("实验环境开关协议", "反退缩规则", "Zero-Waste Recon"):
+            self.assertIn(marker, msg, f"人格里少了 {marker}，说明不是同一份文件")
+
+    def test_persona_summary_mode(self):
+        """SEEP_AGY_PERSONA=summary 时只给摘要，不灌完整人格。"""
+        env = dict(self.env)
+        env["SEEP_AGY_PERSONA"] = "summary"
+        p = subprocess.run([PY, str(HOOKS / "pre_invocation.py")],
+                           input=json.dumps({"conversationId": "c-sum", "lastUserInput": "lab："},
+                                            ensure_ascii=False),
+                           capture_output=True, text=True, encoding="utf-8",
+                           errors="replace", env=env, timeout=60)
+        d = json.loads(p.stdout or "{}")
+        msg = "\n".join((s.get("systemMessage") or {}).get("systemMessage", "") for s in d.get("injectSteps", []))
+        self.assertIn("进入授权审计协作", msg)
+        self.assertNotIn("反退缩", msg, "summary 模式不该带完整人格")
+        self.assertLess(len(msg), 3000)
 
     def test_lab_is_per_conversation(self):
         self.run_hook("pre_invocation.py",
