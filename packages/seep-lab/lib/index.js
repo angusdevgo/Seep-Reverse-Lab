@@ -1279,7 +1279,11 @@ export function apply(ctx, rawConfig = {}) {
           ? contentSkills
           : [join(repoRoot, 'Tool', 'skill'), join(repoRoot, 'Tool', 'skill', 'safe-skills')];
         ctx.plugin(SkillFilesystem, { customSkillDirs: skillDirs });
-        ctx.plugin(ToolSkill, {});
+        // [local-fix 2026-11-24] 不挂 ToolSkill：官方 @deepseek-ai/dsh-skill 本身已提供 skill 工具
+        // 与 <available_skills> catalog。再挂一个 ToolSkill 会顶掉 catalog 注入 —— 实测表现为
+        // catalog 为空、skill 只能按名硬调（注册表里 36 个都在，但 agent 看不见 description）。
+        // 只留 SkillFilesystem 追加目录即可。
+        // ctx.plugin(ToolSkill, {});
         mounted.skills = true;
       } catch (error) {
         lines.push(
