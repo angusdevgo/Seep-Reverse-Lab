@@ -10,22 +10,28 @@ env.md 后再继续。env.md 是本机级快照、跨项目共享，只写本机
 
 这是给 AI/Agent 的全局操作入口。任何任务先判断所属板块，再沿 board、case、tools、kb、reports 的链路推进；不要只在当前目录里孤立工作。
 
+`kb/` 通过 Git 子模块链接独立仓库 [open-reverselab-knowledge](https://github.com/LING71671/open-reverselab-knowledge)。首次使用源码知识工具前执行 `git submodule update --init --recursive`；文章、方法和网络修改在知识库仓库提交。
+
 ## 1. 任务路由
 
 | 任务类型 | 主入口 | 工具入口 | 知识/模板 |
 |---|---|---|---|
-| Web / Website CTF / CVE 链 | `boards/ctf-website/README.md` | `tools/ctf-website/` | `kb/ctf-website/README.md` |
+| 桌面 UI / Goal / 工作区 / Agent 调度 | `desktop/README.zh-CN.md` | `desktop/src/`, `scripts/misc/desktop_*.py` | `desktop/ARCHITECTURE.md`, `desktop/AGENT_SYSTEM.md` |
+| 官网 / 文档 / 发布 | `site/README.md`, `RELEASING.md` | `site/`, `.github/workflows/` | `PRODUCT.md`, `DESIGN.md` |
+| Web / Website CTF / CVE 链 | `boards/ctf-website/README.md` | `tools/ctf-website/` | `kb/shared/ctf-website/README.md` |
 | Android / APK / DEX / Frida | `boards/android/README.md` | `tools/android/` | `templates/notes/android-apk-analysis.md` |
 | Windows / PE / crackme / malware triage | `boards/windows/README.md` | `tools/windows/`, `tools/common/` | `templates/notes/windows-pe-analysis.md` |
-| General / crypto / protocol / firmware / IoT / radio / AI | `boards/general/README.md` | `tools/general/` | `kb/general/README.md` |
+| General / crypto / protocol / firmware / IoT / radio / AI | `boards/general/README.md` | `tools/general/` | `kb/shared/general/README.md` |
 | MCP / skills / lab health / automation | `boards/misc/README.md` | `tools/skills/README.md` | `reports/misc/`, `scripts/misc/` |
 | 跨板块综合案件 | `cases/README.md` | 链接各板块 tools/scripts | `templates/cases/` |
+
+桌面运行数据使用所选工作区的 `.reverselab/`，与以下外部 Agent 的 `cases/` 协议分开。桌面开发先读 [DEV_GUIDE.md](desktop/DEV_GUIDE.md)；不要因当前界面切换而改变后台任务的工作区。
 
 ## 2. AI 默认工作流
 
 1. **识别板块**：Web/Android/Windows/Misc；不确定时从 `boards/README.md` 选择最接近的入口。
 2. **生成任务上下文**：运行 `python scripts/misc/ai_context.py "<task>" --save`。
-3. **查知识库路由**：对有明确信号的 Web 目标，运行 `python scripts/ctf-website/kb_router.py "<信号>"`。
+3. **查知识库路由**：先按策略读取所属领域的 `attack-network.md`（red）或 `defense-network.md`（blue），再运行 `python scripts/misc/kb_router.py "<信号>" --track red` 或 `--track blue`；both 分支分别检索并关联证据。
 4. **建立或更新 case**：复杂任务在 `cases/<case>/` 维护轻量索引。
 5. **读取本地说明**：先看目标目录的 `README.md` / `AI-USAGE.md`。
 6. **工具路由**：先运行 `python scripts/misc/ai_tool.py plan "<task>"`，再按 ID 调用工具。
@@ -69,7 +75,36 @@ python3 scripts/misc/setup_unattended_ctf_runner.py --overwrite
 - Claude Code: 本地 settings 允许 Bash、文件读写、搜索和 Web 工具。
 - 这些文件是本地运行配置，不作为公开制品提交。
 
-## 2.2 公共仓库边界
+## 2.2 工具 profile 与可选工具
+
+MCP 服务器默认加载 `legacy`（全部工具，行为不变）。按任务选择 profile，减少无关 schema：
+
+| profile | 适用场景 |
+|---|---|
+| `legacy` | 现有配置；不裁剪 |
+| `common` | 立案、初筛、工作区、工具状态 |
+| `ctf` | Web / HTTP / CTF |
+| `pe` | PE/ELF 静态、动态、补丁、IOC |
+| `apk` | Android 静态、Frida、加密 |
+| `general` | 加密、协议、pcap、.NET、WASM |
+
+设置方式：`.mcp.json` 的 `env.REVERSELAB_PROFILE`，或启动参数 `--profile <name>`。
+查看某个 profile 会暴露哪些工具：
+
+```bash
+python tools/skills/mcp/ReverseLabToolsMCP/reverse_lab_tools_mcp.py --profile-report pe
+```
+
+可选外部工具（默认不安装，缺失时返回 `missing_engine`，不要当成空结果）：
+
+- **tshark**：`pcap_summary` / `pcap_extract_http`。
+- **ilspycmd**：`dotnet_list_types` / `dotnet_decompile_type`。
+- **WABT**：`wasm_info`。
+- 可用 `python scripts/misc/install_engines.ps1`（干跑）确认，或运行
+  `python scripts/misc/lab_healthcheck.py` 查看工具状态。
+- 能力矩阵：`docs/capability-matrix.md`（由 registry 生成）。
+
+## 2.3 公共仓库边界
 
 不要把私人工作区的 `cases/`、samples、日志、真实目标、凭据、用户目录或个人信息
 迁入本仓库。通用发现应去标识化后写入 `kb/`；发布前运行
@@ -131,3 +166,11 @@ Playwright     判断是否新增      kb/   技术文档        git commit
 python scripts/misc/lab_healthcheck.py
 python scripts/misc/ai_toolcheck.py
 ```
+
+
+## 静态分析后端策略：IDA 优先，Ghidra 备用
+
+- 默认调用 `static_headless_analyze`，自动顺序为 IDA → Ghidra；不要为了常规分析直接指定旧 Ghidra 工具。
+- `sample_full_workup` 默认启用此策略；已有 summary 时复用。`run_static=False` 可跳过静态分析，`run_ghidra=True` 是显式强制 Ghidra 的兼容参数。
+- 使用 `static_summary_*` 读取结果；IDA 缺失或分析失败的原因必须保留在 attempts 中。
+- 保留现有 cases/projects；IDA 使用独立新数据库，不覆盖原样本。配置和使用方式见 `docs/static-analysis-backends.md`。

@@ -10,31 +10,40 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 from typing import Any, Callable
 
 from mcp.server.fastmcp import FastMCP
 
-from reverselab_mcp.config import REVERSE_ROOT, SERVER_NAME
-from reverselab_mcp.paths import resolve_file
+from reverselab_mcp import registry
+from reverselab_mcp import track as track_mod
+from reverselab_mcp.config import REVERSE_ROOT, SCRIPTS_DIR, SERVER_NAME
+from reverselab_mcp.paths import resolve_file, resolve_summary
 from reverselab_mcp.tools import (
     android_mumu,
     analysis_notes,
     crypto_unpack,
     debug_scripts,
+    dotnet,
     ghidra_headless,
     ghidra_summary,
+    ida_headless,
     ioc_extract,
+    kb,
     mcp_update,
     mutations,
     patch_reports,
+    pcap,
     procmon_filters,
     python_re_tools,
     rizin_write,
     sample_crud,
     sigma_stub,
+    static_analysis,
     toolbox,
     triage,
     unpack_intake,
+    wasm,
     web_ctf,
     workflow,
     workspace_crud,
@@ -50,6 +59,33 @@ def _safe_call(func: Callable[..., dict[str, Any]], *args: Any, **kwargs: Any) -
         return func(*args, **kwargs)
     except Exception as exc:
         return {"error": str(exc)}
+
+
+def _red_call(tool_name: str, func: Callable[..., dict[str, Any]], *args: Any, **kwargs: Any) -> dict[str, Any]:
+    blocked = track_mod.check_red_tool_allowed(tool_name)
+    if blocked is not None:
+        return blocked
+    return _safe_call(func, *args, **kwargs)
+
+
+# ── Dual-track control & routing ──
+
+@mcp.tool()
+def get_track_status() -> dict[str, Any]:
+    """查询当前双轨模式 (blue/red/both)、来源 (runtime/env/default) 及 RED 工具门控状态。"""
+    return _safe_call(track_mod.get_track_status)
+
+
+@mcp.tool()
+def set_track(track: str) -> dict[str, Any]:
+    """切换运行轨道：blue（默认，防御与只读分析）、red（攻击/探测/patch）、both（双轨对照）。"""
+    return _safe_call(track_mod.set_track, track)
+
+
+@mcp.tool()
+def route_track(target_or_intent: str, track: str = "auto") -> dict[str, Any]:
+    """根据目标或意图路由到对应轨道 (blue/red/both)、板块、推荐工具、工作流与知识库条目。"""
+    return _safe_call(track_mod.route_track, target_or_intent, track)
 
 
 @mcp.tool()
@@ -117,6 +153,78 @@ def ghidra_headless_analyze(
         string_limit,
         import_limit,
     )
+
+
+@mcp.tool()
+def static_backend_status() -> dict[str, Any]:
+    """查看 IDA/Ghidra 路径与默认顺序；路径存在不代表许可证和运行时已验证。"""
+    return _safe_call(static_analysis.static_backend_status)
+
+
+@mcp.tool()
+def static_headless_analyze(
+    path: str, backend: str = "", project_name: str = "", overwrite: bool = True,
+    analysis_timeout_seconds: int = 600, process_timeout_seconds: int = 1800,
+    function_limit: int = 300, string_limit: int = 300, import_limit: int = 300,
+) -> dict[str, Any]:
+    """默认 IDA 优先、失败后回退 Ghidra；backend=ida/ghidra 强制指定，不执行样本。"""
+    return _safe_call(static_analysis.static_headless_analyze, path, backend, project_name, overwrite,
+                      analysis_timeout_seconds, process_timeout_seconds, function_limit, string_limit, import_limit)
+
+
+@mcp.tool()
+def ida_headless_analyze(
+    path: str, project_name: str = "", overwrite: bool = True,
+    analysis_timeout_seconds: int = 600, process_timeout_seconds: int = 1800,
+    function_limit: int = 300, string_limit: int = 300, import_limit: int = 300,
+) -> dict[str, Any]:
+    """只用 IDA/IDAPython 分析，生成独立数据库和兼容摘要；不会改写原样本。"""
+    return _safe_call(ida_headless.ida_headless_analyze, path, project_name, overwrite,
+                      analysis_timeout_seconds, process_timeout_seconds, function_limit, string_limit, import_limit)
+
+
+def _static_summary_call(reader: Callable[..., dict[str, Any]], summary_path: str, *args: Any) -> dict[str, Any]:
+    def read() -> dict[str, Any]:
+        path = summary_path or str(resolve_summary(include_ida=True))
+        return reader(path, *args)
+
+    return _safe_call(read)
+
+
+@mcp.tool()
+def static_summary_list(limit: int = 20) -> dict[str, Any]:
+    """列出 IDA 与 Ghidra 摘要，包含后端标记。"""
+    return _safe_call(ghidra_summary.ghidra_summary_list, limit, include_ida=True)
+
+
+@mcp.tool()
+def static_summary_overview(summary_path: str = "") -> dict[str, Any]:
+    """读取 IDA/Ghidra 通用摘要概览。"""
+    return _static_summary_call(ghidra_summary.ghidra_summary_overview, summary_path)
+
+
+@mcp.tool()
+def static_summary_functions(summary_path: str = "", query: str = "", address: str = "", limit: int = 50) -> dict[str, Any]:
+    """按名称、signature 或地址查询 IDA/Ghidra 函数。"""
+    return _static_summary_call(ghidra_summary.ghidra_summary_functions, summary_path, query, address, limit)
+
+
+@mcp.tool()
+def static_summary_function_detail(summary_path: str = "", address: str = "", name: str = "", include_decompile: bool = True, max_decompile_chars: int = 12000) -> dict[str, Any]:
+    """读取函数的调用关系、导入/字符串引用及反编译预览。"""
+    return _static_summary_call(ghidra_summary.ghidra_summary_function_detail, summary_path, address, name, include_decompile, max_decompile_chars)
+
+
+@mcp.tool()
+def static_summary_imports(summary_path: str = "", query: str = "", library: str = "", min_refs: int = 0, limit: int = 50) -> dict[str, Any]:
+    """查询 IDA/Ghidra 摘要的导入符号与引用。"""
+    return _static_summary_call(ghidra_summary.ghidra_summary_imports, summary_path, query, library, min_refs, limit)
+
+
+@mcp.tool()
+def static_summary_strings(summary_path: str = "", query: str = "", min_length: int = 0, limit: int = 50) -> dict[str, Any]:
+    """查询 IDA/Ghidra 摘要的字符串。"""
+    return _static_summary_call(ghidra_summary.ghidra_summary_strings, summary_path, query, min_length, limit)
 
 
 @mcp.tool()
@@ -200,7 +308,7 @@ def patch_bytes(
     overwrite: bool = False,
 ) -> dict[str, Any]:
     """复制输入文件到 patches 后修改指定 offset 的字节；不原地修改样本。"""
-    return _safe_call(mutations.patch_bytes, path, offset, new_bytes_hex, output_path, case_name, overwrite)
+    return _red_call("patch_bytes", mutations.patch_bytes, path, offset, new_bytes_hex, output_path, case_name, overwrite)
 
 
 @mcp.tool()
@@ -220,7 +328,7 @@ def patch_pe_bytes(
     overwrite: bool = False,
 ) -> dict[str, Any]:
     """按 PE file offset/RVA/VA 定位后 patch 副本字节；不原地修改样本。"""
-    return _safe_call(mutations.patch_pe_bytes, path, address, new_bytes_hex, address_type, output_path, case_name, overwrite)
+    return _red_call("patch_pe_bytes", mutations.patch_pe_bytes, path, address, new_bytes_hex, address_type, output_path, case_name, overwrite)
 
 
 @mcp.tool()
@@ -242,7 +350,8 @@ def patch_pattern(
     overwrite: bool = False,
 ) -> dict[str, Any]:
     """按十六进制 pattern 定位后 patch 副本字节；pattern 支持 ?? 通配。"""
-    return _safe_call(
+    return _red_call(
+        "patch_pattern",
         mutations.patch_pattern,
         path,
         pattern,
@@ -421,7 +530,7 @@ def android_frida_run_script(
     output_path: str = "",
 ) -> dict[str, Any]:
     """对指定进程/包运行一次性 Frida JS 脚本，收集 send() 消息并导出 JSON。"""
-    return _safe_call(android_mumu.android_frida_run_script, target, script_source, serial, mode, duration_seconds, output_path)
+    return _red_call("android_frida_run_script", android_mumu.android_frida_run_script, target, script_source, serial, mode, duration_seconds, output_path)
 
 
 @mcp.tool()
@@ -736,7 +845,7 @@ def rizin_write_bytes(
     timeout: int = 30,
 ) -> dict[str, Any]:
     """使用 Rizin raw write 在 patches 副本上写入十六进制字节。"""
-    return _safe_call(rizin_write.rizin_write_bytes, path, offset, new_bytes_hex, output_path, case_name, overwrite, timeout)
+    return _red_call("rizin_write_bytes", rizin_write.rizin_write_bytes, path, offset, new_bytes_hex, output_path, case_name, overwrite, timeout)
 
 
 @mcp.tool()
@@ -766,7 +875,8 @@ def rizin_assemble_patch(
     timeout: int = 30,
 ) -> dict[str, Any]:
     """先用 rz-asm 汇编，再对 patches 副本做 patch。"""
-    return _safe_call(
+    return _red_call(
+        "rizin_assemble_patch",
         rizin_write.rizin_assemble_patch,
         path,
         offset,
@@ -1045,8 +1155,10 @@ def sample_full_workup(
     overwrite_note: bool = True,
     report_path: str = "",
     ghidra_timeout_seconds: int = 1800,
+    static_backend: str = "",
+    run_static: bool = True,
 ) -> dict[str, Any]:
-    """一键自动逆向工作流：triage、可选 Ghidra、重点函数队列、x64dbg/Procmon 计划、IOC、YARA/Sigma 草案和总控 manifest。"""
+    """一键逆向：默认 IDA 优先/Ghidra 备用；run_static=False 跳过分析，run_ghidra=True 保留旧版强制 Ghidra 行为。"""
     return _safe_call(
         workflow.sample_full_workup,
         sample_path,
@@ -1056,6 +1168,8 @@ def sample_full_workup(
         overwrite_note,
         report_path,
         ghidra_timeout_seconds,
+        static_backend,
+        run_static,
     )
 
 
@@ -1069,36 +1183,63 @@ def sample_autopilot_round(
     return _safe_call(workflow.sample_autopilot_round, manifest_path, max_actions, execute)
 
 
-# ── Web CTF tools ──
+# ── Web CTF & KB tools ──
 
 @mcp.tool()
 def http_probe(url: str, timeout: int = 15) -> dict[str, Any]:
     """对目标 URL 发起 GET 探测，收集 header/body/cookie/指纹。"""
-    return _safe_call(web_ctf.http_probe, url, timeout)
+    return _red_call("http_probe", web_ctf.http_probe, url, timeout)
 
 
 @mcp.tool()
-def kb_router(query: str, board: str = "") -> dict[str, Any]:
-    """按攻击信号搜索知识库（支持所有板块），返回匹配的技术文件和路径。board 可选: ctf-website|apk-reverse|pe-reverse，不传则全部搜索。"""
-    return _safe_call(web_ctf.kb_router, query, board)
+def kb_router(query: str, board: str = "", track: str = "") -> dict[str, Any]:
+    """按信号与轨道搜索知识库（支持 ctf-website/apk-reverse/pe-reverse/general）。
+
+    board 可选: ctf-website|apk-reverse|pe-reverse|general；track 可选: blue|red|both。
+    """
+    return _safe_call(kb.kb_router, query, board, track)
 
 
 @mcp.tool()
 def kb_read_file(technique_path: str, board: str = "") -> dict[str, Any]:
-    """读取知识库技术文件内容。自动检测板块或通过 board 参数指定。路径格式如 '02-auth/jwt/01-alg-none.md'（ctf-website）或 '04-crypto/01-game-encryption-patterns.md'（apk-reverse）或 '01-triage/01-aob-signature-scan.md'（pe-reverse）。"""
-    return _safe_call(web_ctf.kb_read_file, technique_path, board)
+    """读取知识库技术文件内容。自动检测板块或通过 board 参数指定（支持 ctf-website/apk-reverse/pe-reverse/general）。"""
+    return _safe_call(kb.kb_read_file, technique_path, board)
 
 
 @mcp.tool()
-def kb_catalog(board: str = "") -> dict[str, Any]:
-    """列出知识库所有板块、分类、条目数和文件数。board 可选: ctf-website|apk-reverse|pe-reverse，不传则列出全部板块。"""
-    return _safe_call(web_ctf.kb_catalog, board)
+def kb_catalog(board: str = "", track: str = "") -> dict[str, Any]:
+    """列出知识库所有板块、分类、条目数、文件数与轨道分布。board/track 可选。"""
+    return _safe_call(kb.kb_catalog, board, track)
+
+
+@mcp.tool()
+def kb_graph(track: str = "both", pinned: list[dict[str, Any]] | None = None) -> dict[str, Any]:
+    """Read installed knowledge networks and methods at exact package editions."""
+    return _safe_call(kb.kb_graph, track, pinned)
+
+
+@mcp.tool()
+def kb_get(entity: str, pinned: list[dict[str, Any]] | None = None) -> dict[str, Any]:
+    """Resolve a knowledge URI or stable entity ID without guessing its source."""
+    return _safe_call(kb.kb_get, entity, pinned)
+
+
+@mcp.tool()
+def kb_neighbors(entity: str, pinned: list[dict[str, Any]] | None = None) -> dict[str, Any]:
+    """Read typed relations involving a knowledge method."""
+    return _safe_call(kb.kb_neighbors, entity, pinned)
+
+
+@mcp.tool()
+def kb_pin() -> dict[str, Any]:
+    """Record installed knowledge editions for repeatable retrieval."""
+    return _safe_call(kb.kb_pin)
 
 
 @mcp.tool()
 def ctf_new_challenge(name: str, url: str = "") -> dict[str, Any]:
     """创建新的 CTF 题目 case 目录，从模板初始化。"""
-    return _safe_call(web_ctf.ctf_new_challenge, name, url)
+    return _red_call("ctf_new_challenge", web_ctf.ctf_new_challenge, name, url)
 
 
 @mcp.tool()
@@ -1110,13 +1251,13 @@ def ctf_autopilot_round(
     timeout: int = 600,
 ) -> dict[str, Any]:
     """读取 Web CTF ai_manifest.json，执行一轮带 checkpoint 的 autopilot 计划/allowlist 动作。"""
-    return _safe_call(web_ctf.ctf_autopilot_round, manifest_path, max_actions, execute, allow_network_cve, timeout)
+    return _red_call("ctf_autopilot_round", web_ctf.ctf_autopilot_round, manifest_path, max_actions, execute, allow_network_cve, timeout)
 
 
 @mcp.tool()
 def run_ctf_tool(tool: str, args: str, timeout: int = 120) -> dict[str, Any]:
     """运行 CTF 工具。tool: sqlmap/dirsearch/jwt_tool/tplmap。args: 命令行参数。"""
-    return _safe_call(web_ctf.run_ctf_tool, tool, args, timeout)
+    return _red_call("run_ctf_tool", web_ctf.run_ctf_tool, tool, args, timeout)
 
 
 @mcp.tool()
@@ -1134,7 +1275,7 @@ def ctf_save_request(raw_request: str, case_name: str = "default", filename: str
 @mcp.tool()
 def run_sqlmap_request(request_path: str, extra_args: str = "--batch", timeout: int = 300) -> dict[str, Any]:
     """用 sqlmap -r 运行已保存的 raw HTTP request。"""
-    return _safe_call(web_ctf.run_sqlmap_request, request_path, extra_args, timeout)
+    return _red_call("run_sqlmap_request", web_ctf.run_sqlmap_request, request_path, extra_args, timeout)
 
 
 @mcp.tool()
@@ -1146,7 +1287,7 @@ def burp_status() -> dict[str, Any]:
 @mcp.tool()
 def burp_launch(extra_args: str = "", launch: bool = False) -> dict[str, Any]:
     """生成或可选启动 Burp Suite。默认 launch=False，只返回命令，不弹 GUI。"""
-    return _safe_call(web_ctf.burp_launch, extra_args, launch)
+    return _red_call("burp_launch", web_ctf.burp_launch, extra_args, launch)
 
 
 # ── Skill / project setup ──
@@ -1185,6 +1326,44 @@ def project_skills_status() -> dict[str, Any]:
             else f"Run install commands above for missing skills ({len(status) - installed} remaining)"
         ),
     }
+
+
+# ── Cross-format engines and fallbacks ──
+
+@mcp.tool()
+def pcap_summary(path: str, display_filter: str = "", max_packets: int = 0) -> dict[str, Any]:
+    """用 tshark 汇总 pcap/pcapng：包数、捕获元数据、协议层级。缺失时返回 missing_engine。"""
+    return _safe_call(pcap.pcap_summary, path, display_filter, max_packets)
+
+
+@mcp.tool()
+def pcap_extract_http(path: str, kind: str = "request", max_rows: int = 500) -> dict[str, Any]:
+    """用 tshark 从抓包中提取 HTTP 请求/响应行（request|response|both）。"""
+    return _safe_call(pcap.pcap_extract_http, path, kind, max_rows)
+
+
+@mcp.tool()
+def dotnet_metadata(path: str) -> dict[str, Any]:
+    """判断 PE 是否为 .NET 托管程序集，并读取 CLI 头与元数据版本（无外部依赖）。"""
+    return _safe_call(dotnet.dotnet_metadata, path)
+
+
+@mcp.tool()
+def dotnet_list_types(path: str, kind: str = "classes") -> dict[str, Any]:
+    """用 ilspycmd 列出 .NET 程序集中的类型（classes|interfaces|structs|enums|delegates）。"""
+    return _safe_call(dotnet.dotnet_list_types, path, kind)
+
+
+@mcp.tool()
+def dotnet_decompile_type(path: str, type_name: str) -> dict[str, Any]:
+    """用 ilspycmd 反编译 .NET 程序集中的一个类型为 C# 源码。"""
+    return _safe_call(dotnet.dotnet_decompile_type, path, type_name)
+
+
+@mcp.tool()
+def wasm_info(path: str, wat_bytes: int = 8192) -> dict[str, Any]:
+    """用 WABT 检查 WebAssembly 模块：节区/指令结构 + WAT 文本预览。"""
+    return _safe_call(wasm.wasm_info, path, wat_bytes)
 
 
 def _self_test(path: str) -> int:
@@ -1643,6 +1822,24 @@ def _android_mumu_test() -> int:
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="ReverseLab local tools MCP server")
+    parser.add_argument(
+        "--profile",
+        default=os.environ.get(registry.PROFILE_ENV, registry.DEFAULT_PROFILE),
+        choices=list(registry.PROFILES),
+        help="tool profile to expose (default: legacy = every tool)",
+    )
+    parser.add_argument(
+        "--list-tools",
+        action="store_true",
+        help="apply the profile, print the exposed tool list as JSON, and exit",
+    )
+    parser.add_argument(
+        "--profile-report",
+        nargs="?",
+        const="",
+        metavar="PROFILE",
+        help="print a profile summary and exit (defaults to --profile)",
+    )
     parser.add_argument("--self-test", metavar="FILE", help="run tool self-test against a file and exit")
     parser.add_argument("--headless-test", metavar="FILE", help="run Ghidra headless smoke test against a file and exit")
     parser.add_argument("--summary-test", nargs="?", const="", metavar="SUMMARY_JSON", help="run Ghidra summary query smoke test and exit")
@@ -1749,6 +1946,33 @@ def main() -> None:
         raise SystemExit(_sample_autopilot_round_test(args.sample_autopilot_round_test, args.sample_autopilot_execute))
     if args.android_mumu_test:
         raise SystemExit(_android_mumu_test())
+
+    if args.profile_report is not None:
+        print(json.dumps(registry.profile_report(args.profile_report or args.profile), ensure_ascii=False, indent=2))
+        return
+
+    applied = registry.apply_profile(mcp, args.profile)
+    if not applied.get("ok"):
+        raise SystemExit(applied.get("error", "failed to apply profile"))
+
+    if args.profile in {"apk", "pe", "general", "common"}:
+        # Keep the public tool names stable across local sample-analysis profiles.
+        for name, reader in (("kb_router", kb.blue_kb_router), ("kb_read_file", kb.blue_kb_read_file)):
+            mcp.remove_tool(name)
+            mcp.add_tool(reader, name=name)
+
+    if args.list_tools:
+        print(
+            json.dumps(
+                {
+                    "profile": applied,
+                    "tools": sorted(mcp._tool_manager._tools),
+                },
+                ensure_ascii=False,
+                indent=2,
+            )
+        )
+        return
 
     mcp.run()
 

@@ -20,12 +20,25 @@
 - 如果需要执行命令、运行脚本、调用工具、分析文件，可以主动进行。
 - 对破坏性操作要保留原始文件，优先复制样本再操作。
 - 所有结论必须说明证据来源，不能凭空猜测。
+- 界面设计极简约束（非必要不添加文字）：严禁在空状态堆砌欢迎词、解释段落与示例提示词气泡，界面仅保留核心功能 ID、目标标签与操作控件。
+
+## 工具 profile 与可选工具
+
+MCP 服务器默认 `legacy`（全部工具，行为不变）。按任务设置 `REVERSELAB_PROFILE`：
+`common` / `ctf` / `pe` / `apk` / `general`。
+
+- 遇到 .NET / WASM / pcap，优先使用原生适配器（`dotnet_metadata` / `pcap_summary` /
+  `wasm_info`）；它们需要外部的 ilspycmd / tshark / WABT 时，缺失统一返回
+  `missing_engine` 信封。
+- **不要**把缺失当成空结果，也不要写成“未发现”；否则会把环境问题误判成样本结论。
+- 能力矩阵以 `docs/capability-matrix.md` 为准（由 registry 生成）。
+- 新工具必须声明 profile 与 target format，并返回统一信封；否则不计入能力矩阵。
 
 ## Web CTF 知识库
 
 做 Web/CTF 目标分析时，**必须先查知识库再动手**：
 
-1. **读攻击网** — `kb/ctf-website/techniques/attack-network.md`，了解所有攻击路径和分叉
+1. **按策略读网络图** — red 读 `kb/red/ctf-website/techniques/attack-network.md`，blue 读 `kb/blue/ctf-website/techniques/defense-network.md`；both 的两方分别沿自己的网络图选择路径。
 2. **按信号查技术文件** — 每发现一个信号（JWT、SQLi、SSRF...）立即调用 MCP `kb_router` 或:
    ```bash
    python scripts/ctf-website/kb_router.py "发现的信号描述"
@@ -59,7 +72,7 @@
 
 分析 Android APK/DEX 时，**必须先查知识库再动手**：
 
-1. **读攻击网** — `kb/apk-reverse/techniques/attack-network.md`，了解 APK 逆向的全部分析路径和交叉连接
+1. **按策略读网络图** — red 读 `kb/red/apk-reverse/techniques/attack-network.md`，blue 读 `kb/blue/apk-reverse/techniques/defense-network.md`；both 的两方分别沿自己的网络图选择路径。
 2. **按信号查技术文件** — 每发现一个信号（加密、混淆、壳、native、网络协议...）立即调用 MCP `kb_router` 搜索，board 指定 `apk-reverse`：
    ```
    MCP: kb_router(query="加密", board="apk-reverse")
@@ -72,7 +85,7 @@
 
 分析 Windows PE/二进制时，**必须先查知识库再动手**：
 
-1. **读攻击网** — `kb/pe-reverse/techniques/attack-network.md`，了解 PE 分析的全部路径（triage→static→dynamic→crypto→IOC→YARA→patch→免杀）
+1. **按策略读网络图** — red 读 `kb/red/pe-reverse/techniques/attack-network.md`，blue 读 `kb/blue/pe-reverse/techniques/defense-network.md`；both 的两方分别沿自己的网络图选择路径。
 2. **按信号查技术文件** — 每发现一个信号（壳、反调试、加密、注入、AOB...）立即调用 MCP `kb_router` 搜索，board 指定 `pe-reverse`：
    ```
    MCP: kb_router(query="脱壳", board="pe-reverse")
@@ -85,7 +98,7 @@
 
 分析密码算法/协议/游戏作弊/固件/硬件/无线电/AI 安全时，**必须先查知识库再动手**：
 
-1. **读攻击网** — `kb/general/techniques/attack-network.md`，了解跨领域分析的全部路径和交叉连接
+1. **按策略读网络图** — red 读 `kb/red/general/techniques/attack-network.md`，blue 读 `kb/blue/general/techniques/defense-network.md`；both 的两方分别沿自己的网络图选择路径。
 2. **按信号查技术文件** — 每发现一个信号（加密算法、协议格式、PRNG、反作弊...）立即调用 MCP `kb_router` 搜索，board 指定 `general`：
    ```
    MCP: kb_router(query="PRNG", board="general")
@@ -443,3 +456,11 @@ host: <主机名>
 
 ## 工作区
 ```
+
+
+## 静态分析后端策略：IDA 优先，Ghidra 备用
+
+- 默认调用 `static_headless_analyze`，自动顺序为 IDA → Ghidra；不要为了常规分析直接指定旧 Ghidra 工具。
+- `sample_full_workup` 默认启用此策略；已有 summary 时复用。`run_static=False` 可跳过静态分析，`run_ghidra=True` 是显式强制 Ghidra 的兼容参数。
+- 使用 `static_summary_*` 读取结果；IDA 缺失或分析失败的原因必须保留在 attempts 中。
+- 保留现有 cases/projects；IDA 使用独立新数据库，不覆盖原样本。配置和使用方式见 `docs/static-analysis-backends.md`。

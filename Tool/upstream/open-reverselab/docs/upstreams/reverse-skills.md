@@ -18,18 +18,18 @@ The upstream README states MIT, but the reviewed repository tree does not contai
 |---|---|---|
 | `rev-frida` loader-aware instrumentation | Android native Frida templates and JNI tracing guidance | `android_frida_template_library`, `android_frida_render_template`, `android_frida_run_script`, `android_crypto_unpack_recipe` |
 | `rev-symbol` function-name inference | Ghidra summary evidence plus conservative Function Map suggestions | `ghidra_headless_analyze`, `ghidra_summary_functions`, `ghidra_summary_function_detail`, `ghidra_summary_call_focus`, generated analysis notes |
-| `rev-struct` layout inference | Existing PE struct/ReClass techniques plus a symbol/field evidence ledger | `kb/pe-reverse/techniques/03-static-analysis/01-struct-reconstruction.md`, `04-reclass-reconstruction.md` |
+| `rev-struct` layout inference | Existing PE struct/ReClass techniques plus a symbol/field evidence ledger | `kb/shared/pe-reverse/techniques/03-static-analysis/01-struct-reconstruction.md`, `04-reclass-reconstruction.md` |
 
 ## Tool baseline
 
-For the supported Ghidra-first workflow, install or provide:
+For the supported IDA-first workflow with Ghidra fallback, install or provide:
 
 - Ghidra and the compatible Java runtime; `analyzeHeadless` is the primary automated path.
 - Android SDK platform-tools (`adb`) for Android work.
 - Host Frida tooling plus an Android `frida-server` version compatible with the host client.
 - JADX and Apktool for Android static preparation.
 
-IDA Pro/Hex-Rays may be used as an analyst-provided optional second opinion. It is not required by this integration, is not added to `.mcp.json`, and is not a CI dependency. Ghidra summary evidence remains the portable project contract.
+IDA Pro/Hex-Rays is now the preferred optional backend through an independently implemented IDAPython adapter in reverse_lab_tools. Ghidra remains the fallback. No additional MCP server or IDA dependency is required in CI; mocked tests and the existing compatible summary contract remain portable. See docs/static-analysis-backends.md.
 
 ## Update policy
 
